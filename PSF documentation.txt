@@ -1,0 +1,13 @@
+PSF documentation
+
+Understanding the PSF is crucial to correctly modelling the flux distribution of PNe as detected by MUSE. We consider PNe to be point sources, as it stands it is impossible with today's technology to resolve single stars within other galaxies. PNe are diffuse by nature by are seen to span no more than 6-8 pixels in diameter as seen on the FOV.
+At first the PSF was modelled on the single brightest point object in the field, normally the brightest PNe, but a star can be used if it is not too embedded in the background stellar emission of the galaxy.
+
+First approach - Select brightest (hopefully highest A/rN value as well) source and fit with 2D Moffat distribution, taking the fitted parameter values of gamma and beta (the radial and wing components respectively) to be the PSF for the rest of the galaxy.
+
+Second approach was to manipulate the lmfit residual fitting routine to fit 6 objects simultaneously; each objet would have it's own amplitude, x and y values, but all would be fitted by a shared spatial profile as determined by gamma and beta. This method takes the 6 brightest, in A/rN, sources and fits them together so as to better constrain the shape of the PSF. Though not perfect this method showed promise, and so required testing.
+
+Since this step I have been to EWASS and heard mention of work done on crowded field spectroscopy with MUSE, carried out by Sebastian Kamann (arXiv:1211.0445, 2012). After reviewing the methods used for PSF analysis in this paper I have moved to FWHM and beta fitting instead, where gamma can be calculated from FWHM and beta, with the benefit lying in the transformations undertaken by the fitter when fitting the Moffat profile to the data set.
+
+Third approach is a re-evaluation of the second step and has been adjusted to allow for any number of objects to be fitted simultaneously, potentially allowing for all detectable source to be fitted and evaluated simultaneously, whilst sharing a common PSF that would be fitted to each collection of sources. Testing of this approach is underway for FCC170, as we can compare directly with a star PSF to gauge how relaible this routine will turn out to be once it is let loose on other data sets.
+
