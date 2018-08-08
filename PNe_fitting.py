@@ -46,8 +46,12 @@ PNe_spectra = np.array([PNextractor(x, y, n_pixels, raw_data_cube, wave=waveleng
 PNe_df = pd.DataFrame(columns=("PNe number", "Total Flux", "Flux error", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN"))
 PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
 
+check_for_1D_fit = input("Do you want to run the 1D fitter?: (y/n)")
 
-
+if check_for_1D_fit == "y":
+    # Run 1D fitter
+elif check_for_1D_fit == "n":
+    # load from saved files
 
 #Run 1D fit of the spectra and save relevant outputs
 ## potentially check to see if 1D needs to be run, or load from files with an input() call
