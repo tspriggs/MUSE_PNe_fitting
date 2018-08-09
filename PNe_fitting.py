@@ -74,7 +74,8 @@ if check_for_1D_fit == "y":
     np.save("exported_data/FCC167/list_of_resids_min_data", list_of_residuals)
     np.save("exported_data/FCC167/list_of_resids_min_obj", list_of_residuals_from_fitter)
     np.save("exported_data/FCC167/rN", list_of_rN)
-
+    
+    print("Cube fitted, data saved.")
     # DETECT PNE here?
 
 
@@ -116,22 +117,31 @@ elif check_for_1D_fit == "n":
     for p in np.arange(0, len(x_PNe)):
         list_of_std = [np.abs(np.std(spec)) for spec in PNe_uncertainty[p]]
         error_cube[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
+    
+    print("Files loaded.")
 
+        
 
+fit_FWHM = 4.0
+fit_beta = 2.5
 
 #run initial 3D fit on selected objects
 # LMfit initial parameters
 PNe_params = Parameters()
-PNe_params.add('Amp_2D', value=100., min=0.01)
-PNe_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
-PNe_params.add('y_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
-PNe_params.add("M_FWHM", value=4., vary=False)
-PNe_params.add("beta", value=2.5, vary=False) #1.46
-PNe_params.add("mean", value=5035., min=5000., max=5070.)
-PNe_params.add("Gauss_bkg",  value=0.001)
-PNe_params.add("Gauss_grad", value=0.001)
+def gen_params(wave=5007, FWHM, beta)
+    PNe_params.add('Amp_2D', value=100., min=0.01)
+    PNe_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
+    PNe_params.add('y_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
+    PNe_params.add("M_FWHM", value=FWHM, vary=False)
+    PNe_params.add("beta", value=beta, vary=False) #1.46
+    PNe_params.add("mean", value=wave, min=wave-40., max=wave+40.)
+    PNe_params.add("Gauss_bkg",  value=0.001)
+    PNe_params.add("Gauss_grad", value=0.001)
 
-#
+    
+# generate parameters with values
+gen_params(wave=5035., FWHM=fit_FWHM, beta=fit_beta)
+
 # useful value storage setup
 total_Flux = np.zeros(len(x_PNe))
 list_of_rN = np.zeros(len(x_PNe))
@@ -232,7 +242,10 @@ plt.ylabel("N Sources", fontsize=24)
 plt.savefig("Plots/FCC167/M5007_histogram.png")
 bins_cens = info[1][:-1]
 
-#run psf fit using objective residuals
+# Run PSF fit using objective residuals
+
+
+
 
 #determine PSF values and feed back into 3D fitter
 
