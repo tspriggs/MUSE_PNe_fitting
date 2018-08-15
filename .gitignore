@@ -1,7 +1,6 @@
 M87_data
 test.py
 *.~tmp
-*.png
 *.pyc
 python_test_spectra
 for_Thomas_1D_specs
