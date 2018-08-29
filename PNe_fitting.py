@@ -23,11 +23,14 @@ raw_data_list = np.swapaxes(raw_data_list, 1, 0)
 # Check for nan values
 raw_data_cube = raw_data_list.reshape(y_data, x_data, len(wavelength))
 
+non_zero_index = np.squeeze(np.where(raw_data_list[:,0] != 0.))
+
 # constants
 n_pixels= 13
-z = 0.006261 # read from header?
 c = 299792458.0 # speed of light
-D = 18.7
+
+z = 0.006261 # read from header?
+D = 18.7 # Distance
 
 coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
 x_fit = np.array([item[0] for item in coordinates])
@@ -51,14 +54,14 @@ if check_for_1D_fit == "y":
     obj_residuals = np.zeros((len(raw_data_list),len(wavelength)))
     # setup LMfit paramterts
     params = Parameters()
-    params.add("Amp",value=50., min=0.001, max=300.)
-    params.add("mean", value=5035., min=5000., max=5070.)
+    params.add("Amp",value=70., min=0.001, max=500.)
+    params.add("mean", value=5035., min=5000., max=5080.)
     params.add("FWHM", value=2.81, vary=False) # Line Spread Function LSF
     params.add("Gauss_bkg", value=0.001, min=-500., max=500.)
     params.add("Gauss_grad", value=0.001)
 
-    for i, spectra in enumerate(raw_data_list):
-        fit_results = minimize(Gaussian_1D_res, params, args=(wavelength, spectra, input_errors[i], i), nan_policy="propagate")
+    for i in non_zero_index:
+        fit_results = minimize(Gaussian_1D_res, params, args=(wavelength, raw_data_list[i], input_errors[i], i), nan_policy="propagate")
         best_fit_A[i] = [results.params["Amp"], results.params["Amp"].stderr]
         list_of_residuals_from_fitter[i] = results.residual
 
