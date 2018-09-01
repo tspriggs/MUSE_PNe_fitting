@@ -113,3 +113,16 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err, A_rN):
         return np.concatenate([resid[x] for x in sorted(resid)],0)
     else:
         return resid["resid_000"]
+
+
+def data_cube_y_x(n):
+    nsqrt = np.ceil(np.sqrt(n))
+    solution = False
+    val = nsqrt
+    while not solution:
+        val2 = int(n/val)
+        if val2 * val == float(n):
+            solution = True
+        else:
+            val-=1
+    return int(val), int(val2), n

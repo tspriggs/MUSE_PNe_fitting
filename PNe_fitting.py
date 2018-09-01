@@ -55,7 +55,7 @@ if check_for_1D_fit == "y":
     # setup LMfit paramterts
     params = Parameters()
     params.add("Amp",value=70., min=0.001, max=500.)
-    params.add("mean", value=5035., min=5000., max=5080.)
+    params.add("mean", value=5030., min=5000., max=5080.)
     params.add("FWHM", value=2.81, vary=False) # Line Spread Function LSF
     params.add("Gauss_bkg", value=0.001, min=-500., max=500.)
     params.add("Gauss_grad", value=0.001)
@@ -63,7 +63,7 @@ if check_for_1D_fit == "y":
     for i in non_zero_index:
         fit_results = minimize(Gaussian_1D_res, params, args=(wavelength, raw_data_list[i], input_errors[i], i), nan_policy="propagate")
         best_fit_A[i] = [results.params["Amp"], results.params["Amp"].stderr]
-        list_of_residuals_from_fitter[i] = results.residual
+        obj_residuals[i] = results.residual
 
     gauss_A = [A[0] for A in best_fit_A]
     A_err = [A[1] for A in best_fit_A]
@@ -74,8 +74,8 @@ if check_for_1D_fit == "y":
     np.save("exported_data/FCC167/gauss_A_cen", gauss_A)
     np.save("exported_data/FCC167/gauss_A_err_cen", A_err)
     np.save("exported_data/FCC167/gauss_F_cen", Gauss_F)
-    np.save("exported_data/FCC167/list_of_resids_min_data", list_of_residuals)
-    np.save("exported_data/FCC167/list_of_resids_min_obj", list_of_residuals_from_fitter)
+    np.save("exported_data/FCC167/list_of_resids_min_data", data_residuals)
+    np.save("exported_data/FCC167/list_of_resids_min_obj", obj_residuals)
     np.save("exported_data/FCC167/rN", list_of_rN)
     
     print("Cube fitted, data saved.")
@@ -97,29 +97,25 @@ elif check_for_1D_fit == "n":
     PNe_df = pd.DataFrame(columns=("PNe number", "Total Flux", "Flux error", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN"))
     PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
 
-    # Objective residual
-    obj_residual_cube = np.load("exported_data/FCC167/list_of_resids_min_obj.npy")
-    obj_residual_cube[obj_residual_cube==np.inf] = 0.01
-    obj_residual_cube_shape = obj_residual_cube.reshape(y_data, x_data, len(wavelength))
-    PNe_uncertainty = np.array([PNextractor(x, y, n_pixels, obj_residual_cube_shape, wave=wavelength, dim=2) for x,y in zip(x_PNe, y_PNe)])
-
-    obj_error_cube = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))
-
-    for p in np.arange(0, len(x_PNe)):
-        list_of_std = [np.abs(np.std(spec)) for spec in PNe_uncertainty[p]]
-        obj_error_cube[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
-
-    # Data residual
-    residual_cube = np.load("exported_data/FCC167/list_of_resids_min.npy")
-    residual_cube[residual_cube==np.inf] = 0.01
-    residual_cube_shape = residual_cube.reshape(y_data, x_data, len(wavelength))
-    PNe_uncertainty = np.array([PNextractor(x, y, n_pixels, residual_cube_shape, wave=wavelength, dim=2) for x,y in zip(x_PNe, y_PNe)])
-
-    error_cube = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))
-
-    for p in np.arange(0, len(x_PNe)):
-        list_of_std = [np.abs(np.std(spec)) for spec in PNe_uncertainty[p]]
-        error_cube[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
+    # Objective Residual Cube
+    obj_residual_cube = np.load("exported_data/FCC255/list_of_resids_min_obj.npy")
+    
+    # Data Residual Cube
+    residual_cube = np.load("exported_data/FCC255/list_of_resids_min.npy")
+    
+    def uncertainty_cube_construct(data, x_P, y_P, n_pix):
+        data[data == np.inf] = 0.01
+        data_shape = data.reshape(y_data, x_data, len(wavelength))
+        extract_data = np.array([PNextractor(x, y, n_pix, data_shape, wave=wavelength, dim=2) for x,y in zip(x_P, y_P)])
+        array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
+        for p in np.arange(0, len(x_P)):
+            list_of_std = [np.abs(np.std(spec)) for spec in extract_data[p]]
+            array_to_fill[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
+      
+        return array_to_fill
+    
+    error_cube = uncertainty_cube_construct(residual_cube, x_PNe, y_PNe, n_pixels)
+    obj_error_cube = uncertainty_cube_construct(obj_residual_cube, x_PNe, y_PNe, n_pixels)
     
     print("Files loaded.")
 

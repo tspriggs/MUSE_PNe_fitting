@@ -22,5 +22,6 @@ FCC167_data/FCC167_xy_forThomas.txt
 FCC167_data/FCC167_xy_PNe_Marc_forThomas.txt
 FCC170_data/FCC170_OIII_line_cube.fits
 FCC170_data/wavelength_list.npy
+FCC277_data/
 for_pablo.py
 M87 paper skeleton.txt
