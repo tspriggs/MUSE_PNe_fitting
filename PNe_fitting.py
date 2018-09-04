@@ -6,20 +6,24 @@ from astropy.table import Table
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 import lmfit
 import pandas as pd
-from MUSE_Models import MUSE_3D_OIII, MUSE_3D_residual, Gauss_1D_residual, PNextractor, PSF_residuals
+from MUSE_Models import MUSE_3D_OIII, MUSE_3D_residual, Gauss_1D_residual, PNextractor, PSF_residuals, data_cube_y_x
 from ppxf import robust_sigma
 
 #First load in the relevant data
 hdulist = fits.open("FCC167_data/FCC167_OIII_line_center.fits") # Path to data
 hdr = hdulist[0].header # extract header from .fits file
 raw_data = hdulist[0].data # extract data from .fits file
-y_data = hdr["NAXIS2"] # read y and x dimension values from the header
-x_data = hdr["NAXIS1"]
-wavelength = np.exp(hdr['CRVAL3']+np.arange(hdr["NAXIS3"])*hdr['CDELT3']) # construct wavelength from header data
+
+y_data, x_data, n_data = data_cube_y_x(len(raw_data))
+
+#y_data = hdr["NAXIS2"] # read y and x dimension values from the header
+#x_data = hdr["NAXIS1"]
+#wavelength = np.exp(hdr['CRVAL3']+np.arange(hdr["NAXIS3"])*hdr['CDELT3']) # construct wavelength from header data
+full_wavelength = np.load("exported_data/galaxy/wavelength.npy")
 
 # swap axes to y,x,wavelength - THIS MAY NO BE NEEDED
-raw_data_list = np.array(raw_data).reshape(len(wavelength), x_data*y_data)
-raw_data_list = np.swapaxes(raw_data_list, 1, 0)
+#raw_data_list = np.array(raw_data).reshape(len(wavelength), x_data*y_data)
+#raw_data_list = np.swapaxes(raw_data_list, 1, 0)
 # Check for nan values
 raw_data_cube = raw_data_list.reshape(y_data, x_data, len(wavelength))
 
@@ -86,7 +90,7 @@ elif check_for_1D_fit == "n":
     # load from saved files
     #np.load("exported_data/") # read in data
 
-    x_y_list = np.load("exported_data/FCC167/sep_x_y_list.npy")
+    x_y_list = np.load("exported_data/ galaxy /sep_x_y_list.npy")
     x_PNe = np.array([x[0] for x in x_y_list])
     y_PNe = np.array([y[1] for y in x_y_list])
 
@@ -132,7 +136,7 @@ def gen_params(wave=5007, FWHM, beta)
     PNe_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
     PNe_params.add('y_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
     PNe_params.add("M_FWHM", value=FWHM, vary=False)
-    PNe_params.add("beta", value=beta, vary=False) #1.46
+    PNe_params.add("beta", value=beta, vary=False)
     PNe_params.add("mean", value=wave, min=wave-40., max=wave+40.)
     PNe_params.add("Gauss_bkg",  value=0.001)
     PNe_params.add("Gauss_grad", value=0.001)
@@ -165,8 +169,7 @@ Gauss_bkg = np.zeros(len(x_PNe))
 Gauss_grad = np.zeros(len(x_PNe))
 
 model_2D = "Moffat"
-#model_2D = "Gauss"
-#model_2D = "Gauss_2"
+
 
 f = FloatProgress(min=0, max=len(x_PNe), description="Fitting progress", )
 display(f)
@@ -176,12 +179,8 @@ for PNe_num in np.arange(0, len(x_PNe)):
     #run minimizer fitting routine
     fit_results = minimize(MUSE_3D_residual, PNe_params, args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], model_2D, PNe_num, useful_stuff), nan_policy="propagate")
     # Store values in numpy arrays
-    if model_2D == "Moffat" or model_2D == "Gauss":
-        PNe_df.loc[PNe_num, "Total Flux"] = np.sum(useful_stuff[1][1]) * 1e-20
-    if model_2D == "Gauss_2":
-        PNe_df.loc[PNe_num, "Total Flux"] = (np.sum(useful_stuff[1][2]) + (0.68 * np.sum(useful_stuff[1][3]))) * 1e-20
+    PNe_df.loc[PNe_num, "Total Flux"] = np.sum(useful_stuff[1][1]) * 1e-20
     list_of_fit_residuals[PNe_num] = useful_stuff[0]
-    #list_of_rN[PNe_num] = np.std(useful_stuff)
     A_OIII_list[PNe_num] = useful_stuff[1][0]
     F_OIII_xy_list[PNe_num] = useful_stuff[1][1]
     M_amp_list[PNe_num] = fit_results.params["Amp_2D"]
@@ -199,23 +198,8 @@ for PNe_num in np.arange(0, len(x_PNe)):
     Gauss_grad_err[PNe_num] = fit_results.params["Gauss_grad"].stderr
     f.value+=1.
 
-#Apply circular aperture to total flux
-Y_circ, X_circ = np.mgrid[:n_pixels, :n_pixels]
-#if model_2D == "Moffat":
-r = PNe_params["M_FWHM"]
-# elif model_2D == "Gauss":
-#     r = round(0.75* PNe_params["G_FWHM"])
-# elif model_2D == "Gauss_2":
-#     r = round(0.75* np.abs(PNe_params["G_FWHM_2"]))
-for i in np.arange(0, len(x_PNe)):
-    circ_mask = (Y_circ-list_of_y[i])**2 + (X_circ-list_of_x[i])**2 > r*r
-    flux_n = np.array(F_OIII_xy_list[i]) # copy list of fluxes
-    flux_2D = flux_n.reshape(n_pixels, n_pixels) #reshape
-    flux_2D[circ_mask==True] = 0.0 # set mask = False areas to 0.0
-    PNe_df.loc[i, "Total Flux"] = np.sum(flux_2D) * 1e-20
-
 # Signal to noise and Magnitude calculations
-list_of_rN = np.std(list_of_fit_residuals, 1)
+list_of_rN = np.array([np.std(PNe_res) for PNe_res in list_of_fit_residuals])
 A_by_rN = A_OIII_list / list_of_rN
 PNe_df["A/rN"] = A_by_rN
 
@@ -230,18 +214,46 @@ PNe_df["m 5007"] = -2.5 * PNe_df["Total Flux"].apply(log_10) - 13.74
 dM =  5. * np.log10(D) + 25   # 31.63
 PNe_df["M 5007"] = PNe_df["m 5007"] - dM
 
-#Plotting
 plt.figure(1, figsize=(12,10))
-plt.axvline(-4.5, color="k", ls="dashed")
-info = plt.hist(PNe_df["M 5007"].loc[PNe_df["A/rN"]>2], bins=10, edgecolor="black", linewidth=0.8, label="M 5007 >2 * A/rN", alpha=0.5)
-plt.xlim(-5,0)
-#plt.title("Absolute Magnitude Histogram", fontsize=24)
-plt.xlabel("$M_{5007}$", fontsize=24)
+bins, bins_cens, other = plt.hist(PNe_df["m 5007"].loc[PNe_df["A/rN"]>2], bins=10, edgecolor="black", linewidth=0.8, label="m 5007 > 2 * A/rN", alpha=0.5)
+plt.xlim(26.0,30.0)
+plt.xlabel("$m_{5007}$", fontsize=24)
 plt.ylabel("N Sources", fontsize=24)
-plt.savefig("Plots/FCC167/M5007_histogram.png")
-bins_cens = info[1][:-1]
+#plt.legend(fontsize=15)
+#plt.savefig("Plots/ galaxy /M5007_histogram.png")
+bins_cens = bins_cens[:-1]
 
 # Run PSF fit using objective residuals
+
+PSF_choose = input("Use Brightest PNe? (Y/N)")
+if PSF_choose == "Y":
+    sel_PNe = PNe_df.nlargest(1, "A/rN").index.values
+elif PSF_choose == "N":
+    # Devise system for PNe choise based upon low background (radial?)
+    #sel_PNe = [0,3]#,62]#63,26]#[ 28]#, 29]
+print(sel_PNe)
+
+selected_PNe = PNe_spectra[sel_PNe]
+selected_PNe_err = obj_error_cube[sel_PNe] 
+PSF_params = Parameters()
+
+def model_params(p, n, amp, mean):
+    PSF_params.add("moffat_amp_{:03d}".format(n), value=amp, min=0.001)
+    PSF_params.add("x_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
+    PSF_params.add("y_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
+    PSF_params.add("mean_{:03d}".format(n), value=mean, min=5000., max=5070.)
+    PSF_params.add("gauss_bkg_{:03d}".format(n), value=0.001)
+    PSF_params.add("gauss_grad_{:03d}".format(n), value=0.001)
+
+
+for i in np.arange(0,len(sel_PNe)):
+        model_params(p=PSF_params, n=i, amp=200.0, mean=5030.0)    
+    
+PSF_params.add('FWHM', value=4.0, min=0.01, max=12., vary=True)
+PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True) 
+PSF_params.add("Gauss_FWHM", value=0.00000, min=0.000001, max=3.0, vary=False) # LSF, instrumental resolution.
+
+PSF_results = minimize(PSF_residuals, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err, np.ones(len(sel_PNe))), nan_policy="propagate")
 
 
 
