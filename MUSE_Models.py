@@ -124,18 +124,16 @@ def PNextractor(x, y, n_pix, data, wave=None, dim=1):
         return from_data.reshape(n_pix**2, len(wave))
 
 
-def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err, A_rN):
+def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
     FWHM = PSF_params['FWHM']
     beta = PSF_params["beta"]
-    Gauss_FWHM = PSF_params["Gauss_FWHM"]
 
-    def generate_model(x, y, moffat_amp, FWHM, beta, Gauss_FWHM, Gauss_bkg, Gauss_grad, mean):
+    def generate_model(x, y, moffat_amp, FWHM, beta, Gauss_bkg, Gauss_grad, mean):
         gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2.) / gamma**2.
         F_OIII_xy = moffat_amp * (1. + rr_gg)**(-beta)
 
-        comb_FWHM = np.sqrt(2.81**2. + Gauss_FWHM**2.)
-        Gauss_std = comb_FWHM / 2.35482
+        Gauss_std = 2.81 / 2.35482
 
         A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
 
@@ -147,11 +145,11 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err, A_rN):
     list_of_models = {}
     for k in np.arange(0, len(data)):
         list_of_models["model_{:03d}".format(k)] = generate_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)], PSF_params["moffat_amp_{:03d}".format(k)],
-                            FWHM, beta, Gauss_FWHM, PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)], PSF_params["mean_{:03d}".format(k)])
+                            FWHM, beta, PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)], PSF_params["mean_{:03d}".format(k)])
 
     resid = {}
     for m in np.arange(0, len(data)):
-        resid["resid_{:03d}".format(m)] = ((data[m] - list_of_models["model_{:03d}".format(m)]) / err[m]) *A_rN[m]
+        resid["resid_{:03d}".format(m)] = ((data[m] - list_of_models["model_{:03d}".format(m)]) / err[m]) 
 
     if len(resid) > 1.:
         return np.concatenate([resid[x] for x in sorted(resid)],0)
