@@ -30,7 +30,6 @@ wavelength = full_wavelength[382:543]
 # swap axes to y,x,wavelength - THIS MAY NO BE NEEDED
 #raw_data_list = np.array(raw_data).reshape(len(wavelength), x_data*y_data)
 #raw_data_list = np.swapaxes(raw_data_list, 1, 0)
-# Check for nan values
 raw_data_cube = raw_data_list.reshape(y_data, x_data, len(wavelength))
 
 non_zero_index = np.squeeze(np.where(raw_data_list[:,0] != 0.))
@@ -53,6 +52,7 @@ check_for_1D_fit = input("Do you want to run the 1D fitter?: (y/n)")
 
 if check_for_1D_fit == "y":
     # Run 1D fitter
+    print("Starting 1D fit")
     list_of_std = np.array([np.abs(np.std(spec)) for spec in raw_data_list])
     input_errors = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0,len(list_of_std))]
     # setup numpy arrays for storage
@@ -63,8 +63,10 @@ if check_for_1D_fit == "y":
     # setup LMfit paramterts
     params = Parameters()
     params.add("Amp",value=70., min=0.001, max=500.)
-    params.add("mean", value=5030., min=5000., max=5080.)
-    params.add("FWHM", value=2.81, vary=False) # Line Spread Function LSF
+    params.add("mean", value=galaxy_data["wave start"]., 
+               min=galaxy_data["wave start"]-40,
+               max=galaxy_data["wave start"]+40)
+    params.add("FWHM", value=2.81, vary=False) # Line Spread Function
     params.add("Gauss_bkg", value=0.001, min=-500., max=500.)
     params.add("Gauss_grad", value=0.001)
 
@@ -91,6 +93,7 @@ if check_for_1D_fit == "y":
 
 
 elif check_for_1D_fit == "n":
+    print("Starting PNe analysis with initial PSF guess")
     # load from saved files
     #np.load("exported_data/") # read in data
 
@@ -142,7 +145,7 @@ def gen_params(wave=5007, FWHM=4.0, beta=2.5):
     PNe_params.add("Gauss_grad", value=0.001)
 
 # generate parameters with values
-gen_params(wave=5035.,)
+gen_params(wave=galaxy_data["wave start"],)
 
 # useful value storage setup
 total_Flux = np.zeros(len(x_PNe))
@@ -210,7 +213,7 @@ def run_minimiser(parameters):
     PNe_df["M 5007"] = PNe_df["m 5007"] - dM
 
 
-
+print("Running fitter")
 run_minimiser(PNe_params)
 # Run PSF fit using objective residuals
 plt.figure(1, figsize=(12,10))
@@ -223,8 +226,8 @@ plt.ylabel("N Sources", fontsize=24)
 bins_cens = bins_cens[:-1]
 
 
-use_brightest = input("Use Brightest PNe? (Y/N)")
-if use_brightest == "Y":
+use_brightest = input("Use Brightest PNe? (y/n) ")
+if use_brightest == "y":
     sel_PNe = PNe_df.nlargest(2, "A/rN").index.values
 #elif use_brightest == "N":
     # Devise system for PNe choise based upon low background (radial?)
@@ -244,11 +247,12 @@ def model_params(p, n, amp, wave):
     PSF_params.add("gauss_grad_{:03d}".format(n), value=0.001)
 
 for i in np.arange(0,len(sel_PNe)):
-        model_params(p=PSF_params, n=i, amp=200.0, wave=5030.0)    
+        model_params(p=PSF_params, n=i, amp=200.0, wave=galaxy_data["wave start"])    
     
 PSF_params.add('FWHM', value=4.0, min=0.01, max=12., vary=True)
 PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True) 
 
+print("Fitting for PSF")
 PSF_results = minimize(PSF_residuals, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err), nan_policy="propagate")
 
 #determine PSF values and feed back into 3D fitter
@@ -257,8 +261,8 @@ fitted_FWHM = PSF_results.params["FWHM"].value
 fitted_beta = PSF_results.params["beta"].value
 
 #Fit PNe with updated PSF
-gen_params(wave=3035.,FWHM=fitted_FWHM, beta=fitted_beta) # set params up with fitted FWHM and beta values
-
+gen_params(wave=galaxy_data["wave start"],FWHM=fitted_FWHM, beta=fitted_beta) # set params up with fitted FWHM and beta values
+print("Fitting with PSF")
 run_minimiser(PNe_params) # run fitting section again with new values
 
 #Run the rest of the analysis
