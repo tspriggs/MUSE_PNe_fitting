@@ -63,7 +63,7 @@ if check_for_1D_fit == "y":
     # setup LMfit paramterts
     params = Parameters()
     params.add("Amp",value=70., min=0.001, max=500.)
-    params.add("mean", value=galaxy_data["wave start"]., 
+    params.add("mean", value=galaxy_data["wave start"], 
                min=galaxy_data["wave start"]-40,
                max=galaxy_data["wave start"]+40)
     params.add("FWHM", value=2.81, vary=False) # Line Spread Function
