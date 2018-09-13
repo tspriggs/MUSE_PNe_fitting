@@ -47,6 +47,7 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data, model_2D):
 def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, n_lines):
     # n_lines is a dictionary of wavelengths with offsets, read from this and make models with offsets
     Amp_2D_OIII = params['Amp_2D']
+    
     x_0 = params['x_0']
     y_0 = params['y_0']
     M_FWHM = params["M_FWHM"]
@@ -144,8 +145,10 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
 
     list_of_models = {}
     for k in np.arange(0, len(data)):
-        list_of_models["model_{:03d}".format(k)] = generate_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)], PSF_params["moffat_amp_{:03d}".format(k)],
-                            FWHM, beta, PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)], PSF_params["mean_{:03d}".format(k)])
+        list_of_models["model_{:03d}".format(k)] = generate_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)],
+                                                                  PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta,
+                                                                  PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)], 
+                                                                  PSF_params["mean_{:03d}".format(k)])
 
     resid = {}
     for m in np.arange(0, len(data)):
