@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def MUSE_3D_OIII(params, l, x_2D, y_2D, data, model_2D):
     Amp_2D = params['Amp_2D']
@@ -44,61 +45,50 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data, model_2D):
         return model_spectra, [np.max(A_OIII_xy), F_OIII_xy, A_OIII_xy, Gauss_1, Gauss_2]
 
 # Multi wavelength analysis model
-def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, n_lines):
+def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data):
     # n_lines is a dictionary of wavelengths with offsets, read from this and make models with offsets
-    Amp_2D_OIII = params['Amp_2D']
-    
+    Amp_2D_list = [params['Amp_2D_OIII_5007'], params['Amp_2D_OIII_4959'], params['Amp_2D_Hb'], 
+                   params['Amp_2D_Ha'], params['Amp_2D_NII_1'], params['Amp_2D_NII_2']]
     x_0 = params['x_0']
     y_0 = params['y_0']
     M_FWHM = params["M_FWHM"]
     beta = params["beta"]
-    mean_OIII = params["mean"]
+    wave_list = [params["wave_OIII_5007"], params["wave_OIII_4959"], params["wave_Hb"], 
+                 params["wave_Ha"], params["wave_NII_1"], params["wave_NII_2"]]
     Gauss_bkg = params["Gauss_bkg"]
     Gauss_grad = params["Gauss_grad"]
 
     #Moffat model
-    gamma = M_FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
-    rr_gg = ((x_2D - x_0)**2. + (y_2D - y_0)**2) / gamma**2.
-    F_OIII_xy = Amp_2D_OIII * ((1 + rr_gg)**(-beta))
-
+    def Moffat(Amp, FWHM, b, x, y):
+        gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
+        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / gamma**2.
+        return Amp * ((1 + rr_gg)**(-b))
+    
+    F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
+    
     # 1D Gaussian standard deviation from FWHM
     Gauss_std = 2.81 / 2.35482
 
     # Convert flux to amplitude
-    A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
-
-    #Construct OIII model
-    OIII_model_spectra = [(Gauss_bkg + (Gauss_grad * l) + Amp * np.exp(- 0.5 * (l - mean_OIII)** 2 / Gauss_std**2.) +
-             (Amp/3.) * np.exp(- 0.5 * (l - (mean_OIII - 47.9399))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
+    A_xy = np.array([F / (np.sqrt(2*np.pi) * Gauss_std) for F in F_xy])
     
-    def generate_model(x, y, moffat_amp, FWHM, beta, Gauss_FWHM, Gauss_bkg, Gauss_grad, mean):
-        gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
-        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2.) / gamma**2.
-        F_OIII_xy = moffat_amp * (1. + rr_gg)**(-beta)
-
-        comb_FWHM = np.sqrt(2.81**2. + Gauss_FWHM**2.)
-        Gauss_std = comb_FWHM / 2.35482
-
-        A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
-
-        model_spectra = [(Gauss_bkg + (Gauss_grad * l) + np.abs(Amp) * np.exp(- 0.5 * (l - mean)** 2. / Gauss_std**2.) +
-             (np.abs(Amp)/3.) * np.exp(- 0.5 * (l - (mean - 47.9399))** 2. / Gauss_std**2.)) for Amp in A_OIII_xy]
-
-        return model_spectra
+    def Gauss(Amp_1D, wave):
+        model = np.array([(Gauss_bkg + (Gauss_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / Gauss_std**2.) for A in Amp_1D])
+        return model
     
-    for k in np.arange(0, len(data)):
-        list_of_models["model_{:03d}".format(k)] = generate_model(x_0, y_0, PNe_params["moffat_amp_{:03d}".format(k)], FWHM, beta, Gauss_FWHM, gauss_grad, gauss_bkg, PNe_params["mean_{:03d}".format(k)])
-    
-    return model_spectra, [np.max(A_OIII_xy), F_OIII_xy, A_OIII_xy]
+    model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0)
+
+    return model_spectra, [F_xy, A_xy, model_spectra]
 # end dev
 
 def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, model_2D, PNe_number, list_to_append_data):
-    model = MUSE_3D_OIII(params, l, x_2D, y_2D, data, model_2D )
+    #model = MUSE_3D_OIII(params, l, x_2D, y_2D, data, model_2D )
+    model = MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data)
     list_to_append_data.clear()
     list_to_append_data.append(data-model[0])
     list_to_append_data.append(model[1])
 
-    return (data - model[0]) / (error)
+    return (data - model[0]) / error  #(data - model[0]) / (error)
 
 def Gaussian_1D_res(params, x, data, error, spec_num):
     Amp = params["Amp"]
