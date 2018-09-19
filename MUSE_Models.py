@@ -45,6 +45,7 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data, model_2D):
         return model_spectra, [np.max(A_OIII_xy), F_OIII_xy, A_OIII_xy, Gauss_1, Gauss_2]
 
 # Multi wavelength analysis model
+
 def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data):
     # n_lines is a dictionary of wavelengths with offsets, read from this and make models with offsets
     Amp_2D_list = [params['Amp_2D_OIII_5007'], params['Amp_2D_OIII_4959'], params['Amp_2D_Hb'], 
@@ -78,10 +79,10 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data):
     
     model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0)
 
-    return model_spectra, [F_xy, A_xy, model_spectra]
+    return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
 # end dev
 
-def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, model_2D, PNe_number, list_to_append_data):
+def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, PNe_number, list_to_append_data):
     #model = MUSE_3D_OIII(params, l, x_2D, y_2D, data, model_2D )
     model = MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data)
     list_to_append_data.clear()
