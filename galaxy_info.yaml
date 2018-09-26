@@ -7,8 +7,11 @@ Distance: 19.7,
 z: 0.004186,
 best fit FWHM: 4.,
 best fit beta: 2.5,
+emissions: {"Hb": [5, "- 145.518"],
+            "Ha": [5,"+ 1556.375"],
+            "N_II_1": [5,"+ 1541.621"],
+            "N_II_2": [5,"+ 1577.031"]},
 }
-
 
 FCC277: {
 Galaxy name: FCC277,
@@ -19,4 +22,8 @@ Distance: 20.5,
 z: 0.00547,
 best fit FWHM: 4.,
 best fit beta: 2.5,
+emissions: {"Hb": [5, "- 145.518"],
+            "Ha": [5,"+ 1556.375"],
+            "N_II_1": [5,"+ 1541.621"],
+            "N_II_2": [5,"+ 1577.031"]},
 }

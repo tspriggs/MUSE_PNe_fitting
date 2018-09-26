@@ -30,19 +30,21 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data):
 
 # Multi wavelength analysis model
 
-def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data):
+def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     # n_lines is a dictionary of wavelengths with offsets, read from this and make models with offsets
-    Amp_2D_list = [params['Amp_2D_OIII_5007'], params['Amp_2D_OIII_4959'], params['Amp_2D_Hb'], 
-                   params['Amp_2D_Ha'], params['Amp_2D_NII_1'], params['Amp_2D_NII_2']]
+    Amp_2D_list = [params['Amp_2D_OIII_5007'], params['Amp_2D_OIII_4959']]
     x_0 = params['x_0']
     y_0 = params['y_0']
     M_FWHM = params["M_FWHM"]
     beta = params["beta"]
-    wave_list = [params["wave_OIII_5007"], params["wave_OIII_4959"], params["wave_Hb"], 
-                 params["wave_Ha"], params["wave_NII_1"], params["wave_NII_2"]]
-    Gauss_bkg = params["Gauss_bkg"]
-    Gauss_grad = params["Gauss_grad"]
-
+    wave_list = [params["wave_OIII_5007"], params["wave_OIII_4959"]]
+    G_bkg = params["Gauss_bkg"]
+    G_grad = params["Gauss_grad"]
+    # loop through emission dict and append to Amp 2D and wave lists
+    for em in emission_dict:
+        Amp_2D_list.append(params["Amp_2D_{}".format(em)])
+        wave_list.append(params["wave_{}".format(em)])
+    
     #Moffat model
     def Moffat(Amp, FWHM, b, x, y):
         gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
@@ -52,23 +54,21 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data):
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
     
     # 1D Gaussian standard deviation from FWHM
-    Gauss_std = 2.81 / 2.35482
+    G_std = 2.81 / 2.35482
 
     # Convert flux to amplitude
     A_xy = np.array([F / (np.sqrt(2*np.pi) * Gauss_std) for F in F_xy])
     
     def Gauss(Amp_1D, wave):
-        model = np.array([(Gauss_bkg + (Gauss_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / Gauss_std**2.) for A in Amp_1D])
-        return model
+        return np.array([(G_bkg + (G_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])
     
     model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0)
 
     return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
-# end dev
 
-def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, PNe_number, list_to_append_data):
+def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, PNe_number, emission_dict, list_to_append_data):
     #model = MUSE_3D_OIII(params, l, x_2D, y_2D, data )
-    model = MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data)
+    model = MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict)
     list_to_append_data.clear()
     list_to_append_data.append(data-model[0])
     list_to_append_data.append(model[1])

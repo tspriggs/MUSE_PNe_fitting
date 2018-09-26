@@ -18,7 +18,7 @@ hdulist = fits.open(galaxy_data["emission cube"]) # Path to data
 hdr = hdulist[0].header # extract header from .fits file
 raw_data = hdulist[0].data # extract data from .fits file
 raw_data_list = raw_data
-raw_data_list_short = raw_data[:,382:543]
+#raw_data_list_short = raw_data[:,382:543]
 
 y_data, x_data, n_data = data_cube_y_x(len(raw_data))
 
@@ -29,7 +29,7 @@ full_wavelength = np.load(galaxy_data["wavelength"])
 wavelength = full_wavelength[382:543]
 
 # Reshape data into y, x and wavelength
-raw_data_cube = raw_data_list.reshape(y_data, x_data, len(wavelength))
+raw_data_cube = raw_data_list.reshape(y_data, x_data, len(full_wavelength))
 
 # create an list of indices where there is spectral data to fit.
 non_zero_index = np.squeeze(np.where(raw_data_list[:,0] != 0.))
@@ -54,12 +54,12 @@ if check_for_1D_fit == "y":
     # Run 1D fitter
     print("Starting 1D fit")
     list_of_std = np.array([np.abs(np.std(spec)) for spec in raw_data_list])
-    input_errors = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0,len(list_of_std))]
+    input_errors = [np.repeat(list_of_std[i], len(full_wavelength)) for i in np.arange(0,len(list_of_std))]
     # setup numpy arrays for storage
     best_fit_A = np.zeros((len(raw_data_list),2))
     list_of_rN = np.zeros(len(raw_data_list))
-    data_residuals = np.zeros((len(raw_data_list),len(wavelength)))
-    obj_residuals = np.zeros((len(raw_data_list),len(wavelength)))
+    data_residuals = np.zeros((len(raw_data_list),len(full_wavelength)))
+    obj_residuals = np.zeros((len(raw_data_list),len(full_wavelength)))
     # setup LMfit paramterts
     params = Parameters()
     params.add("Amp",value=70., min=0.001, max=500.)
@@ -71,7 +71,7 @@ if check_for_1D_fit == "y":
     params.add("Gauss_grad", value=0.001)
 
     for i in non_zero_index:
-        fit_results = minimize(Gaussian_1D_res, params, args=(wavelength, raw_data_list[i], input_errors[i], i), nan_policy="propagate")
+        fit_results = minimize(Gaussian_1D_res, params, args=(full_wavelength, raw_data_list[i], input_errors[i], i), nan_policy="propagate")
         best_fit_A[i] = [results.params["Amp"], results.params["Amp"].stderr]
         obj_residuals[i] = results.residual
 
@@ -134,32 +134,29 @@ elif check_for_1D_fit == "n":
 #run initial 3D fit on selected objects
 # LMfit initial parameters
 PNe_multi_params = Parameters()
-def gen_params(wave=5007, FWHM=4.0, beta=2.5):
+
+emission_dict = galaxy_data["emissions"]
+
+def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
+    PNe_multi_params = Parameters()
     PNe_multi_params.add('Amp_2D_OIII_5007', value=100., min=0.01)
     PNe_multi_params.add('Amp_2D_OIII_4959', expr="Amp_2D_OIII_5007/3")
-    PNe_multi_params.add('Amp_2D_Hb', value=1., min=0.01)
-    PNe_multi_params.add('Amp_2D_Ha', value=1., min=0.01)
-    PNe_multi_params.add('Amp_2D_NII_1', value=1., min=0.01)
-    PNe_multi_params.add('Amp_2D_NII_2', value=1., min=0.01)
+    PNe_multi_params.add("wave_OIII_5007", value=wave, min=wave-40., max=wave+40.)
+    PNe_multi_params.add("wave_OIII_4959", expr="wave_OIII_5007 - 47.9399")
+    # loop through emission dictionary to add different element parameters 
+    for em in em_dict:
+        PNe_multi_params.add('Amp_2D_{}'.format(em), value=emission_dict[em][0], min=0.01)
+        PNe_multi_params.add("wave_{}".format(em), expr="wave_OIII_5007 {0} * (1+{1})".format(emission_dict[em][1], z))
     
     PNe_multi_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
     PNe_multi_params.add('y_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
-    PNe_multi_params.add("M_FWHM", value=FWHM, min=3.4, max=4.2, vary=False)
-    PNe_multi_params.add("beta", value=beta, min=2.6, max=3.0, vary=False)
-    
-    # wavelengths params
-    PNe_multi_params.add("wave_OIII_5007", value=wave., min=wave-40., max=wave+40.)
-    PNe_multi_params.add("wave_OIII_4959", expr="wave_OIII_5007 - 47.9399")
-    PNe_multi_params.add("wave_Hb", expr="wave_OIII_5007 - 145.518 * (1+{0})".format(z))
-    PNe_multi_params.add("wave_Ha", expr="wave_OIII_5007 + 1556.375 * (1+{0})".format(z))
-    PNe_multi_params.add("wave_NII_1", expr="wave_OIII_5007 + 1541.621 * (1+{0})".format(z))
-    PNe_multi_params.add("wave_NII_2", expr="wave_OIII_5007 + 1577.031 * (1+{0})".format(z))
-    
+    PNe_multi_params.add("M_FWHM", value=FWHM, vary=False)
+    PNe_multi_params.add("beta", value=beta, vary=False)   
     PNe_multi_params.add("Gauss_bkg",  value=0.00001)
     PNe_multi_params.add("Gauss_grad", value=0.00001)
 
 # generate parameters with values
-gen_params(wave=galaxy_data["wave start"],)
+gen_params(wave=galaxy_data["wave start"], em_dict=emission_dict)
 
 # useful value storage setup
 total_Flux = np.zeros((len(x_PNe),6))
@@ -192,7 +189,7 @@ def run_minimiser(parameters):
     for PNe_num in np.arange(0, len(x_PNe)):
         useful_stuff = []
         #run minimizer fitting routine
-        multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(full_wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, useful_stuff), nan_policy="propagate")
+        multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(full_wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
         total_Flux[PNe_num] = np.sum(useful_stuff[1][1],1) * 1e-20
         list_of_fit_residuals[PNe_num] = useful_stuff[0]
         A_2D_list[PNe_num] = useful_stuff[1][0]
