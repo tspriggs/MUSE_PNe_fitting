@@ -57,7 +57,7 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     G_std = 2.81 / 2.35482
 
     # Convert flux to amplitude
-    A_xy = np.array([F / (np.sqrt(2*np.pi) * Gauss_std) for F in F_xy])
+    A_xy = np.array([F / (np.sqrt(2*np.pi) * G_std) for F in F_xy])
     
     def Gauss(Amp_1D, wave):
         return np.array([(G_bkg + (G_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])

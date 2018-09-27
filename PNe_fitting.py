@@ -213,25 +213,28 @@ def run_minimiser(parameters):
 
     # Signal to noise and Magnitude calculations
     list_of_rN = np.array([np.std(PNe_res) for PNe_res in list_of_fit_residuals])
-    PNe_df["A/rN"] = A_2D_list[:][0] / list_of_rN
+    PNe_df["A/rN"] = A_2D_list / list_of_rN
     
-    de_z_means = mean_wave_list[:][0] / (1 + z)
+    de_z_means = mean_wave_list[:,0] / (1 + z)
     
     PNe_df["V (km/s)"] = (c * (de_z_means - 5007.) / 5007.) / 1000.
     
-    PNe_df["[OIII] Flux"] = total_flux[:][0]
+    PNe_df["[OIII] Flux"] = total_Flux[:,0]
     
-    PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_flux[:][2]
+    PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2]
     
-    PNe_df["m 5007"] = -2.5 * PNe_df["Total Flux"].apply(log_10) - 13.74
-    dM =  5. * np.log10(D) + 25.
+    def log_10(x):
+        return np.log10(x)
+    
+    PNe_df["m 5007"] = -2.5 * PNe_df["[OIII] Flux"].apply(log_10) - 13.74
+    dM =  5. * np.log10(D) + 25.   # 31.63
     PNe_df["M 5007"] = PNe_df["m 5007"] - dM
     
     Dist_est = 10.**(((PNe_df["m 5007"].min() + 4.5) -25.) / 5.)
     print("Distance Estimate from PNLF: ", Dist_est, "Mpc")
     
     PNe_table = Table([np.arange(0,len(x_PNe)), np.round(x_PNe), np.round(y_PNe), PNe_df["[OIII] Flux"], PNe_df["[OIII]/Hb"], PNe_df["m 5007"], PNe_df["M 5007"]], 
-              names=("PNe number", "x", "y", "[OIII] Flux", "[OIII]/Hb", "m 5007", "M 5007"))
+                      names=("PNe number", "x", "y", "[OIII] Flux", "[OIII]/Hb", "m 5007", "M 5007"))
     ascii.write(PNe_table, "FCC277_PNe_table.txt", format="tab")
     print("Table Created and saved.")
 
