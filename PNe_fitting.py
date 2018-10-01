@@ -194,10 +194,8 @@ def run_minimiser(parameters):
         A_2D_list[PNe_num] = useful_stuff[1][0]
         F_xy_list[PNe_num] = useful_stuff[1][1]
         model_spectra_list[PNe_num] = useful_stuff[1][3]
-        emission_amp_list[PNe_num] = [multi_fit_results.params["Amp_2D_OIII_5007"], multi_fit_results.params["Amp_2D_OIII_4959"], multi_fit_results.params["Amp_2D_Hb"],
-                                      multi_fit_results.params["Amp_2D_Ha"], multi_fit_results.params["Amp_2D_NII_1"], multi_fit_results.params["Amp_2D_NII_2"]] 
-        mean_wave_list[PNe_num] = [multi_fit_results.params["wave_OIII_5007"], multi_fit_results.params["wave_OIII_4959"], multi_fit_results.params["wave_Hb"],
-                                   multi_fit_results.params["wave_Ha"], multi_fit_results.params["wave_NII_1"], multi_fit_results.params["wave_NII_2"]]   
+        emission_amp_list[PNe_num] = np.concatenate([[multi_fit_results.params["Amp_2D_OIII_5007"], multi_fit_results.params["Amp_2D_OIII_4959"]], [multi_fit_results.params["Amp_2D_{}".format(em)] for em in emission_dict]])
+        mean_wave_list[PNe_num] = np.concatenate([[multi_fit_results.params["wave_OIII_5007"], multi_fit_results.params["wave_OIII_4959"]], [multi_fit_results.params["wave_{}".format(em)] for em in emission_dict]])   
         list_of_x[PNe_num] = multi_fit_results.params["x_0"]
         list_of_y[PNe_num] = multi_fit_results.params["y_0"]
         Gauss_bkg[PNe_num] = multi_fit_results.params["Gauss_bkg"]
@@ -212,7 +210,7 @@ def run_minimiser(parameters):
 
     # Signal to noise and Magnitude calculations
     list_of_rN = np.array([np.std(PNe_res) for PNe_res in list_of_fit_residuals])
-    PNe_df["A/rN"] = A_2D_list / list_of_rN
+    PNe_df["A/rN"] = A_2D_list[:,0] / list_of_rN
     
     de_z_means = mean_wave_list[:,0] / (1 + z)
     
