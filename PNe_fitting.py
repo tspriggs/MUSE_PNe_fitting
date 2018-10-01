@@ -26,7 +26,7 @@ y_data, x_data, n_data = data_cube_y_x(len(raw_data))
 #x_data = hdr["NAXIS1"]
 #wavelength = np.exp(hdr['CRVAL3']+np.arange(hdr["NAXIS3"])*hdr['CDELT3']) # construct wavelength from header data
 full_wavelength = np.load(galaxy_data["wavelength"])
-wavelength = full_wavelength[382:543]
+#wavelength = full_wavelength[382:543]
 
 # Reshape data into y, x and wavelength
 raw_data_cube = raw_data_list.reshape(y_data, x_data, len(full_wavelength))
@@ -92,43 +92,43 @@ if check_for_1D_fit == "y":
     # DETECT PNE here?
 
 
-elif check_for_1D_fit == "n":
-    print("Starting PNe analysis with initial PSF guess")
-    # load from saved files
-    # read in data
+# if n, then fit PNe
 
-    x_y_list = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/sep_x_y_list.npy")
-    x_PNe = np.array([x[0] for x in x_y_list])
-    y_PNe = np.array([y[1] for y in x_y_list])
+print("Starting PNe analysis with initial PSF guess")
+# load from saved files
 
-    # Retrieve the respective spectra for each PNe source
-    PNe_spectra = np.array([PNextractor(x, y, n_pixels, raw_data_cube, wave=full_wavelength, dim=2.0) for x,y in zip(x_PNe, y_PNe)])
+x_y_list = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/sep_x_y_list.npy")
+x_PNe = np.array([x[0] for x in x_y_list])
+y_PNe = np.array([y[1] for y in x_y_list])
 
-    # create Pandas data frame for values
-    PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "[OIII]/Hb", "Flux error", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN", "rad D"))
-    PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
+# Retrieve the respective spectra for each PNe source
+PNe_spectra = np.array([PNextractor(x, y, n_pixels, raw_data_cube, wave=full_wavelength, dim=2.0) for x,y in zip(x_PNe, y_PNe)])
 
-    # Objective Residual Cube
-    obj_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/list_of_resids_min_obj.npy")
-    
-    # Data Residual Cube
-    residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/list_of_resids_min.npy")
-    
-    def uncertainty_cube_construct(data, x_P, y_P, n_pix):
-        data[data == np.inf] = 0.01
-        data_shape = data.reshape(y_data, x_data, len(full_wavelength))
-        extract_data = np.array([PNextractor(x, y, n_pix, data_shape, wave=full_wavelength, dim=2) for x,y in zip(x_P, y_P)])
-        array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(full_wavelength)))
-        for p in np.arange(0, len(x_P)):
-            list_of_std = [np.abs(np.std(spec)) for spec in extract_data[p]]
-            array_to_fill[p] = [np.repeat(list_of_std[i], len(full_wavelength)) for i in np.arange(0, len(list_of_std))]
-      
-        return array_to_fill
-    
-    error_cube = uncertainty_cube_construct(residual_cube, x_PNe, y_PNe, n_pixels)
-    obj_error_cube = uncertainty_cube_construct(obj_residual_cube, x_PNe, y_PNe, n_pixels)
-    
-    print("Files loaded.")
+# create Pandas data frame for values
+PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "[OIII]/Hb", "Flux error", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN", "rad D"))
+PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
+
+# Objective Residual Cube
+obj_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/list_of_resids_min_obj.npy")
+
+# Data Residual Cube
+residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/list_of_resids_min.npy")
+
+def uncertainty_cube_construct(data, x_P, y_P, n_pix):
+    data[data == np.inf] = 0.01
+    data_shape = data.reshape(y_data, x_data, len(full_wavelength))
+    extract_data = np.array([PNextractor(x, y, n_pix, data_shape, wave=full_wavelength, dim=2) for x,y in zip(x_P, y_P)])
+    array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(full_wavelength)))
+    for p in np.arange(0, len(x_P)):
+        list_of_std = [np.abs(np.std(spec)) for spec in extract_data[p]]
+        array_to_fill[p] = [np.repeat(list_of_std[i], len(full_wavelength)) for i in np.arange(0, len(list_of_std))]
+  
+    return array_to_fill
+
+error_cube = uncertainty_cube_construct(residual_cube, x_PNe, y_PNe, n_pixels)
+obj_error_cube = uncertainty_cube_construct(obj_residual_cube, x_PNe, y_PNe, n_pixels)
+
+print("Files loaded.")
 
 
 #run initial 3D fit on selected objects
@@ -138,7 +138,6 @@ PNe_multi_params = Parameters()
 emission_dict = galaxy_data["emissions"]
 
 def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
-    PNe_multi_params = Parameters()
     PNe_multi_params.add('Amp_2D_OIII_5007', value=100., min=0.01)
     PNe_multi_params.add('Amp_2D_OIII_4959', expr="Amp_2D_OIII_5007/3")
     PNe_multi_params.add("wave_OIII_5007", value=wave, min=wave-40., max=wave+40.)
@@ -189,27 +188,27 @@ def run_minimiser(parameters):
     for PNe_num in np.arange(0, len(x_PNe)):
         useful_stuff = []
         #run minimizer fitting routine
-        multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(full_wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
+        multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(full_wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, "full", emission_dict, useful_stuff), nan_policy="propagate")
         total_Flux[PNe_num] = np.sum(useful_stuff[1][1],1) * 1e-20
         list_of_fit_residuals[PNe_num] = useful_stuff[0]
         A_2D_list[PNe_num] = useful_stuff[1][0]
         F_xy_list[PNe_num] = useful_stuff[1][1]
         model_spectra_list[PNe_num] = useful_stuff[1][3]
         emission_amp_list[PNe_num] = [multi_fit_results.params["Amp_2D_OIII_5007"], multi_fit_results.params["Amp_2D_OIII_4959"], multi_fit_results.params["Amp_2D_Hb"],
-                                      multi_fit_results.params["Amp_2D_Ha"], multi_fit_results.params["Amp_2D_NII_1"], multi_fit_results.params["Amp_2D_NII_2"]]    
+                                      multi_fit_results.params["Amp_2D_Ha"], multi_fit_results.params["Amp_2D_NII_1"], multi_fit_results.params["Amp_2D_NII_2"]] 
         mean_wave_list[PNe_num] = [multi_fit_results.params["wave_OIII_5007"], multi_fit_results.params["wave_OIII_4959"], multi_fit_results.params["wave_Hb"],
-                                   multi_fit_results.params["wave_Ha"], multi_fit_results.params["wave_NII_1"], multi_fit_results.params["wave_NII_2"]]    
+                                   multi_fit_results.params["wave_Ha"], multi_fit_results.params["wave_NII_1"], multi_fit_results.params["wave_NII_2"]]   
         list_of_x[PNe_num] = multi_fit_results.params["x_0"]
         list_of_y[PNe_num] = multi_fit_results.params["y_0"]
         Gauss_bkg[PNe_num] = multi_fit_results.params["Gauss_bkg"]
         Gauss_grad[PNe_num] = multi_fit_results.params["Gauss_grad"]
         #save errors
-        moff_A_err[PNe_num] = multi_fit_results.params["Amp_2D"].stderr
-        x_0_err[PNe_num] = multi_fit_results.params["x_0"].stderr
-        y_0_err[PNe_num] = multi_fit_results.params["y_0"].stderr
-        mean_wave_err[PNe_num] = multi_fit_results.params["mean"].stderr
-        Gauss_bkg_err[PNe_num] = multi_fit_results.params["Gauss_bkg"].stderr
-        Gauss_grad_err[PNe_num] = multi_fit_results.params["Gauss_grad"].stderr
+        #moff_A_err[PNe_num] = multi_fit_results.params["Amp_2D"].stderr
+        #x_0_err[PNe_num] = multi_fit_results.params["x_0"].stderr
+        #y_0_err[PNe_num] = multi_fit_results.params["y_0"].stderr
+        #mean_wave_err[PNe_num] = multi_fit_results.params["mean"].stderr
+        #Gauss_bkg_err[PNe_num] = multi_fit_results.params["Gauss_bkg"].stderr
+        #Gauss_grad_err[PNe_num] = multi_fit_results.params["Gauss_grad"].stderr
 
     # Signal to noise and Magnitude calculations
     list_of_rN = np.array([np.std(PNe_res) for PNe_res in list_of_fit_residuals])
@@ -240,22 +239,22 @@ def run_minimiser(parameters):
 
 
 print("Running fitter")
-run_minimiser(PNe_params)
+run_minimiser(PNe_multi_params)
+
 # Run PSF fit using objective residuals
-plt.figure(1, figsize=(12,10))
-bins, bins_cens, other = plt.hist(PNe_df["m 5007"].loc[PNe_df["A/rN"]>2], bins=10, edgecolor="black", linewidth=0.8, label="m 5007 > 2 * A/rN", alpha=0.5)
-plt.xlim(26.0,30.0)
-plt.xlabel("$m_{5007}$", fontsize=24)
-plt.ylabel("N Sources", fontsize=24)
+#plt.figure(1, figsize=(12,10))
+#bins, bins_cens, other = plt.hist(PNe_df["m 5007"].loc[PNe_df["A/rN"]>2], bins=10, edgecolor="black", linewidth=0.8, label="m 5007 > 2 * A/rN", alpha=0.5)
+#plt.xlim(26.0,30.0)
+#plt.xlabel("$m_{5007}$", fontsize=24)
+#plt.ylabel("N Sources", fontsize=24)
 #plt.legend(fontsize=15)
 #plt.savefig("Plots/"+ galaxy_data["Galaxy name"]+"/M5007_histogram.png")
-bins_cens = bins_cens[:-1]
-
+#bins_cens = bins_cens[:-1]
 
 use_brightest = input("Use Brightest PNe? (y/n) ")
 if use_brightest == "y":
     sel_PNe = PNe_df.nlargest(2, "A/rN").index.values
-#elif use_brightest == "N":
+#elif use_brightest == "n":
     # Devise system for PNe choise based upon low background (radial?)
 
 print(sel_PNe)
@@ -289,7 +288,19 @@ fitted_beta = PSF_results.params["beta"].value
 #Fit PNe with updated PSF
 gen_params(wave=galaxy_data["wave start"],FWHM=fitted_FWHM, beta=fitted_beta) # set params up with fitted FWHM and beta values
 print("Fitting with PSF")
-run_minimiser(PNe_params) # run fitting section again with new values
+run_minimiser(PNe_multi_params) # run fitting section again with new values
+
+# Plot out each full spectrum with fitted peaks
+for o in np.arange(0, len(x_PNe)):
+    plt.figure(figsize=(30,10))
+    plt.plot(full_wavelength, np.sum(PNe_spectra[o],0), alpha=0.7, c="k") # data
+    plt.plot(full_wavelength, np.sum(model_spectra_list[o],0), c="r") # model
+    plt.axhline(residuals_list[o])
+    plt.xlabel("Wavelength ($\AA$)", fontsize=18)
+    plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
+    plt.savefig("Plots/"+ galaxy_data["Galaxy name"] +"/full_spec_fit_PNe_{}".format(o))
+    plt.clf()
+
 
 #Run the rest of the analysis
 
