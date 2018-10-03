@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from astropy.io import ascii, fits
+from astropy.table import Table
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 import yaml
 import pandas as pd
@@ -158,22 +159,22 @@ def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
 gen_params(wave=galaxy_data["wave start"], em_dict=emission_dict)
 
 # useful value storage setup
-total_Flux = np.zeros((len(x_PNe),6))
-A_2D_list = np.zeros((len(x_PNe),6))
-F_xy_list = np.zeros((len(x_PNe), 6, len(PNe_spectra[0])))
-emission_amp_list = np.zeros((len(x_PNe),6))
+total_Flux = np.zeros((len(x_PNe),len(emission_dict)+2))
+A_2D_list = np.zeros((len(x_PNe),len(emission_dict)+2))
+F_xy_list = np.zeros((len(x_PNe), len(emission_dict)+2, len(PNe_spectra[0])))
+emission_amp_list = np.zeros((len(x_PNe),len(emission_dict)+2))
 model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(full_wavelength)))
-mean_wave_list = np.zeros((len(x_PNe),6))
+mean_wave_list = np.zeros((len(x_PNe),len(emission_dict)+2))
 residuals_list = np.zeros(len(x_PNe))
 list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(full_wavelength)))
 
 # error lists
-moff_A_err = np.zeros(len(x_PNe))
-x_0_err = np.zeros(len(x_PNe))
-y_0_err = np.zeros(len(x_PNe))
-mean_wave_err = np.zeros(len(x_PNe))
-Gauss_bkg_err = np.zeros(len(x_PNe))
-Gauss_grad_err = np.zeros(len(x_PNe))
+moff_A_err = np.zeros((len(x_PNe), len(emission_dict)+2))
+x_0_err = np.zeros((len(x_PNe), len(emission_dict)+2))
+y_0_err = np.zeros((len(x_PNe), len(emission_dict)+2))
+mean_wave_err = np.zeros((len(x_PNe), len(emission_dict)+2))
+Gauss_bkg_err = np.zeros((len(x_PNe), len(emission_dict)+2))
+Gauss_grad_err = np.zeros((len(x_PNe), len(emission_dict)+2))
 
 FWHM_list = np.zeros(len(x_PNe))
 list_of_x = np.zeros(len(x_PNe))
@@ -201,24 +202,24 @@ def run_minimiser(parameters):
         Gauss_bkg[PNe_num] = multi_fit_results.params["Gauss_bkg"]
         Gauss_grad[PNe_num] = multi_fit_results.params["Gauss_grad"]
         #save errors
-        #moff_A_err[PNe_num] = multi_fit_results.params["Amp_2D"].stderr
-        #x_0_err[PNe_num] = multi_fit_results.params["x_0"].stderr
-        #y_0_err[PNe_num] = multi_fit_results.params["y_0"].stderr
-        #mean_wave_err[PNe_num] = multi_fit_results.params["mean"].stderr
-        #Gauss_bkg_err[PNe_num] = multi_fit_results.params["Gauss_bkg"].stderr
-        #Gauss_grad_err[PNe_num] = multi_fit_results.params["Gauss_grad"].stderr
+        moff_A_err[PNe_num] = np.concatenate([[multi_fit_results.params["Amp_2D_OIII_5007"].stderr, multi_fit_results.params["Amp_2D_OIII_4959"].stderr], [multi_fit_results.params["Amp_2D_{}".format(em)].stderr for em in emission_dict]])
+        mean_wave_err[PNe_num] = np.concatenate([[multi_fit_results.params["wave_OIII_5007"].stderr, multi_fit_results.params["wave_OIII_4959"].stderr], [multi_fit_results.params["wave_{}".format(em)].stderr for em in emission_dict]])   
+        x_0_err[PNe_num] = multi_fit_results.params["x_0"].stderr
+        y_0_err[PNe_num] = multi_fit_results.params["y_0"].stderr
+        Gauss_bkg_err[PNe_num] = multi_fit_results.params["Gauss_bkg"].stderr
+        Gauss_grad_err[PNe_num] = multi_fit_results.params["Gauss_grad"].stderr
 
     # Signal to noise and Magnitude calculations
     list_of_rN = np.array([np.std(PNe_res) for PNe_res in list_of_fit_residuals])
-    PNe_df["A/rN"] = A_2D_list[:,0] / list_of_rN
+    PNe_df["A/rN"] = A_2D_list[:,0] / list_of_rN # Using OIII amplitude
     
-    de_z_means = mean_wave_list[:,0] / (1 + z)
+    de_z_means = mean_wave_list[:,0] / (1 + z) # de redshift OIII wavelength position
     
     PNe_df["V (km/s)"] = (c * (de_z_means - 5007.) / 5007.) / 1000.
     
-    PNe_df["[OIII] Flux"] = total_Flux[:,0]
+    PNe_df["[OIII] Flux"] = total_Flux[:,0] #store total OIII 5007 line flux
     
-    PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2]
+    PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2] # store OIII/Hb ratio
     
     def log_10(x):
         return np.log10(x)
@@ -233,6 +234,7 @@ def run_minimiser(parameters):
     PNe_table = Table([np.arange(0,len(x_PNe)), np.round(x_PNe), np.round(y_PNe), PNe_df["[OIII] Flux"], PNe_df["[OIII]/Hb"], PNe_df["m 5007"], PNe_df["M 5007"]], 
                       names=("PNe number", "x", "y", "[OIII] Flux", "[OIII]/Hb", "m 5007", "M 5007"))
     ascii.write(PNe_table, "FCC277_PNe_table.txt", format="tab")
+    ascii.write(PNe_table, "FCC277_PNe_table_latex.txt", format="latex")
     print("Table Created and saved.")
 
 
