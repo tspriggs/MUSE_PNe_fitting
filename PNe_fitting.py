@@ -145,8 +145,8 @@ def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
     PNe_multi_params.add("wave_OIII_4959", expr="wave_OIII_5007 - 47.9399")
     # loop through emission dictionary to add different element parameters 
     for em in em_dict:
-        PNe_multi_params.add('Amp_2D_{}'.format(em), value=emission_dict[em][0], min=0.01)
-        PNe_multi_params.add("wave_{}".format(em), expr="wave_OIII_5007 {0} * (1+{1})".format(emission_dict[em][1], z))
+        PNe_multi_params.add('Amp_2D_{}'.format(em), value=emission_dict[em][0], min=0.01, expr=emission_dict[em][1])
+        PNe_multi_params.add("wave_{}".format(em), expr=emission_dict[em][2])
     
     PNe_multi_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
     PNe_multi_params.add('y_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
