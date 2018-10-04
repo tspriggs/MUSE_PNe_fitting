@@ -139,14 +139,15 @@ PNe_multi_params = Parameters()
 emission_dict = galaxy_data["emissions"]
 
 def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
-    PNe_multi_params.add('Amp_2D_OIII_5007', value=100., min=0.01)
-    PNe_multi_params.add('Amp_2D_OIII_4959', expr="Amp_2D_OIII_5007/3")
-    PNe_multi_params.add("wave_OIII_5007", value=wave, min=wave-40., max=wave+40.)
-    PNe_multi_params.add("wave_OIII_4959", expr="wave_OIII_5007 - 47.9399")
     # loop through emission dictionary to add different element parameters 
     for em in em_dict:
+        #Amplitude params for each emission
         PNe_multi_params.add('Amp_2D_{}'.format(em), value=emission_dict[em][0], min=0.01, expr=emission_dict[em][1])
-        PNe_multi_params.add("wave_{}".format(em), expr=emission_dict[em][2])
+        #Wavelength params for each emission
+        if emission_dict[em][2] == None:
+            PNe_multi_params.add("wave_{}".format(em), value=wave, min=wave-40., max=wave+40.)
+        else:
+            PNe_multi_params.add("wave_{}".format(em), expr=emission_dict[em][2].format(z))
     
     PNe_multi_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
     PNe_multi_params.add('y_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
@@ -169,12 +170,12 @@ residuals_list = np.zeros(len(x_PNe))
 list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(full_wavelength)))
 
 # error lists
-moff_A_err = np.zeros((len(x_PNe), len(emission_dict)+2))
-x_0_err = np.zeros((len(x_PNe), len(emission_dict)+2))
-y_0_err = np.zeros((len(x_PNe), len(emission_dict)+2))
-mean_wave_err = np.zeros((len(x_PNe), len(emission_dict)+2))
-Gauss_bkg_err = np.zeros((len(x_PNe), len(emission_dict)+2))
-Gauss_grad_err = np.zeros((len(x_PNe), len(emission_dict)+2))
+moff_A_err = np.zeros((len(x_PNe), len(emission_dict)))
+x_0_err = np.zeros((len(x_PNe), len(emission_dict)))
+y_0_err = np.zeros((len(x_PNe), len(emission_dict)))
+mean_wave_err = np.zeros((len(x_PNe), len(emission_dict)))
+Gauss_bkg_err = np.zeros((len(x_PNe), len(emission_dict)))
+Gauss_grad_err = np.zeros((len(x_PNe), len(emission_dict)))
 
 FWHM_list = np.zeros(len(x_PNe))
 list_of_x = np.zeros(len(x_PNe))
@@ -195,15 +196,15 @@ def run_minimiser(parameters):
         A_2D_list[PNe_num] = useful_stuff[1][0]
         F_xy_list[PNe_num] = useful_stuff[1][1]
         model_spectra_list[PNe_num] = useful_stuff[1][3]
-        emission_amp_list[PNe_num] = np.concatenate([[multi_fit_results.params["Amp_2D_OIII_5007"], multi_fit_results.params["Amp_2D_OIII_4959"]], [multi_fit_results.params["Amp_2D_{}".format(em)] for em in emission_dict]])
-        mean_wave_list[PNe_num] = np.concatenate([[multi_fit_results.params["wave_OIII_5007"], multi_fit_results.params["wave_OIII_4959"]], [multi_fit_results.params["wave_{}".format(em)] for em in emission_dict]])   
+        emission_amp_list[PNe_num] = [multi_fit_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
+        mean_wave_list[PNe_num] = [multi_fit_results.params["wave_{}".format(em)] for em in emission_dict]   
         list_of_x[PNe_num] = multi_fit_results.params["x_0"]
         list_of_y[PNe_num] = multi_fit_results.params["y_0"]
         Gauss_bkg[PNe_num] = multi_fit_results.params["Gauss_bkg"]
         Gauss_grad[PNe_num] = multi_fit_results.params["Gauss_grad"]
         #save errors
-        moff_A_err[PNe_num] = np.concatenate([[multi_fit_results.params["Amp_2D_OIII_5007"].stderr, multi_fit_results.params["Amp_2D_OIII_4959"].stderr], [multi_fit_results.params["Amp_2D_{}".format(em)].stderr for em in emission_dict]])
-        mean_wave_err[PNe_num] = np.concatenate([[multi_fit_results.params["wave_OIII_5007"].stderr, multi_fit_results.params["wave_OIII_4959"].stderr], [multi_fit_results.params["wave_{}".format(em)].stderr for em in emission_dict]])   
+        moff_A_err[PNe_num] = [multi_fit_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
+        mean_wave_err[PNe_num] = [multi_fit_results.params["wave_{}".format(em)] for em in emission_dict]
         x_0_err[PNe_num] = multi_fit_results.params["x_0"].stderr
         y_0_err[PNe_num] = multi_fit_results.params["y_0"].stderr
         Gauss_bkg_err[PNe_num] = multi_fit_results.params["Gauss_bkg"].stderr

@@ -2,16 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def MUSE_3D_OIII(params, l, x_2D, y_2D, data):
-    Amp_2D = params['Amp_2D']
+    Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict]
     x_0 = params['x_0']
     y_0 = params['y_0']
     M_FWHM = params["M_FWHM"]
     beta = params["beta"]
-    wave = params["wave"]
+    wave_list = [params["wave_{}".format(em)] for em in emission_dict]
     Gauss_bkg = params["Gauss_bkg"]
     Gauss_grad = params["Gauss_grad"]
 
     #Moffat model
+    def Moffat(Amp, FWHM, b, x, y):
+        gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
+        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / gamma**2.
+        return Amp * ((1 + rr_gg)**(-b))
+    
     gamma = M_FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
     rr_gg = ((x_2D - x_0)**2. + (y_2D - y_0)**2) / gamma**2.
     F_OIII_xy = Amp_2D * ((1 + rr_gg)**(-beta))
@@ -32,18 +37,15 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data):
 
 def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     # n_lines is a dictionary of wavelengths with offsets, read from this and make models with offsets
-    Amp_2D_list = [params['Amp_2D_OIII_5007'], params['Amp_2D_OIII_4959']]
+    # loop through emission dict and append to Amp 2D and wave lists
+    Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict] 
     x_0 = params['x_0']
     y_0 = params['y_0']
     M_FWHM = params["M_FWHM"]
     beta = params["beta"]
-    wave_list = [params["wave_OIII_5007"], params["wave_OIII_4959"]]
+    wave_list = [params["wave_{}".format(em)] for em in emission_dict]
     G_bkg = params["Gauss_bkg"]
     G_grad = params["Gauss_grad"]
-    # loop through emission dict and append to Amp 2D and wave lists
-    for em in emission_dict:
-        Amp_2D_list.append(params["Amp_2D_{}".format(em)])
-        wave_list.append(params["wave_{}".format(em)])
     
     #Moffat model
     def Moffat(Amp, FWHM, b, x, y):
