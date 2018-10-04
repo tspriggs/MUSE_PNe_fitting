@@ -160,12 +160,12 @@ def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
 gen_params(wave=galaxy_data["wave start"], em_dict=emission_dict)
 
 # useful value storage setup
-total_Flux = np.zeros((len(x_PNe),len(emission_dict)+2))
-A_2D_list = np.zeros((len(x_PNe),len(emission_dict)+2))
-F_xy_list = np.zeros((len(x_PNe), len(emission_dict)+2, len(PNe_spectra[0])))
-emission_amp_list = np.zeros((len(x_PNe),len(emission_dict)+2))
+total_Flux = np.zeros((len(x_PNe),len(emission_dict)))
+A_2D_list = np.zeros((len(x_PNe),len(emission_dict)))
+F_xy_list = np.zeros((len(x_PNe), len(emission_dict), len(PNe_spectra[0])))
+emission_amp_list = np.zeros((len(x_PNe),len(emission_dict)))
 model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(full_wavelength)))
-mean_wave_list = np.zeros((len(x_PNe),len(emission_dict)+2))
+mean_wave_list = np.zeros((len(x_PNe),len(emission_dict)))
 residuals_list = np.zeros(len(x_PNe))
 list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(full_wavelength)))
 
@@ -234,8 +234,8 @@ def run_minimiser(parameters):
     
     PNe_table = Table([np.arange(0,len(x_PNe)), np.round(x_PNe), np.round(y_PNe), PNe_df["[OIII] Flux"], PNe_df["[OIII]/Hb"], PNe_df["m 5007"], PNe_df["M 5007"]], 
                       names=("PNe number", "x", "y", "[OIII] Flux", "[OIII]/Hb", "m 5007", "M 5007"))
-    ascii.write(PNe_table, "FCC277_PNe_table.txt", format="tab")
-    ascii.write(PNe_table, "FCC277_PNe_table_latex.txt", format="latex")
+    ascii.write(PNe_table, "FCC277_PNe_table.txt", format="tab", overwrite=True)
+    ascii.write(PNe_table, "FCC277_PNe_table_latex.txt", format="latex", overwrite=True)
     print("Table Created and saved.")
 
 
@@ -268,7 +268,7 @@ def model_params(p, n, amp, wave):
     PSF_params.add("moffat_amp_{:03d}".format(n), value=amp, min=0.001)
     PSF_params.add("x_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
     PSF_params.add("y_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
-    PSF_params.add("mean_{:03d}".format(n), value=wave, min=wave-40., max=wave+40.)
+    PSF_params.add("wave_{:03d}".format(n), value=wave, min=wave-40., max=wave+40.)
     PSF_params.add("gauss_bkg_{:03d}".format(n), value=0.001)
     PSF_params.add("gauss_grad_{:03d}".format(n), value=0.001)
 
