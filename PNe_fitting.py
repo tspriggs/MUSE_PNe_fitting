@@ -287,7 +287,7 @@ fitted_FWHM = PSF_results.params["FWHM"].value
 fitted_beta = PSF_results.params["beta"].value
 
 #Fit PNe with updated PSF
-gen_params(wave=galaxy_data["wave start"],FWHM=fitted_FWHM, beta=fitted_beta) # set params up with fitted FWHM and beta values
+gen_params(wave=galaxy_data["wave start"],FWHM=fitted_FWHM, beta=fitted_beta, em_dict=emission_dict) # set params up with fitted FWHM and beta values
 print("Fitting with PSF")
 run_minimiser(PNe_multi_params) # run fitting section again with new values
 
