@@ -1,6 +1,6 @@
 FCC255: {
 Galaxy name: FCC255,
-emission cube: FCC255_data/FCC255_emission_cube.fits,
+residual cube: FCC255_data/FCC255_emission_cube.fits,
 wavelength: exported_data/FCC255/wavelength.npy,
 wave start: 5030.,
 Distance: 19.7,
@@ -17,7 +17,7 @@ emissions: {"OIII_5007": [100, null, null, null],
 
 FCC277: {
 Galaxy name: FCC277,
-emission cube: FCC277_data/FCC277_emission_cube.fits,
+residual cube: FCC277_data/FCC277_emission_cube.fits,
 wavelength: exported_data/FCC277/wavelength.npy,
 wave start: 5035.,
 Distance: 20.5,
@@ -34,7 +34,8 @@ emissions: {"OIII_5007": [100, null, null, null],
 
 FCC167: {
 Galaxy name: FCC167,
-emission cube: FCC167_data/FCC167_OIII_line_center.fits,
+residual cube: FCC167_data/FCC167_gandalf-residual_SPAXEL.fits,
+clean cube: FCC167_data/FCC167_gandalf-cleaned_SPAXEL.fits
 wavelength: exported_data/FCC167/wavelength.npy,
 wave start: 5035.,
 Distance: 18.7,
@@ -43,4 +44,18 @@ best fit FWHM: 4.,
 best fit beta: 2.5,
 emissions: {"OIII_5007": [100, null, null, null],
             "OIII_4959": [5, "Amp_2D_OIII_5007/3", "wave_OIII_5007 - 47.9399 * (1+{})", null]},
+}
+
+FCC170: {
+Galaxy name: FCC170,
+residual cube: FCC170_data/FCC170_pablo/FCC170_residuals.fits,
+wavelength: FCC170_data/FCC170_pablo/wavelength.npy,
+wave start: 5030.,
+Distance: 18.7,
+z: 0.00575,
+best fit FWHM: 4.,
+best fit beta: 2.5,
+emissions: {"OIII_5007": [100, null, null, null],
+            "OIII_4959": [5, "Amp_2D_OIII_5007/3", "wave_OIII_5007 - 47.9399 * (1+{})", null]},
+
 }

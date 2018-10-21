@@ -6,7 +6,7 @@ from astropy.table import Table
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 import yaml
 import pandas as pd
-from MUSE_Models import MUSE_3D_OIII, MUSE_3D_residual, Gaussian_1D_res, PNextractor, PSF_residuals, data_cube_y_x
+from MUSE_Models import MUSE_3D_OIII, MUSE_3D_residual, PNextractor, PSF_residuals, data_cube_y_x
 
 with open("galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data)
@@ -15,18 +15,32 @@ choose_galaxy = input("Please type which Galaxy you want to analyse, use FCC000 
 galaxy_data = galaxy_info[choose_galaxy]
 
 #First load in the relevant data
-hdulist = fits.open(galaxy_data["emission cube"]) # Path to data
-hdr = hdulist[0].header # extract header from .fits file
-raw_data = hdulist[0].data # extract data from .fits file
-raw_data_list = raw_data
+res_hdulist = fits.open(galaxy_data["residual cube"]) # Path to data
+clean_hdulist = fits.open(galaxy_data["clean cube"]) # cleaned cube for wavelength
+res_hdr = hdulist["RESIDUALS"].header # extract header from .fits file
+clean_hdr = hdulist["LOGLAM"]
+raw_data = hdulist["RESIDUALS"].data # extract data from .fits file
+#raw_data_list = raw_data.reshape()
 #raw_data_list_short = raw_data[:,382:543]
 
-y_data, x_data, n_data = data_cube_y_x(len(raw_data))
+wave_check = input("Wavelength from Clean cube or from npy file? Clean[1], npy[2]:  ")
+if wave_check == "1"
+    full_wavelength = np.exp(clean_hdulist[2].data) #np.load(galaxy_data["wavelength"])
+elif wave_check == "2"
+    np.load(galaxy_data["wavelength"])
 
+y_data, x_data, n_data = data_cube_y_x(res_hdr["NAXIS2"])
+    
+raw_data_list = np.array(raw_data).reshape(len(full_wavelength), x_data*y_data)
+raw_data_list = np.swapaxes(raw_data_list, 1, 0)
+# Check for nan values
+raw_data_list[np.isnan(raw_data_list)]=0.001
+
+#raw_data_cube = raw_data_list.reshape(y_data, x_data, len(wavelength))
 #y_data = hdr["NAXIS2"] # read y and x dimension values from the header
 #x_data = hdr["NAXIS1"]
 #wavelength = np.exp(hdr['CRVAL3']+np.arange(hdr["NAXIS3"])*hdr['CDELT3']) # construct wavelength from header data
-full_wavelength = np.load(galaxy_data["wavelength"])
+
 #wavelength = full_wavelength[382:543]
 
 # Reshape data into y, x and wavelength
@@ -49,6 +63,23 @@ y_fit = np.array([item[1] for item in coordinates])
 #Run 1D fit of the spectra and save relevant outputs
 ## potentially check to see if 1D needs to be run, or load from files with an input() call
 
+def Gaussian_1D_res(params, x, data, error, spec_num):
+    Amp = params["Amp"]
+    wave = params["wave"]
+    FWHM = params["FWHM"]
+    Gauss_bkg = params["Gauss_bkg"]
+    Gauss_grad = params["Gauss_grad"]
+
+    Gauss_std = FWHM / 2.35482
+    model = ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
+             (Amp/3.) * np.exp(- 0.5 * (x - (wave - 47.9399))** 2 / Gauss_std**2.))
+
+    list_of_rN[spec_num] = np.std(data - model)
+    data_residuals[spec_num] = data - model
+
+    return (data - model) / error
+
+
 check_for_1D_fit = input("Do you want to run the 1D fitter?: (y/n)")
 
 if check_for_1D_fit == "y":
@@ -64,17 +95,17 @@ if check_for_1D_fit == "y":
     # setup LMfit paramterts
     params = Parameters()
     params.add("Amp",value=70., min=0.001, max=500.)
-    params.add("mean", value=galaxy_data["wave start"], 
+    params.add("wave", value=galaxy_data["wave start"], 
                min=galaxy_data["wave start"]-40,
                max=galaxy_data["wave start"]+40)
     params.add("FWHM", value=2.81, vary=False) # Line Spread Function
-    params.add("Gauss_bkg", value=0.001, min=-500., max=500.)
+    params.add("Gauss_bkg", value=0.001)#, min=-500., max=500.)
     params.add("Gauss_grad", value=0.001)
 
     for i in non_zero_index:
         fit_results = minimize(Gaussian_1D_res, params, args=(full_wavelength, raw_data_list[i], input_errors[i], i), nan_policy="propagate")
-        best_fit_A[i] = [results.params["Amp"], results.params["Amp"].stderr]
-        obj_residuals[i] = results.residual
+        best_fit_A[i] = [fit_results.params["Amp"], fit_results.params["Amp"].stderr]
+        obj_residuals[i] = fit_results.residual
 
     gauss_A = [A[0] for A in best_fit_A]
     A_err = [A[1] for A in best_fit_A]
