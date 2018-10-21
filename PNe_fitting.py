@@ -232,10 +232,14 @@ def run_minimiser(parameters):
     Dist_est = 10.**(((PNe_df["m 5007"].min() + 4.5) -25.) / 5.)
     print("Distance Estimate from PNLF: ", Dist_est, "Mpc")
     
-    PNe_table = Table([np.arange(0,len(x_PNe)), np.round(x_PNe), np.round(y_PNe), PNe_df["[OIII] Flux"], PNe_df["[OIII]/Hb"], PNe_df["m 5007"], PNe_df["M 5007"]], 
+    PNe_table = Table([np.arange(0,len(x_PNe)), np.round(x_PNe), np.round(y_PNe), 
+                       PNe_df["[OIII] Flux"].round(20), 
+                       PNe_df["[OIII]/Hb"].round(2),
+                       PNe_df["m 5007"].round(2), 
+                       PNe_df["M 5007"].round(2)], 
                       names=("PNe number", "x", "y", "[OIII] Flux", "[OIII]/Hb", "m 5007", "M 5007"))
-    ascii.write(PNe_table, "FCC277_PNe_table.txt", format="tab", overwrite=True)
-    ascii.write(PNe_table, "FCC277_PNe_table_latex.txt", format="latex", overwrite=True)
+    ascii.write(PNe_table, "{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True)
+    ascii.write(PNe_table, "{}_PNe_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True)
     print("Table Created and saved.")
 
 
@@ -296,10 +300,11 @@ for o in np.arange(0, len(x_PNe)):
     plt.figure(figsize=(30,10))
     plt.plot(full_wavelength, np.sum(PNe_spectra[o],0), alpha=0.7, c="k") # data
     plt.plot(full_wavelength, np.sum(model_spectra_list[o],0), c="r") # model
-    plt.axhline(residuals_list[o])
+    plt.axhline(residuals_list[o], c="b", alpha=0.6)
     plt.xlabel("Wavelength ($\AA$)", fontsize=18)
     plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
-    plt.savefig("Plots/"+ galaxy_data["Galaxy name"] +"/full_spec_fit_PNe_{}".format(o))
+    plt.savefig("Plots/"+ galaxy_data["Galaxy name"] +"/full_spec_fits/PNe_{}".format(o))
+    plt.ylim(-2000,20000)
     plt.clf()
 
 
