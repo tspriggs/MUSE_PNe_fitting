@@ -34,10 +34,8 @@ emissions: {"OIII_5007": [100, null, null, null],
 
 FCC167: {
 Galaxy name: FCC167,
-residual cube: FCC167_data/FCC167_gandalf-residual_SPAXEL.fits,
-clean cube: FCC167_data/FCC167_gandalf-cleaned_SPAXEL.fits
-wavelength: exported_data/FCC167/wavelength.npy,
-wave start: 5035.,
+residual cube: FCC167_data/FCC167_residual_cube.fits,
+wave start: 5020.,
 Distance: 18.7,
 z: 0.006261,
 best fit FWHM: 4.,

@@ -116,16 +116,26 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
 
 def Gaussian_1D_res(params, x, data, error, spec_num):
     Amp = params["Amp"]
-    mean = params["mean"]
+    wave = params["wave"]
     FWHM = params["FWHM"]
     Gauss_bkg = params["Gauss_bkg"]
     Gauss_grad = params["Gauss_grad"]
 
     Gauss_std = FWHM / 2.35482
-    model = ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - mean)** 2 / Gauss_std**2.) +
-             (Amp/3.) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 / Gauss_std**2.))
+    return ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
+             (Amp/3.) * np.exp(- 0.5 * (x - (wave - 47.9399))** 2 / Gauss_std**2.))
 
+    #return (data - model) / error
+
+def MUSE_1D_residual(params, l, data, error, spec_num, list_to_append):
+    model = Gaussian_1D_res(params, l, data, error, spec_num)
+    list_to_append.clear()
+    list_to_append.append(data - model)
+    list_to_append.append(np.std(data - model))
+    
+    
     return (data - model) / error
+
 
 def PNextractor(x, y, n_pix, data, wave=None, dim=1):
     x = round(x)
