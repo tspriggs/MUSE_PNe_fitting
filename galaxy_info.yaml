@@ -1,59 +1,65 @@
-FCC255: {
-Galaxy name: FCC255,
-residual cube: FCC255_data/FCC255_emission_cube.fits,
-wavelength: exported_data/FCC255/wavelength.npy,
-wave start: 5030.,
-Distance: 19.7,
-z: 0.004186,
-best fit FWHM: 4.,
-best fit beta: 2.5,
-emissions: {"OIII_5007": [100, null, null, null],
-            "OIII_4959": [5, "Amp_2D_OIII_5007/3", "wave_OIII_5007 - 47.9399 * (1+{})", null],
-            "Hb": [5, null, "wave_OIII_5007 - 145.518 * (1+{})", null ],
-            "Ha": [5, null, "wave_OIII_5007 + 1556.375 * (1+{})", null],
-            "NII_1": [5, null, "wave_OIII_5007 + 1541.621 * (1+{})", null],
-            "NII_2": [5, null, "wave_OIII_5007 + 1577.031 * (1+{})", null]},
-}
-
-FCC277: {
-Galaxy name: FCC277,
-residual cube: FCC277_data/FCC277_emission_cube.fits,
-wavelength: exported_data/FCC277/wavelength.npy,
-wave start: 5035.,
-Distance: 20.5,
-z: 0.00547,
-best fit FWHM: 4.,
-best fit beta: 2.5,
-emissions: {"OIII_5007": [100, null, null, null],
-            "OIII_4959": [5, "Amp_2D_OIII_5007/3", "wave_OIII_5007 - 47.9399 * (1+{})", null],
-            "Hb": [5, null, "wave_OIII_5007 - 145.518 * (1+{})", null ],
-            "Ha": [5, null, "wave_OIII_5007 + 1556.375 * (1+{})", null],
-            "NII_1": [5, null, "wave_OIII_5007 + 1541.621 * (1+{})", null],
-            "NII_2": [5, null, "wave_OIII_5007 + 1577.031 * (1+{})", null]},
-}
-
-FCC167: {
-Galaxy name: FCC167,
-residual cube: FCC167_data/FCC167_residual_cube.fits,
-wave start: 5020.,
-Distance: 18.7,
-z: 0.006261,
-best fit FWHM: 4.,
-best fit beta: 2.5,
-emissions: {"OIII_5007": [100, null, null, null],
-            "OIII_4959": [5, "Amp_2D_OIII_5007/3", "wave_OIII_5007 - 47.9399 * (1+{})", null]},
-}
-
-FCC170: {
-Galaxy name: FCC170,
-residual cube: FCC170_data/FCC170_pablo/FCC170_residuals.fits,
-wavelength: FCC170_data/FCC170_pablo/wavelength.npy,
-wave start: 5030.,
-Distance: 18.7,
-z: 0.00575,
-best fit FWHM: 4.,
-best fit beta: 2.5,
-emissions: {"OIII_5007": [100, null, null, null],
-            "OIII_4959": [5, "Amp_2D_OIII_5007/3", "wave_OIII_5007 - 47.9399 * (1+{})", null]},
-
-}
+FCC167:
+  Distance: 18.7
+  Galaxy name: FCC167
+  best fit FWHM: 4.0
+  best fit beta: 2.5
+  emissions:
+    OIII_1: [100, null, null, null]
+    Hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+    OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
+    
+  fit_1D: N
+  wave start: 5030.0
+  z: 0.006261
+  
+FCC170:
+  Distance: 18.7
+  Galaxy name: FCC170
+  best fit FWHM: 4.0
+  best fit beta: 2.5
+  emissions:
+    OIII_1: [100, null, null, null]
+    OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
+    
+  residual cube: FCC170_data/FCC170_pablo/FCC170_residuals.fits
+  fit_1D: N
+  wave start: 5030.0
+  wavelength: FCC170_data/FCC170_pablo/wavelength.npy
+  z: 0.00575
+  
+FCC255:
+  Distance: 19.7
+  Galaxy name: FCC255
+  best fit FWHM: 4.0
+  best fit beta: 2.5
+  emissions:
+    OIII_1: [100, null, null, null]
+    Ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})', null]
+    Hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+    NII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})', null]
+    NII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})', null]
+    OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
+    
+  residual cube: FCC255_data/FCC255_emission_cube.fits
+  fit_1D: N
+  wave start: 5030.0
+  wavelength: exported_data/FCC255/wavelength.npy
+  z: 0.004186
+  
+FCC277:
+  Distance: 20.5
+  Galaxy name: FCC277
+  best fit FWHM: 4.0
+  best fit beta: 2.5
+  emissions:
+    OIII_1: [100, null, null, null]
+    Ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})', null]
+    Hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+    NII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})', null]
+    NII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})', null]
+    OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
+  residual cube: FCC277_data/FCC277_emission_cube.fits
+  fit_1D: N
+  wave start: 5035.0
+  wavelength: exported_data/FCC277/wavelength.npy
+  z: 0.00547
