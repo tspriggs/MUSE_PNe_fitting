@@ -7,7 +7,7 @@ FCC167:
     OIII_1: [100, null, null, null]
     Hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
     OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
-    
+  residual cube: FCC167_data/FCC167_residuals.fits  
   fit_1D: N
   wave start: 5030.0
   z: 0.006261

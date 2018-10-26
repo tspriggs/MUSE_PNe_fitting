@@ -15,7 +15,7 @@ choose_galaxy = input("Please type which Galaxy you want to analyse, use FCC000 
 galaxy_data = galaxy_info[choose_galaxy]
 
 #First load in the relevant data
-res_hdulist = fits.open(galaxy_data["Galaxy name"] + "_data/" + galaxy_data["Galaxy name"] + "_residual_cube.fits") # Path to data
+res_hdulist = fits.open(galaxy_data["residual cube"]) # Path to data
 res_hdr = res_hdulist[0].header # extract header from residual cube
 raw_data = res_hdulist[0].data # extract data from residual cube
 
@@ -26,7 +26,7 @@ raw_data = res_hdulist[0].data # extract data from residual cube
 #    np.load(galaxy_data["wavelength"])
 
 # Create wavelength array using header info from residual cube
-full_wavelength = res_hdr['CRVAL3']+np.arange(res_hdr["NAXIS3"])*res_hdr['CDELT3']
+full_wavelength = np.exp(hdulist[1].data)#res_hdr['CRVAL3']+np.arange(res_hdr["NAXIS3"])*res_hdr['CDELT3']
 
 # get x and y data from header
 y_data = res_hdr["NAXIS2"]
@@ -125,10 +125,10 @@ PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII
 PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
 
 # Objective Residual Cube
-obj_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.npy")
+#obj_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.npy")
 
 # Data Residual Cube
-data_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.npy")
+#data_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.npy")
 
 def uncertainty_cube_construct(data, x_P, y_P, n_pix):
     data[data == np.inf] = 0.01
@@ -141,8 +141,8 @@ def uncertainty_cube_construct(data, x_P, y_P, n_pix):
   
     return array_to_fill
 
-error_cube = uncertainty_cube_construct(data_residual_cube, x_PNe, y_PNe, n_pixels)
-obj_error_cube = uncertainty_cube_construct(obj_residual_cube, x_PNe, y_PNe, n_pixels)
+#error_cube = uncertainty_cube_construct(data_residual_cube, x_PNe, y_PNe, n_pixels)
+#obj_error_cube = uncertainty_cube_construct(obj_residual_cube, x_PNe, y_PNe, n_pixels)
 
 print("Files loaded.")
 

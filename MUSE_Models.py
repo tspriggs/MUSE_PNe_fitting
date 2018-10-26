@@ -133,8 +133,7 @@ def MUSE_1D_residual(params, l, data, error, spec_num, list_to_append):
     list_to_append.append(data - model)
     list_to_append.append(np.std(data - model))
     
-    
-    return (data - model) / error
+    return (data - model) #/ error
 
 
 def PNextractor(x, y, n_pix, data, wave=None, dim=1):
