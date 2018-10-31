@@ -36,7 +36,6 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data):
 # Multi wavelength analysis model
 
 def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
-    # n_lines is a dictionary of wavelengths with offsets, read from this and make models with offsets
     # loop through emission dict and append to Amp 2D and wave lists
     Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict] 
     x_0 = params['x_0']
@@ -47,7 +46,7 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     G_bkg = params["Gauss_bkg"]
     G_grad = params["Gauss_grad"]
     
-    #Moffat model
+    # Moffat model
     def Moffat(Amp, FWHM, b, x, y):
         gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / gamma**2.

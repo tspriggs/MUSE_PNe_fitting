@@ -5,11 +5,11 @@ FCC167:
   best fit beta: 2.5
   emissions:
     OIII_1: [100, null, null, null]
-    Hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
     OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC167_data/FCC167_residuals.fits  
   fit_1D: N
-  wave start: 5030.0
+  wave start: 5035.0
   z: 0.006261
   
 FCC170:
@@ -34,10 +34,10 @@ FCC255:
   best fit beta: 2.5
   emissions:
     OIII_1: [100, null, null, null]
-    Ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})', null]
-    Hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
-    NII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})', null]
-    NII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})', null]
+    ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})', null]
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+    nII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})', null]
+    nII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})', null]
     OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
     
   residual cube: FCC255_data/FCC255_emission_cube.fits
@@ -53,10 +53,10 @@ FCC277:
   best fit beta: 2.5
   emissions:
     OIII_1: [100, null, null, null]
-    Ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})', null]
-    Hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
-    NII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})', null]
-    NII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})', null]
+    ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})', null]
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+    nII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})', null]
+    nII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})', null]
     OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC277_data/FCC277_emission_cube.fits
   fit_1D: N

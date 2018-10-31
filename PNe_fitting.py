@@ -61,8 +61,8 @@ y_fit = np.array([item[1] for item in coordinates])
 if galaxy_data["fit_1D"] == "Y":
     # Run 1D fitter
     print("Fitting Galaxy, spaxel by spaxel, in 1D")
-    list_of_std = np.array([np.abs(np.std(spec)) for spec in raw_data_list])
-    input_errors = [np.repeat(list_of_std[i], len(full_wavelength)) for i in np.arange(0,len(list_of_std))]
+    list_of_std = np.abs(np.std(raw_data_list,1))
+    input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
     # setup numpy arrays for storage
     best_fit_A = np.zeros((len(raw_data_list),2))
     list_of_rN = np.zeros(len(raw_data_list))
