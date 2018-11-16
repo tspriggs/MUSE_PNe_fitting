@@ -23,7 +23,7 @@ FCC170:
     
   residual cube: FCC170_data/FCC170_pablo/FCC170_residuals.fits
   fit_1D: N
-  wave start: 5030.0
+  wave start: 5035.0
   wavelength: FCC170_data/FCC170_pablo/wavelength.npy
   z: 0.00575
   

@@ -132,7 +132,7 @@ def MUSE_1D_residual(params, l, data, error, spec_num, list_to_append):
     list_to_append.append(data - model)
     list_to_append.append(np.std(data - model))
     
-    return (data - model) #/ error
+    return (data - model)/ error
 
 
 def PNextractor(x, y, n_pix, data, wave=None, dim=1):
@@ -146,7 +146,19 @@ def PNextractor(x, y, n_pix, data, wave=None, dim=1):
     if dim == 2:
         return from_data.reshape(n_pix**2, len(wave))
 
-
+#dev
+def new_extractor(x, y, n_pix, data, x_d, wave=None, dim=1):
+    xc = round(x)
+    yc = round(y)
+    offset = n_pix // 2
+    #calculate the x y coordinates of each pixel in n_pix x n_pix square around x,y input coordinates
+    y_range = np.arange(yc - offset, (yc - offset)+n_pix, 1, dtype=int)
+    x_range = np.arange(xc - offset, (xc - offset)+n_pix, 1, dtype=int)
+    ind = [i * x_d + x_range for i in y_range]
+    return data[np.ravel(ind)]
+    
+    
+    
 def data_cube_y_x(n):
     nsqrt = np.ceil(np.sqrt(n))
     solution = False

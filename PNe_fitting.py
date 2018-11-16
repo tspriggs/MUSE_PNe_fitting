@@ -19,6 +19,8 @@ res_hdulist = fits.open(galaxy_data["residual cube"]) # Path to data
 res_hdr = res_hdulist[0].header # extract header from residual cube
 raw_data = res_hdulist[0].data # extract data from residual cube
 
+#check if data read in is in format (wave,y,x) or (list of spec, wave), using np.shape, check length: 2 => reshape to (y,x,wave), 3 => read in wave from header and reshape 
+
 #wave_check = input("Wavelength from Clean cube or from npy file? Clean[1], npy[2]:  ")
 #if wave_check == "1"
 #     #np.load(galaxy_data["wavelength"])
@@ -26,20 +28,20 @@ raw_data = res_hdulist[0].data # extract data from residual cube
 #    np.load(galaxy_data["wavelength"])
 
 # Create wavelength array using header info from residual cube
-full_wavelength = np.exp(hdulist[1].data)#res_hdr['CRVAL3']+np.arange(res_hdr["NAXIS3"])*res_hdr['CDELT3']
+wavelength = np.exp(hdulist[1].data)#res_hdr['CRVAL3']+np.arange(res_hdr["NAXIS3"])*res_hdr['CDELT3']
 
 # get x and y data from header
 y_data = res_hdr["NAXIS2"]
 x_data = res_hdr["NAXIS1"]
 
 # swap axes to make a (length of spec, length of wave) array list
-raw_data_list = np.array(raw_data).reshape(len(full_wavelength), x_data*y_data)
+raw_data_list = np.array(raw_data).reshape(len(wavelength), x_data*y_data)
 raw_data_list = np.swapaxes(raw_data_list, 1, 0)
 # Check for nan values
 raw_data_list[np.isnan(raw_data_list)]=0.001
 
 # Reshape data into y, x and wavelength
-raw_data_cube = raw_data_list.reshape(y_data, x_data, len(full_wavelength))
+raw_data_cube = raw_data_list.reshape(y_data, x_data, len(wavelength))
 
 # create an list of indices where there is spectral data to fit.
 non_zero_index = np.squeeze(np.where(raw_data_list[:,0] != 0.))
@@ -57,34 +59,51 @@ y_fit = np.array([item[1] for item in coordinates])
 
 # Run 1D fit of the spectra and save relevant outputs
 # Check in yaml parameter file if 1D fit is needed or not
+def spaxel_by_spaxel(params, x, data, error, spec_num):
+    Amp = params["Amp"]
+    mean = params["mean"]
+    FWHM = params["FWHM"]
+    Gauss_bkg = params["Gauss_bkg"]
+    Gauss_grad = params["Gauss_grad"]
+
+    Gauss_std = FWHM / 2.35482
+    model = ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - mean)** 2 / Gauss_std**2.) +
+             (Amp/3.) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / Gauss_std**2.))
+
+    list_of_rN[spec_num] = np.std(data - model)
+    data_residuals[spec_num] = data - model
+
+    return (data - model) / error
+
 
 if galaxy_data["fit_1D"] == "Y":
     # Run 1D fitter
     print("Fitting Galaxy, spaxel by spaxel, in 1D")
+    
     list_of_std = np.abs(np.std(raw_data_list,1))
     input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
+    
     # setup numpy arrays for storage
     best_fit_A = np.zeros((len(raw_data_list),2))
     list_of_rN = np.zeros(len(raw_data_list))
-    data_residuals = np.zeros((len(raw_data_list),len(full_wavelength)))
-    obj_residuals = np.zeros((len(raw_data_list),len(full_wavelength)))
+    data_residuals = np.zeros((len(raw_data_list),len(wavelength)))
+    obj_residuals = np.zeros((len(raw_data_list),len(wavelength)))
+    
     # setup LMfit paramterts
     params = Parameters()
-    params.add("Amp",value=70., min=0.001, max=500.)
-    params.add("wave", value=galaxy_data["wave start"], 
-               min=galaxy_data["wave start"]-40,
-               max=galaxy_data["wave start"]+40)
+    params.add("Amp",value=70., min=0.001)
+    params.add("wave", value=5007.0*(1+z), 
+               min=5007.0*(1+z)-40,
+               max=5007.0*(1+z)+40)
     params.add("FWHM", value=2.81, vary=False) # Line Spread Function
     params.add("Gauss_bkg", value=0.001)
     params.add("Gauss_grad", value=0.001)
 
     for i in non_zero_index:
         useful_list = []
-        fit_results = minimize(MUSE_1D_residual, params, args=(full_wavelength, raw_data_list[i], input_errors[i], i, useful_list), nan_policy="propagate")
+        fit_results = minimize(spaxel_by_spaxel, params, args=(wavelength, raw_data_list[i], input_errors[i], i, useful_list), nan_policy="propagate")
         best_fit_A[i] = [fit_results.params["Amp"], fit_results.params["Amp"].stderr]
         obj_residuals[i] = fit_results.residual
-        data_residuals[i] = useful_list[0][0]
-        list_of_rN[i] = useful_list[0][1]
 
     gauss_A = [A[0] for A in best_fit_A]
     A_err = [A[1] for A in best_fit_A]
@@ -118,7 +137,7 @@ x_PNe = np.array([x[0] for x in x_y_list])
 y_PNe = np.array([y[1] for y in x_y_list])
 
 # Retrieve the respective spectra for each PNe source
-PNe_spectra = np.array([PNextractor(x, y, n_pixels, raw_data_cube, wave=full_wavelength, dim=2.0) for x,y in zip(x_PNe, y_PNe)])
+PNe_spectra = np.array([PNextractor(x, y, n_pixels, raw_data_cube, wave=wavelength, dim=2.0) for x,y in zip(x_PNe, y_PNe)])
 
 # create Pandas data frame for values
 PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "[OIII]/Hb", "Flux error", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN", "rad D"))
@@ -132,12 +151,12 @@ PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
 
 def uncertainty_cube_construct(data, x_P, y_P, n_pix):
     data[data == np.inf] = 0.01
-    data_shape = data.reshape(y_data, x_data, len(full_wavelength))
-    extract_data = np.array([PNextractor(x, y, n_pix, data_shape, wave=full_wavelength, dim=2) for x,y in zip(x_P, y_P)])
-    array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(full_wavelength)))
+    data_shape = data.reshape(y_data, x_data, len(wavelength))
+    extract_data = np.array([PNextractor(x, y, n_pix, data_shape, wave=wavelength, dim=2) for x,y in zip(x_P, y_P)])
+    array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
     for p in np.arange(0, len(x_P)):
         list_of_std = [np.abs(np.std(spec)) for spec in extract_data[p]]
-        array_to_fill[p] = [np.repeat(list_of_std[i], len(full_wavelength)) for i in np.arange(0, len(list_of_std))]
+        array_to_fill[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
   
     return array_to_fill
 
@@ -179,10 +198,10 @@ total_Flux = np.zeros((len(x_PNe),len(emission_dict)))
 A_2D_list = np.zeros((len(x_PNe),len(emission_dict)))
 F_xy_list = np.zeros((len(x_PNe), len(emission_dict), len(PNe_spectra[0])))
 emission_amp_list = np.zeros((len(x_PNe),len(emission_dict)))
-model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(full_wavelength)))
+model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))
 mean_wave_list = np.zeros((len(x_PNe),len(emission_dict)))
 residuals_list = np.zeros(len(x_PNe))
-list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(full_wavelength)))
+list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))
 
 # error lists
 moff_A_err = np.zeros((len(x_PNe), len(emission_dict)))
@@ -205,7 +224,7 @@ def run_minimiser(parameters):
     for PNe_num in np.arange(0, len(x_PNe)):
         useful_stuff = []
         #run minimizer fitting routine
-        multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(full_wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, "full", emission_dict, useful_stuff), nan_policy="propagate")
+        multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, "full", emission_dict, useful_stuff), nan_policy="propagate")
         total_Flux[PNe_num] = np.sum(useful_stuff[1][1],1) * 1e-20
         list_of_fit_residuals[PNe_num] = useful_stuff[0]
         A_2D_list[PNe_num] = useful_stuff[1][0]
@@ -261,7 +280,6 @@ def run_minimiser(parameters):
 print("Running fitter")
 run_minimiser(PNe_multi_params)
 
-# Run PSF fit using objective residuals
 #plt.figure(1, figsize=(12,10))
 #bins, bins_cens, other = plt.hist(PNe_df["m 5007"].loc[PNe_df["A/rN"]>2], bins=10, edgecolor="black", linewidth=0.8, label="m 5007 > 2 * A/rN", alpha=0.5)
 #plt.xlim(26.0,30.0)
@@ -299,7 +317,7 @@ PSF_params.add('FWHM', value=4.0, min=0.01, max=12., vary=True)
 PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True) 
 
 print("Fitting for PSF")
-PSF_results = minimize(PSF_residuals, PSF_params, args=(full_wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err), nan_policy="propagate")
+PSF_results = minimize(PSF_residuals, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err), nan_policy="propagate")
 
 #determine PSF values and feed back into 3D fitter
 
@@ -314,8 +332,8 @@ run_minimiser(PNe_multi_params) # run fitting section again with new values
 # Plot out each full spectrum with fitted peaks
 for o in np.arange(0, len(x_PNe)):
     plt.figure(figsize=(30,10))
-    plt.plot(full_wavelength, np.sum(PNe_spectra[o],0), alpha=0.7, c="k") # data
-    plt.plot(full_wavelength, np.sum(model_spectra_list[o],0), c="r") # model
+    plt.plot(wavelength, np.sum(PNe_spectra[o],0), alpha=0.7, c="k") # data
+    plt.plot(wavelength, np.sum(model_spectra_list[o],0), c="r") # model
     plt.axhline(residuals_list[o], c="b", alpha=0.6)
     plt.xlabel("Wavelength ($\AA$)", fontsize=18)
     plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
