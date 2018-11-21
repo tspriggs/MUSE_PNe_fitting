@@ -6,7 +6,7 @@ from astropy.table import Table
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 import yaml
 import pandas as pd
-from MUSE_Models import MUSE_3D_OIII, MUSE_3D_residual, MUSE_1D_residual, PNextractor, PSF_residuals
+from MUSE_Models import MUSE_3D_OIII, MUSE_3D_residual, MUSE_1D_residual, new_extractor, PSF_residuals
 
 with open("galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data)
@@ -17,37 +17,24 @@ galaxy_data = galaxy_info[choose_galaxy]
 #First load in the relevant data
 res_hdulist = fits.open(galaxy_data["residual cube"]) # Path to data
 res_hdr = res_hdulist[0].header # extract header from residual cube
-raw_data = res_hdulist[0].data # extract data from residual cube
 
 #check if data read in is in format (wave,y,x) or (list of spec, wave), using np.shape, check length: 2 => reshape to (y,x,wave), 3 => read in wave from header and reshape 
 
-#wave_check = input("Wavelength from Clean cube or from npy file? Clean[1], npy[2]:  ")
-#if wave_check == "1"
-#     #np.load(galaxy_data["wavelength"])
-#elif wave_check == "2"
-#    np.load(galaxy_data["wavelength"])
+# check to see if the wavelength is in the fits fileby checking length of fits file. 
+if len(res_hdulist) == 2: # check to see if HDU data has 2 units (data, wavelength)
+    wavelength = np.exp(hdulist[1].data)
+    y_data = res_hdr["NAXIS2"]
+    x_data = res_hdr["NAXIS1"]
+else:
+    wavelength = np.load(galaxy_data["wavelength"])
+    y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
 
-# Create wavelength array using header info from residual cube
-wavelength = np.exp(hdulist[1].data)#res_hdr['CRVAL3']+np.arange(res_hdr["NAXIS3"])*res_hdr['CDELT3']
-
-# get x and y data from header
-y_data = res_hdr["NAXIS2"]
-x_data = res_hdr["NAXIS1"]
-
-# swap axes to make a (length of spec, length of wave) array list
-raw_data_list = np.array(raw_data).reshape(len(wavelength), x_data*y_data)
-raw_data_list = np.swapaxes(raw_data_list, 1, 0)
-# Check for nan values
-raw_data_list[np.isnan(raw_data_list)]=0.001
-
-# Reshape data into y, x and wavelength
-raw_data_cube = raw_data_list.reshape(y_data, x_data, len(wavelength))
 
 # create an list of indices where there is spectral data to fit.
-non_zero_index = np.squeeze(np.where(raw_data_list[:,0] != 0.))
+non_zero_index = np.squeeze(np.where(hdulist[0].data[:,0] != 0.))
 
 # constants
-n_pixels= 13
+n_pixels= 9
 c = 299792458.0 # speed of light
 
 z = galaxy_data["z"] # Redshift
@@ -61,14 +48,14 @@ y_fit = np.array([item[1] for item in coordinates])
 # Check in yaml parameter file if 1D fit is needed or not
 def spaxel_by_spaxel(params, x, data, error, spec_num):
     Amp = params["Amp"]
-    mean = params["mean"]
+    wave = params["wave"]
     FWHM = params["FWHM"]
     Gauss_bkg = params["Gauss_bkg"]
     Gauss_grad = params["Gauss_grad"]
 
     Gauss_std = FWHM / 2.35482
-    model = ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - mean)** 2 / Gauss_std**2.) +
-             (Amp/3.) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / Gauss_std**2.))
+    model = ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
+             (Amp/3.) * np.exp(- 0.5 * (x - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.))
 
     list_of_rN[spec_num] = np.std(data - model)
     data_residuals[spec_num] = data - model
@@ -80,7 +67,7 @@ if galaxy_data["fit_1D"] == "Y":
     # Run 1D fitter
     print("Fitting Galaxy, spaxel by spaxel, in 1D")
     
-    list_of_std = np.abs(np.std(raw_data_list,1))
+    list_of_std = np.abs(np.std(hdulist[0].data ,1))
     input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
     
     # setup numpy arrays for storage
@@ -101,7 +88,7 @@ if galaxy_data["fit_1D"] == "Y":
 
     for i in non_zero_index:
         useful_list = []
-        fit_results = minimize(spaxel_by_spaxel, params, args=(wavelength, raw_data_list[i], input_errors[i], i, useful_list), nan_policy="propagate")
+        fit_results = minimize(spaxel_by_spaxel, params, args=(wavelength, hdulist[0].data[i], input_errors[i], i, useful_list), nan_policy="propagate")
         best_fit_A[i] = [fit_results.params["Amp"], fit_results.params["Amp"].stderr]
         obj_residuals[i] = fit_results.residual
 
@@ -109,14 +96,19 @@ if galaxy_data["fit_1D"] == "Y":
     A_err = [A[1] for A in best_fit_A]
     A_rN = np.array([A / rN for A,rN in zip(gauss_A, list_of_rN)])
     Gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
-
+    
+    # Save A/rN, Gauss A, Guass F and rN arrays as npy files.
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/A_rN_cen", A_rN)
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_A_cen", gauss_A)
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_A_err_cen", A_err)
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_F_cen", Gauss_F)
-    np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data", data_residuals)
-    np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj", obj_residuals)
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/rN", list_of_rN)
+    
+    # save the data and obj res in fits file format to us memmapping.
+    hdu_data_res = fits.PrimaryHDU(data_residuals)
+    hdu_obj_res = fits.PrimaryHDU(obj_residuals)
+    hdu_data_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.fits")
+    hdu_obj_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.fits")
     
     print("Cube fitted, data saved.")
     
@@ -127,7 +119,7 @@ if galaxy_data["fit_1D"] == "Y":
     
     # DETECT PNE here?
 elif galaxy_data["fit_1D"] == "N":
-    print("Cube already fitted for 1D, continuing to PNe fitting.")
+    print("Cube fitted for 1D, continuing to PNe fitting.")
 
 print("Starting PNe analysis with initial PSF guess")
 # load from saved files
@@ -137,31 +129,30 @@ x_PNe = np.array([x[0] for x in x_y_list])
 y_PNe = np.array([y[1] for y in x_y_list])
 
 # Retrieve the respective spectra for each PNe source
-PNe_spectra = np.array([PNextractor(x, y, n_pixels, raw_data_cube, wave=wavelength, dim=2.0) for x,y in zip(x_PNe, y_PNe)])
+PNe_spectra = np.array([new_extractor(x, y, n_pixels, hdulist[0].data, x_data, wave=wavelength, dim=2.0) for x,y in zip(x_PNe, y_PNe)])
 
 # create Pandas data frame for values
-PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "[OIII]/Hb", "Flux error", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN", "rad D"))
+PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "Flux error","[OIII]/Hb","Ha Flux", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN", "rad D"))
 PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
 
 # Objective Residual Cube
-#obj_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.npy")
+obj_residual_cube = fits.open("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.fits")
 
 # Data Residual Cube
-#data_residual_cube = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.npy")
+data_residual_cube = fits.open("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.fits")
 
 def uncertainty_cube_construct(data, x_P, y_P, n_pix):
     data[data == np.inf] = 0.01
-    data_shape = data.reshape(y_data, x_data, len(wavelength))
-    extract_data = np.array([PNextractor(x, y, n_pix, data_shape, wave=wavelength, dim=2) for x,y in zip(x_P, y_P)])
+    extract_data = np.array([new_extractor(x, y, n_pix, data, x_data, wave=wavelength) for x,y in zip(x_P, y_P)])
     array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
     for p in np.arange(0, len(x_P)):
-        list_of_std = [np.abs(np.std(spec)) for spec in extract_data[p]]
+        list_of_std = np.abs(np.std(extract_data[p], 1))
         array_to_fill[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
   
     return array_to_fill
 
-#error_cube = uncertainty_cube_construct(data_residual_cube, x_PNe, y_PNe, n_pixels)
-#obj_error_cube = uncertainty_cube_construct(obj_residual_cube, x_PNe, y_PNe, n_pixels)
+error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels)
+obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels)
 
 print("Files loaded.")
 
@@ -172,7 +163,7 @@ PNe_multi_params = Parameters()
 
 emission_dict = galaxy_data["emissions"]
 
-def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
+def gen_params(wave=5007*(1+z), FWHM=4.0, beta=2.5, em_dict=None):
     # loop through emission dictionary to add different element parameters 
     for em in em_dict:
         #Amplitude params for each emission
@@ -191,7 +182,7 @@ def gen_params(wave=5007, FWHM=4.0, beta=2.5, em_dict=None):
     PNe_multi_params.add("Gauss_grad", value=0.00001)
 
 # generate parameters with values
-gen_params(wave=galaxy_data["wave start"], em_dict=emission_dict)
+gen_params(wave=5007*(1+z), em_dict=emission_dict)
 
 # useful value storage setup
 total_Flux = np.zeros((len(x_PNe),len(emission_dict)))
@@ -256,6 +247,8 @@ def run_minimiser(parameters):
     
     PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2] # store OIII/Hb ratio
     
+    PNe_df["Ha Flux"] = total_flux[:, 1]
+    
     def log_10(x):
         return np.log10(x)
     
@@ -269,13 +262,14 @@ def run_minimiser(parameters):
     PNe_table = Table([np.arange(0,len(x_PNe)), np.round(x_PNe), np.round(y_PNe), 
                        PNe_df["[OIII] Flux"].round(20), 
                        PNe_df["[OIII]/Hb"].round(2),
+                       PNe_df["Flux Ha"].round(20)
                        PNe_df["m 5007"].round(2), 
                        PNe_df["M 5007"].round(2)], 
-                      names=("PNe number", "x", "y", "[OIII] Flux", "[OIII]/Hb", "m 5007", "M 5007"))
+                      names=("PNe number", "x", "y", "[OIII] Flux", "[OIII]/Hb", "Ha Flux", "m 5007", "M 5007"))
     ascii.write(PNe_table, "{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True)
     ascii.write(PNe_table, "{}_PNe_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True)
-    print("Table Created and saved.")
-
+    print(galaxy_data["Galaxy name"]+ "_table.txt saved")
+    print(galaxy_data["Galaxy name"]+ "_PNe_table_latex.txt saved")
 
 print("Running fitter")
 run_minimiser(PNe_multi_params)
@@ -291,15 +285,15 @@ run_minimiser(PNe_multi_params)
 
 use_brightest = input("Use Brightest PNe? (y/n) ")
 if use_brightest == "y":
-    sel_PNe = PNe_df.nlargest(2, "A/rN").index.values
+    sel_PNe = PNe_df.nsmallest(3, "m 5007").index.values
+    selected_PNe = PNe_spectra[sel_PNe] # Select PNe from the PNe minicubes
+    selected_PNe_err = obj_error_cube[sel_PNe] # Select associated errors from the objective error cubes 
 elif use_brightest == "n":
     # Devise system for PNe choise based upon low background (radial?)
     sel_PNe = 0
 
 print(sel_PNe)
 
-selected_PNe = PNe_spectra[sel_PNe] # Select PNe from the PNe minicubes
-selected_PNe_err = obj_error_cube[sel_PNe] # Select associated errors from the objective error cubes
 PSF_params = Parameters()
 
 def model_params(p, n, amp, wave):
@@ -311,7 +305,7 @@ def model_params(p, n, amp, wave):
     PSF_params.add("gauss_grad_{:03d}".format(n), value=0.001)
 
 for i in np.arange(0,len(sel_PNe)):
-        model_params(p=PSF_params, n=i, amp=200.0, wave=galaxy_data["wave start"])    
+        model_params(p=PSF_params, n=i, amp=200.0, wave=5007*(1+z))    
     
 PSF_params.add('FWHM', value=4.0, min=0.01, max=12., vary=True)
 PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True) 
@@ -325,7 +319,7 @@ fitted_FWHM = PSF_results.params["FWHM"].value
 fitted_beta = PSF_results.params["beta"].value
 
 #Fit PNe with updated PSF
-gen_params(wave=galaxy_data["wave start"],FWHM=fitted_FWHM, beta=fitted_beta, em_dict=emission_dict) # set params up with fitted FWHM and beta values
+gen_params(wave=5007*(1+z), FWHM=fitted_FWHM, beta=fitted_beta, em_dict=emission_dict) # set params up with fitted FWHM and beta values
 print("Fitting with PSF")
 run_minimiser(PNe_multi_params) # run fitting section again with new values
 
