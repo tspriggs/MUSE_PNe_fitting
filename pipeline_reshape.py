@@ -25,7 +25,7 @@ def save_list(data, header, name):
     hdu = fits.PrimaryHDU()
     hdu2 = fits.ImageHDU()
     hdu.data = np.copy(data)
-    hdu_2 = fits.ImageHDU(data = header, name="WAVELENGTH")
+    hdu2 = fits.ImageHDU(data = header, name="WAVELENGTH")
     
     print("Data to be saved in a list format.")
     HDUList = fits.HDUList([hdu, hdu2])

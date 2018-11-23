@@ -16,7 +16,7 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data):
         gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / gamma**2.
         return Amp * ((1 + rr_gg)**(-b))
-    
+
     gamma = M_FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
     rr_gg = ((x_2D - x_0)**2. + (y_2D - y_0)**2) / gamma**2.
     F_OIII_xy = Amp_2D * ((1 + rr_gg)**(-beta))
@@ -37,7 +37,7 @@ def MUSE_3D_OIII(params, l, x_2D, y_2D, data):
 
 def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     # loop through emission dict and append to Amp 2D and wave lists
-    Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict] 
+    Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict]
     x_0 = params['x_0']
     y_0 = params['y_0']
     M_FWHM = params["M_FWHM"]
@@ -45,24 +45,24 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     wave_list = [params["wave_{}".format(em)] for em in emission_dict]
     G_bkg = params["Gauss_bkg"]
     G_grad = params["Gauss_grad"]
-    
+
     # Moffat model
     def Moffat(Amp, FWHM, b, x, y):
         gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / gamma**2.
         return Amp * ((1 + rr_gg)**(-b))
-    
+
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
-    
+
     # 1D Gaussian standard deviation from FWHM
     G_std = 2.81 / 2.35482
 
     # Convert flux to amplitude
     A_xy = np.array([F / (np.sqrt(2*np.pi) * G_std) for F in F_xy])
-    
+
     def Gauss(Amp_1D, wave):
         return np.array([(G_bkg + (G_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])
-    
+
     model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0)
 
     return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
@@ -100,12 +100,12 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
     for k in np.arange(0, len(data)):
         list_of_models["model_{:03d}".format(k)] = generate_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)],
                                                                   PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta,
-                                                                  PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)], 
+                                                                  PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)],
                                                                   PSF_params["wave_{:03d}".format(k)])
 
     resid = {}
     for m in np.arange(0, len(data)):
-        resid["resid_{:03d}".format(m)] = ((data[m] - list_of_models["model_{:03d}".format(m)]) / err[m]) 
+        resid["resid_{:03d}".format(m)] = ((data[m] - list_of_models["model_{:03d}".format(m)]) / err[m])
 
     if len(resid) > 1.:
         return np.concatenate([resid[x] for x in sorted(resid)],0)
@@ -131,7 +131,7 @@ def MUSE_1D_residual(params, l, data, error, spec_num, list_to_append):
     list_to_append.clear()
     list_to_append.append(data - model)
     list_to_append.append(np.std(data - model))
-    
+
     return (data - model)/ error
 
 
@@ -147,7 +147,7 @@ def PNextractor(x, y, n_pix, data, wave=None, dim=1):
         return from_data.reshape(n_pix**2, len(wave))
 
 #dev
-def new_extractor(x, y, n_pix, data, x_d, wave=None, dim=1):
+def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     xc = round(x)
     yc = round(y)
     offset = n_pix // 2
@@ -156,9 +156,9 @@ def new_extractor(x, y, n_pix, data, x_d, wave=None, dim=1):
     x_range = np.arange(xc - offset, (xc - offset)+n_pix, 1, dtype=int)
     ind = [i * x_d + x_range for i in y_range]
     return data[np.ravel(ind)]
-    
-    
-    
+
+
+
 def data_cube_y_x(n):
     nsqrt = np.ceil(np.sqrt(n))
     solution = False
@@ -169,4 +169,7 @@ def data_cube_y_x(n):
             solution = True
         else:
             val-=1
-    return int(val), int(val2), n
+    if int(val) > int(val2):
+        return int(val2), int(val), n
+    else:
+        return int(val), int(val2), n
