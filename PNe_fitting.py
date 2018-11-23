@@ -199,11 +199,10 @@ def gen_params(wave=5007*(1+z), FWHM=4.0, beta=2.5, em_dict=None):
         # Amplitude parameter for each emission
         PNe_multi_params.add('Amp_2D_{}'.format(em), value=emission_dict[em][0], min=0.01, expr=emission_dict[em][1])
         # Wavelength parameter for each emission
-        PNe_multi_params.add("wave_{}".format(em), value=wave, min=wave-40., max=wave+40., expr=emission_dict[em][2].format(z))
-        #if emission_dict[em][2] == None:
-        #    PNe_multi_params.add("wave_{}".format(em), value=wave, min=wave-40., max=wave+40.)
-        #else:
-        #    PNe_multi_params.add("wave_{}".format(em), expr=emission_dict[em][2].format(z))
+        if emission_dict[em][2] == None:
+            PNe_multi_params.add("wave_{}".format(em), value=wave, min=wave-40., max=wave+40.)
+        else:
+            PNe_multi_params.add("wave_{}".format(em), expr=emission_dict[em][2].format(z))
 
     # Add the rest of the paramters for the 3D fitter here, including the PSF (Moffat FWHM (M_FWHM) and beta)
     PNe_multi_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
