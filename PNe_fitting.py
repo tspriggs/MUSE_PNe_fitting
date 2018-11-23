@@ -108,8 +108,8 @@ if galaxy_data["fit_1D"] == "Y":
     # save the data and obj res in fits file format to us memmapping.
     hdu_data_res = fits.PrimaryHDU(data_residuals)
     hdu_obj_res = fits.PrimaryHDU(obj_residuals)
-    hdu_data_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.fits")
-    hdu_obj_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.fits")
+    hdu_data_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.fits", overwrite=True)
+    hdu_obj_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.fits", overwrite=True)
 
     print("Cube fitted, data saved.")
 
