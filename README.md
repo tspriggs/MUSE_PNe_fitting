@@ -17,15 +17,16 @@ The folder Plots/ is where the saved figures / plots from the script will be sav
 The final folder required here is "exported_data/", where the results of the spaxel-by-spaxel fit will be stored. Again a folder within "exported_data/", for each galaxy, needs to be made so as to keep track of exported files.
 
 The directory will look something like this:
-Working_directory/
-    > FCC000_data/
-        > >F CC000_residauls_list.fits
-        > > FCC000_wavelength.npy
-    > Plots/
-        > > FCC000/
-            > > >full_spec_fits/
-    > exported_data/
-        > > FCC000/
+
+> Working_directory/
+    > > FCC000_data/
+        > > >F CC000_residauls_list.fits
+        > > > FCC000_wavelength.npy
+    > > Plots/
+        > > > FCC000/
+            > > > >full_spec_fits/
+    > >  exported_data/
+        > > > FCC000/
 
 ## Galaxy information
 In this pipeline, a yaml file is used to store and read from the information of a galaxy that you intend to analyse and fit.
