@@ -41,17 +41,17 @@ The directory will look something like this:
 In this pipeline, a yaml file is used to store and read from the information of a galaxy that you intend to analyse and fit.
 The format, as it stands, of the yaml entry for each galaxy is:
 
-FCC000:
-    Distance: 20 # this is in Mpc
-    Galaxy name: FCC000
-    emissions: # This is a dictionary of emissions with the required parameter setup.
-        OIII_1: [100, null, null]
-        ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})']
-        hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
-        OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})']
-    residual cube: FCC000_data/FCC000_residuals_list.fits # Load in the galaxy residuals data list
-    fit 1D: N # Use Y to fit spaxel-by-spaxel, then after this the script will update to N
-    z: 0.005 # redshift from simbad.
+    FCC000:
+        Distance: 20 # this is in Mpc
+        Galaxy name: FCC000
+        emissions: # This is a dictionary of emissions with the required parameter setup.
+            OIII_1: [100, null, null]
+            ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})']
+            hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
+            OIII_2: [5, "Amp_2D_OIII_1/3", 'wave_OIII_1 - 47.9399 * (1+{})']
+        residual cube: FCC000_data/FCC000_residuals_list.fits # Load in the galaxy residuals data list
+        fit 1D: N # Use Y to fit spaxel-by-spaxel, then after this the script will update to N
+        z: 0.005 # redshift from simbad.
 
 ## Spaxel-by-Spaxel [OIII] fitting
 
