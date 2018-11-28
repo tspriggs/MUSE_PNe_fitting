@@ -18,23 +18,23 @@ The final folder required here is "exported_data/", where the results of the spa
 
 The directory will look something like this:
 
-> Working_directory/
+    Working_directory/
 
-    > > FCC000_data/
-    
-        > > >F CC000_residauls_list.fits
+        FCC000_data/
         
-        > > > FCC000_wavelength.npy
-        
-    > > Plots/
-    
-        > > > FCC000/
-        
-            > > > >full_spec_fits/
+            FCC000_residauls_list.fits
             
-    > >  exported_data/
-    
-        > > > FCC000/
+            FCC000_wavelength.npy
+            
+        Plots/
+        
+            FCC000/
+            
+                full_spec_fits/
+                
+        exported_data/
+        
+            FCC000/
         
 
 ## Galaxy information
