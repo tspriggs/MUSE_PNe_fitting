@@ -54,7 +54,11 @@ The format, as it stands, of the yaml entry for each galaxy is:
         z: 0.005 # redshift from simbad.
 
 ## Spaxel-by-Spaxel [OIII] fitting
+When you first run PNe_fitting.py (with fit 1D set to Y), the first step of the program is to read in the FCC000_residuals_list.fits file, and then attempt to fit a double peaked Gaussian model to the spectral data in each spectrum. This Spaxel-by-Spaxel fitter looks for [OIII] at 5007 and 4959 Angstroms, accounting for the redshift of the host galaxy (5007 * (1+z)). This procedure will produce an Ampitude and Flux map in 5007, allowing for the first signs of detections of PNe emissions. Another output is the Amplitude divided by residual noise map, which is used for the detection and cataloguing of potential PNe sources which will be fitted with the 3D model.
 
 
 
 ## PNe 3D modelling
+
+
+
