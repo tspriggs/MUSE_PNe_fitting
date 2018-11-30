@@ -1,28 +1,13 @@
-M87_data
-test.py
 *.~tmp
 *.pyc
-python_test_spectra
-for_Thomas_1D_specs
 .ipynb_checkpoints
 __pycache__
-exported_data/M87/PNe sim 1 raw spectra list.fits
-exported_data/M87/PNe sim all raw spectra list.fits
-exported_data/M87/PNe sim all v2 raw spectra list.fits
-exported_data/M87/PNe sim all v3 raw spectra list.fits
-exported_data/M87/PNe sim all v4 raw spectra list.fits
-exported_data/M87/PNe sim raw spectra list.fits
-exported_data
-FCC255_data
-FCC167_data
-FCC170_data
-FCC167_data/FCC167_residuals_forThomas.fits
-FCC167_data/FCC167_restframed_wavelength_forThomas.txt
-FCC167_data/FCC167_xy_forThomas.txt
-FCC167_data/FCC167_xy_PNe_Marc_forThomas.txt
-FCC170_data/FCC170_OIII_line_cube.fits
-FCC170_data/wavelength_list.npy
+exported_data/
+M87_data/
+FCC255_data/
+FCC167_data/
+FCC170_data/
+FCC167_data/
+FCC170_data/
 FCC277_data/
-for_pablo.py
-M87 paper skeleton.txt
 ICIC_work
