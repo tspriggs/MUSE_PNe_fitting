@@ -392,8 +392,7 @@ if fit_3D == "y":
     
     #Run the rest of the analysis
     
-    print("ta da")
+    print("PNe analysis complete.")
 
 elif fit_3D == "n":
     print("Exiting PNe fitting script.")
-#test
