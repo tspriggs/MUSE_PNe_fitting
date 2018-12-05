@@ -1,38 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def MUSE_3D_OIII(params, l, x_2D, y_2D, data):
-    Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict]
-    x_0 = params['x_0']
-    y_0 = params['y_0']
-    M_FWHM = params["M_FWHM"]
-    beta = params["beta"]
-    wave_list = [params["wave_{}".format(em)] for em in emission_dict]
-    Gauss_bkg = params["Gauss_bkg"]
-    Gauss_grad = params["Gauss_grad"]
-
-    #Moffat model
-    def Moffat(Amp, FWHM, b, x, y):
-        gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
-        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / gamma**2.
-        return Amp * ((1 + rr_gg)**(-b))
-
-    gamma = M_FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
-    rr_gg = ((x_2D - x_0)**2. + (y_2D - y_0)**2) / gamma**2.
-    F_OIII_xy = Amp_2D * ((1 + rr_gg)**(-beta))
-
-    # 1D Gaussian standard deviation from FWHM
-    Gauss_std = 2.81 / 2.35482
-
-    # Convert flux to amplitude
-    A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
-
-    #Construct model gaussian profiles for each amplitude value in cube
-    model_spectra = [(Gauss_bkg + (Gauss_grad * l) + Amp * np.exp(- 0.5 * (l - wave)** 2 / Gauss_std**2.) +
-             (Amp/3.) * np.exp(- 0.5 * (l - (wave - 47.9399))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
-
-    return model_spectra, [np.max(A_OIII_xy), F_OIII_xy, A_OIII_xy]
-
 # Multi wavelength analysis model
 
 def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
@@ -91,8 +59,8 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
 
         A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
 
-        model_spectra = [(Gauss_bkg + (Gauss_grad * l) + np.abs(Amp) * np.exp(- 0.5 * (l - wave)** 2. / Gauss_std**2.) +
-             (np.abs(Amp)/3.) * np.exp(- 0.5 * (l - (wave - 47.9399))** 2. / Gauss_std**2.)) for Amp in A_OIII_xy]
+        model_spectra = [((Gauss_bkg + Gauss_grad * l) + Amp * np.exp(- 0.5 * (l - wave)** 2 / Gauss_std**2.) +
+             (Amp/3.) * np.exp(- 0.5 * (l - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
 
         return model_spectra
 
@@ -113,26 +81,26 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
         return resid["resid_000"]
 
 
-def Gaussian_1D_res(params, x, data, error, spec_num):
-    Amp = params["Amp"]
-    wave = params["wave"]
-    FWHM = params["FWHM"]
-    Gauss_bkg = params["Gauss_bkg"]
-    Gauss_grad = params["Gauss_grad"]
-
-    Gauss_std = FWHM / 2.35482
-    return ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
-             (Amp/3.) * np.exp(- 0.5 * (x - (wave - 47.9399))** 2 / Gauss_std**2.))
-
-    #return (data - model) / error
-
-def MUSE_1D_residual(params, l, data, error, spec_num, list_to_append):
-    model = Gaussian_1D_res(params, l, data, error, spec_num)
-    list_to_append.clear()
-    list_to_append.append(data - model)
-    list_to_append.append(np.std(data - model))
-
-    return (data - model)/ error
+#def Gaussian_1D_res(params, x, data, error, spec_num):
+#    Amp = params["Amp"]
+#    wave = params["wave"]
+#    FWHM = params["FWHM"]
+#    Gauss_bkg = params["Gauss_bkg"]
+#    Gauss_grad = params["Gauss_grad"]
+#
+#    Gauss_std = FWHM / 2.35482
+#    return ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
+#             (Amp/3.) * np.exp(- 0.5 * (x - (wave - 47.9399))** 2 / Gauss_std**2.))
+#
+#    #return (data - model) / error
+#
+#def MUSE_1D_residual(params, l, data, error, spec_num, list_to_append):
+#    model = Gaussian_1D_res(params, l, data, error, spec_num)
+#    list_to_append.clear()
+#    list_to_append.append(data - model)
+#    list_to_append.append(np.std(data - model))
+#
+#    return (data - model)/ error
 
 
 def PNextractor(x, y, n_pix, data, wave=None, dim=1):
@@ -146,7 +114,7 @@ def PNextractor(x, y, n_pix, data, wave=None, dim=1):
     if dim == 2:
         return from_data.reshape(n_pix**2, len(wave))
 
-#dev
+
 def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     xc = round(x)
     yc = round(y)
@@ -156,7 +124,6 @@ def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     x_range = np.arange(xc - offset, (xc - offset)+n_pix, 1, dtype=int)
     ind = [i * x_d + x_range for i in y_range]
     return data[np.ravel(ind)]
-
 
 
 def data_cube_y_x(n):
