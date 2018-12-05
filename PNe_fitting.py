@@ -61,7 +61,7 @@ def spaxel_by_spaxel(params, x, data, error, spec_num):
     list_of_rN[spec_num] = np.std(data - model)
     data_residuals[spec_num] = data - model
 
-    return (data - model) / error # Used for the minimizer
+    return (data - model) / error
 
 # Run Spaxel by Spaxel fit of the spectra within the .fits file.
 # Check if fit_1D parameter, within the Galaxy_info.yaml file is set to Y (yes to fit), or N (no to fit - has been fitted before).
@@ -161,7 +161,7 @@ if fit_3D == "y":
     PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, hdulist[0].data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
     
     # create Pandas dataframe for storage of values from the 3D fitter.
-    PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "Flux error","[OIII]/Hb","Ha Flux", "V (km/s)", "m 5007", "M 5007", "M 5007 error","A/rN", "rad D"))
+    PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "Flux error","[OIII]/Hb","Ha Flux", "V (km/s)", "m 5007", "M 5007", "M 5007 error", "A/rN", "redchi"))
     PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
     
     # Read in Objective Residual Cube .fits file.
