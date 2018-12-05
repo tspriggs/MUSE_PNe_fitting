@@ -35,11 +35,8 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
 
     return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
 
-def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, PNe_number, spec, emission_dict, list_to_append_data):
-    if spec == "short":
-        model = MUSE_3D_OIII(params, l, x_2D, y_2D, data )
-    elif spec == "full":
-        model = MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict)
+def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, PNe_number, emission_dict, list_to_append_data):
+    model = MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict)
     list_to_append_data.clear()
     list_to_append_data.append(data-model[0])
     list_to_append_data.append(model[1])

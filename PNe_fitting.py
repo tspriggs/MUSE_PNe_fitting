@@ -6,7 +6,7 @@ from astropy.table import Table
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 import yaml
 import pandas as pd
-from MUSE_Models import MUSE_3D_OIII, MUSE_3D_residual, PNe_spectrum_extractor, PSF_residuals, data_cube_y_x
+from MUSE_Models import MUSE_3D_residual, PNe_spectrum_extractor, PSF_residuals, data_cube_y_x
 
 with open("galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data)
@@ -251,7 +251,7 @@ if fit_3D == "y":
         for PNe_num in np.arange(0, len(x_PNe)):
             useful_stuff = [] # Used to store other outputs from the 3D model function: maximum spectral amplitude, flux arrays for each emission, A_xy, model spectra
             #run minimizer fitting routine
-            multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, "full", emission_dict, useful_stuff), nan_policy="propagate")
+            multi_fit_results = minimize(MUSE_3D_residual, PNe_multi_params, args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
             total_Flux[PNe_num] = np.sum(useful_stuff[1][1],1) * 1e-20
             list_of_fit_residuals[PNe_num] = useful_stuff[0]
             A_2D_list[PNe_num] = useful_stuff[1][0]
