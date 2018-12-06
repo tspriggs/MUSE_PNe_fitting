@@ -1,26 +1,26 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, Ellipse, Circle
-from astropy.io import ascii, fits
-from astropy.table import Table
-from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 import yaml
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from astropy.table import Table
+from astropy.io import ascii, fits
+from matplotlib.patches import Rectangle, Ellipse, Circle
+from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 from MUSE_Models import MUSE_3D_residual, PNe_spectrum_extractor, PSF_residuals, data_cube_y_x
 
+# Load in yaml file to query galaxy properties
 with open("galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data)
 
+# Queries user for a galaxy name, in the form of FCC000, and taking the relevant info from the yaml file
 choose_galaxy = input("Please type which Galaxy you want to analyse, use FCC000 format: ")
 galaxy_data = galaxy_info[choose_galaxy]
 
-#First load in the relevant data
+# Load in the residual data, in list form
 hdulist = fits.open(galaxy_data["residual cube"]) # Path to data
 res_hdr = hdulist[0].header # extract header from residual cube
 
-#check if data read in is in format (wave,y,x) or (list of spec, wave), using np.shape, check length: 2 => reshape to (y,x,wave), 3 => read in wave from header and reshape
-
-# check to see if the wavelength is in the fits fileby checking length of fits file.
+# Check to see if the wavelength is in the fits fileby checking length of fits file.
 if len(hdulist) == 2: # check to see if HDU data has 2 units (data, wavelength)
     wavelength = np.exp(hdulist[1].data)
 else:
@@ -29,10 +29,10 @@ else:
 # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
 y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
 
-# create an list of indices where there is spectral data to fit. Do this by checking where there is data that doesn't start with 0 (spectral data should never be 0.0).
+# Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
 non_zero_index = np.squeeze(np.where(hdulist[0].data[:,0] != 0.))
 
-# constants
+# Constants
 n_pixels= 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
 
@@ -44,7 +44,7 @@ coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
 x_fit = np.array([item[0] for item in coordinates])
 y_fit = np.array([item[1] for item in coordinates])
 
-
+# Defines spaxel by spaxel fitting model
 def spaxel_by_spaxel(params, x, data, error, spec_num):
     Amp = params["Amp"]
     wave = params["wave"]
@@ -312,10 +312,10 @@ if fit_3D == "y":
                            PNe_df["M 5007"].round(2)],
                            PNe_df["redchi"]
                            names=("PNe number", "x", "y", "[OIII] Flux", "A/rN" "[OIII]/Hb", "Ha Flux", "m 5007", "M 5007", "redchi"))
-        ascii.write(PNe_table, "{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save data table in tab separated format (.txt).
-        ascii.write(PNe_table, "{}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex ready table of galaxy data.
-        print(galaxy_data["Galaxy name"]+ "_table.txt saved")
-        print(galaxy_data["Galaxy name"]+ "_table_latex.txt saved")
+        ascii.write(PNe_table, "exported_data/"+"{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
+        ascii.write(PNe_table, "exported_data/"+"{}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of galaxy data.
+        print("exported_data/"+galaxy_data["Galaxy name"]+ "_table.txt saved")
+        print("exported_data/"+galaxy_data["Galaxy name"]+ "_table_latex.txt saved")
     
     print("Running fitter")
     run_minimiser(PNe_multi_params) # Run the 3D model fitter.
@@ -365,7 +365,7 @@ if fit_3D == "y":
     PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True)
     
     print("Fitting for PSF")
-    PSF_results = minimize(PSF_residuals, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err), nan_policy="propagate")
+    PSF_results = minimize(PSF_residuals, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err, z), nan_policy="propagate")
     
     #determine PSF values and feed back into 3D fitter
     

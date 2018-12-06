@@ -43,11 +43,11 @@ def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, PNe_number, emission_di
 
     return (data - model[0]) / error
 
-def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
+def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err, z):
     FWHM = PSF_params['FWHM']
     beta = PSF_params["beta"]
 
-    def generate_model(x, y, moffat_amp, FWHM, beta, Gauss_bkg, Gauss_grad, wave):
+    def generate_model(x, y, moffat_amp, FWHM, beta, Gauss_bkg, Gauss_grad, wave, z):
         gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2.) / gamma**2.
         F_OIII_xy = moffat_amp * (1. + rr_gg)**(-beta)
@@ -66,7 +66,7 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err):
         list_of_models["model_{:03d}".format(k)] = generate_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)],
                                                                   PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta,
                                                                   PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)],
-                                                                  PSF_params["wave_{:03d}".format(k)])
+                                                                  PSF_params["wave_{:03d}".format(k)], z)
 
     resid = {}
     for m in np.arange(0, len(data)):
