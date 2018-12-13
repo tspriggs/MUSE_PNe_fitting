@@ -15,10 +15,11 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     G_grad = params["Gauss_grad"]
 
     # Moffat model
-    def Moffat(Amp, FWHM, b, x, y):
-        gamma = FWHM / (2. * np.sqrt(2.**(1./b) - 1.))
-        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / gamma**2.
-        return Amp * ((1 + rr_gg)**(-b))
+    def Moffat(Amp, FWHM, beta, x, y):
+        r_d = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
+        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / r_d**2.
+        return Amp * ((1 + rr_gg)**(-beta))
+
 
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
 
