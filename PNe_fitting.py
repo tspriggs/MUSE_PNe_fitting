@@ -23,17 +23,19 @@ res_hdr = hdulist[0].header # extract header from residual cube
 # Check to see if the wavelength is in the fits fileby checking length of fits file.
 if len(hdulist) == 2: # check to see if HDU data has 2 units (data, wavelength)
     wavelength = np.exp(hdulist[1].data)
+    np.save(galaxy_data["wavelength"], wavelength)
 else:
     wavelength = np.load(galaxy_data["wavelength"])
 
+
 # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
+x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
 non_zero_index = np.squeeze(np.where(hdulist[0].data[:,0] != 0.))
 
 # Constants
-n_pixels= 9 # number of pixels to be considered for FOV x and y range
+n_pixels = 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
 
 z = galaxy_data["z"] # Redshift - taken from simbad / NED - read in from yaml file
@@ -65,7 +67,8 @@ def spaxel_by_spaxel(params, x, data, error, spec_num):
 
 # Run Spaxel by Spaxel fit of the spectra within the .fits file.
 # Check if fit_1D parameter, within the Galaxy_info.yaml file is set to Y (yes to fit), or N (no to fit - has been fitted before).
-if galaxy_data["fit_1D"] == "Y":
+fit_1D = input("Do you wish to out the Spaxel by Spaxel fir for the [OIII] doublet? (y/n) ")
+if fit_1D == "y":
     # Run Spaxel by Spaxel fitter
     print("Fitting Galaxy Spaxel by Spaxel, for [OIII] doublet")
 
@@ -93,8 +96,8 @@ if galaxy_data["fit_1D"] == "Y":
         best_fit_A[i] = [fit_results.params["Amp"], fit_results.params["Amp"].stderr]
         obj_residuals[i] = fit_results.residual
 
-    gauss_A = [A[0] for A in best_fit_A]
-    A_err = [A[1] for A in best_fit_A]
+    gauss_A = np.array([A[0] for A in best_fit_A])
+    A_err = np.array([A[1] for A in best_fit_A])
     A_rN = np.array([A / rN for A,rN in zip(gauss_A, list_of_rN)])
     Gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
 
@@ -132,18 +135,12 @@ if galaxy_data["fit_1D"] == "Y":
     plt.colorbar()
     plt.savefig("Plots/"+ galaxy_data["Galaxy name"]+"/F_5007_map.png")
 
-    print("Plots saved in Plots/"+galaxy_info["Galaxy name"])
+    print("Plots saved in Plots/"+galaxy_data["Galaxy name"])
 
-    galaxy_info[galaxy_data["Galaxy name"]]["fit_1D"] = "N"
-
-    with open("galaxy_info.yaml", "w") as yaml_data:
-        yaml.dump(galaxy_info, yaml_data)
-
-    # DETECT PNE here?
 
 # If spaxel-by-spaxel fit has already been carried out, then fit_1D will be N, proceed to 3D fit. (should check if 3D fit needed)
-elif galaxy_data["fit_1D"] == "N":
-    print("Cube fitted for 1D.")
+elif fit_3D == "n":
+    print("Moving on...")
 
 # Check is user wants to run the rest of the script, i.e. 3D model and PSF analysis
 fit_3D = input("Do you wish to continue and fit the detected [OIII] sources in 3D + PSF analysis?(y/n) ")
@@ -310,7 +307,7 @@ if fit_3D == "y":
                            PNe_df["Ha Flux"].round(20),
                            PNe_df["m 5007"].round(2),
                            PNe_df["M 5007"].round(2)],
-                           PNe_df["redchi"]
+                           PNe_df["redchi"],
                            names=("PNe number", "x", "y", "[OIII] Flux", "A/rN" "[OIII]/Hb", "Ha Flux", "m 5007", "M 5007", "redchi"))
         ascii.write(PNe_table, "exported_data/"+"{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
         ascii.write(PNe_table, "exported_data/"+"{}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of galaxy data.

@@ -134,7 +134,8 @@ def data_cube_y_x(n):
             solution = True
         else:
             val-=1
+    
     if int(val) > int(val2):
-        return int(val2), int(val), n
+       return int(val2), int(val), n
     else:
-        return int(val), int(val2), n
+       return int(val), int(val2), n
