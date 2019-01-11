@@ -214,7 +214,14 @@ if fit_3D == "y":
         PNe_multi_params.add("Gauss_grad", value=0.00001)
     
     # generate default parameters using above function.
-    gen_params(em_dict=emission_dict)
+    #check PSF known or no
+    PSF_check = imput("please enter PSF values: FWHM, beta: (if you do not know the PSF, enter n) ")
+    
+    if PSF_check == "n":
+        gen_params(em_dict=emission_dict)
+    else:
+        PSF = [x.strip() for x in PSF_check.split(',')]
+        gen_params(FWHM=float(PSF[0]), beta=float(PSF[1], em_dict=emission_dict)
     
     # Setup Numpy arrays for storing values from the fitter
     total_Flux = np.zeros((len(x_PNe), len(emission_dict)))                         # Total integrated flux of each emission, as measured for the PNe.
@@ -331,48 +338,52 @@ if fit_3D == "y":
     # First ask which to attempt: brightest or pre-selected PNe
     # if brightest, then ask how many PNe to use from a list of the brightest in m_5007
     # if pre-selected, then ask for which PNe numbers to use.
-    use_brightest = input("Use Brightest PNe? (y/n) ")
-    if use_brightest == "y":
-        how_many = input("How many brightest PNe would you like to fit for the PSF? Please enter a number greater than 0: ")
-        sel_PNe = PNe_df.nsmallest(int(how_many), "m 5007").index.values # query the PNe dataframe for the n brightest PNe in m_5007.
-    elif use_brightest == "n":
-        which_PNe = input("Which PNe would you like to use for PSF analysis? Please enter numbers, separated by spaces: ")
-        # Devise system for PNe choise based upon low background (radial?)
-        sel_PNe = [int(i) for i in which_PNe.split()]
+    if PSF_check == "n":
+        use_brightest = input("Use Brightest PNe? (y/n) ")
+        if use_brightest == "y":
+            how_many = input("How many brightest PNe would you like to fit for the PSF? Please enter a number greater than 0: ")
+            sel_PNe = PNe_df.nsmallest(int(how_many), "m 5007").index.values # query the PNe dataframe for the n brightest PNe in m_5007.
+        elif use_brightest == "n":
+            which_PNe = input("Which PNe would you like to use for PSF analysis? Please enter numbers, separated by spaces: ")
+            # Devise system for PNe choise based upon low background (radial?)
+            sel_PNe = [int(i) for i in which_PNe.split()]
+       
+        print(sel_PNe)
+        
+        selected_PNe = PNe_spectra[sel_PNe] # Select PNe from the PNe minicubes
+        selected_PNe_err = obj_error_cube[sel_PNe] # Select associated errors from the objective error cubes
+        
+        PSF_params = Parameters()
+        
+        def model_params(p, n, amp, wave):
+            PSF_params.add("moffat_amp_{:03d}".format(n), value=amp, min=0.001)
+            PSF_params.add("x_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
+            PSF_params.add("y_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
+            PSF_params.add("wave_{:03d}".format(n), value=wave, min=wave-40., max=wave+40.)
+            PSF_params.add("gauss_bkg_{:03d}".format(n), value=0.001)
+            PSF_params.add("gauss_grad_{:03d}".format(n), value=0.001)
+        
+        for i in np.arange(0,len(sel_PNe)):
+                model_params(p=PSF_params, n=i, amp=200.0, wave=5007*(1+z))
+        
+        PSF_params.add('FWHM', value=4.0, min=0.01, max=12., vary=True)
+        PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True)
+        
+        print("Fitting for PSF")
+        PSF_results = minimize(PSF_residuals, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err, z), nan_policy="propagate")
+        
+        #determine PSF values and feed back into 3D fitter
+        
+        fitted_FWHM = PSF_results.params["FWHM"].value
+        fitted_beta = PSF_results.params["beta"].value
+        
+        #Fit PNe with updated PSF
+        gen_params(FWHM=fitted_FWHM, beta=fitted_beta, em_dict=emission_dict) # set params up with fitted FWHM and beta values
+        print("Fitting with PSF")
+        run_minimiser(PNe_multi_params) # run fitting section again with new values
     
-    print(sel_PNe)
-    
-    selected_PNe = PNe_spectra[sel_PNe] # Select PNe from the PNe minicubes
-    selected_PNe_err = obj_error_cube[sel_PNe] # Select associated errors from the objective error cubes
-    
-    PSF_params = Parameters()
-    
-    def model_params(p, n, amp, wave):
-        PSF_params.add("moffat_amp_{:03d}".format(n), value=amp, min=0.001)
-        PSF_params.add("x_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
-        PSF_params.add("y_{:03d}".format(n), value=n_pixels/2., min=0.001, max=n_pixels)
-        PSF_params.add("wave_{:03d}".format(n), value=wave, min=wave-40., max=wave+40.)
-        PSF_params.add("gauss_bkg_{:03d}".format(n), value=0.001)
-        PSF_params.add("gauss_grad_{:03d}".format(n), value=0.001)
-    
-    for i in np.arange(0,len(sel_PNe)):
-            model_params(p=PSF_params, n=i, amp=200.0, wave=5007*(1+z))
-    
-    PSF_params.add('FWHM', value=4.0, min=0.01, max=12., vary=True)
-    PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True)
-    
-    print("Fitting for PSF")
-    PSF_results = minimize(PSF_residuals, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err, z), nan_policy="propagate")
-    
-    #determine PSF values and feed back into 3D fitter
-    
-    fitted_FWHM = PSF_results.params["FWHM"].value
-    fitted_beta = PSF_results.params["beta"].value
-    
-    #Fit PNe with updated PSF
-    gen_params(FWHM=fitted_FWHM, beta=fitted_beta, em_dict=emission_dict) # set params up with fitted FWHM and beta values
-    print("Fitting with PSF")
-    run_minimiser(PNe_multi_params) # run fitting section again with new values
+    else:
+        print("Plotting each PNe spectra.")
     
     # Plot out each full spectrum with fitted peaks
     for o in np.arange(0, len(x_PNe)):
