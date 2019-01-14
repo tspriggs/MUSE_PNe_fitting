@@ -29,7 +29,7 @@ else:
 
 
 # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
 non_zero_index = np.squeeze(np.where(hdulist[0].data[:,0] != 0.))
@@ -221,7 +221,7 @@ if fit_3D == "y":
         gen_params(em_dict=emission_dict)
     else:
         PSF = [x.strip() for x in PSF_check.split(',')]
-        gen_params(FWHM=float(PSF[0]), beta=float(PSF[1], em_dict=emission_dict)
+        gen_params(FWHM=float(PSF[0]), beta=float(PSF[1], em_dict=emission_dict))
     
     # Setup Numpy arrays for storing values from the fitter
     total_Flux = np.zeros((len(x_PNe), len(emission_dict)))                         # Total integrated flux of each emission, as measured for the PNe.
