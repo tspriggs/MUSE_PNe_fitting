@@ -214,7 +214,7 @@ if fit_3D == "y":
         PNe_multi_params.add("Gauss_grad", value=0.00001)
     
     # generate default parameters using above function.
-    #check PSF known or no
+    # check PSF known or no
     PSF_check = imput("please enter PSF values: FWHM, beta: (if you do not know the PSF, enter n) ")
     
     if PSF_check == "n":
@@ -224,13 +224,13 @@ if fit_3D == "y":
         gen_params(FWHM=float(PSF[0]), beta=float(PSF[1], em_dict=emission_dict))
     
     # Setup Numpy arrays for storing values from the fitter
-    total_Flux = np.zeros((len(x_PNe), len(emission_dict)))                         # Total integrated flux of each emission, as measured for the PNe.
-    A_2D_list = np.zeros((len(x_PNe), len(emission_dict)))                          # Amplitude from the Moffat function
-    F_xy_list = np.zeros((len(x_PNe), len(emission_dict), len(PNe_spectra[0])))     # Array of flux arrays for each emission.
-    emission_amp_list = np.zeros((len(x_PNe), len(emission_dict)))                  # List of each emission's amplitude
-    model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength))) # Array of the model spectral fits
-    mean_wave_list = np.zeros((len(x_PNe), len(emission_dict)))                     # List of the measured wavelength positions for each emission
-    residuals_list = np.zeros(len(x_PNe))                                           # List of the residual noise level of each fit.
+    total_Flux = np.zeros((len(x_PNe), len(emission_dict)))                            # Total integrated flux of each emission, as measured for the PNe.
+    A_2D_list = np.zeros((len(x_PNe), len(emission_dict)))                             # Amplitude from the Moffat function
+    F_xy_list = np.zeros((len(x_PNe), len(emission_dict), len(PNe_spectra[0])))        # Array of flux arrays for each emission.
+    emission_amp_list = np.zeros((len(x_PNe), len(emission_dict)))                     # List of each emission's amplitude
+    model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))    # Array of the model spectral fits
+    mean_wave_list = np.zeros((len(x_PNe), len(emission_dict)))                        # List of the measured wavelength positions for each emission
+    residuals_list = np.zeros(len(x_PNe))                                              # List of the residual noise level of each fit.
     list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength))) # List of arrays of best fit residuals (data-model)
     chi_2_r = np.zeros((len(x_PNe)))
     
@@ -285,11 +285,11 @@ if fit_3D == "y":
     
         PNe_df["V (km/s)"] = (c * (de_z_means - 5007.) / 5007.) / 1000.
     
-        PNe_df["[OIII] Flux"] = total_Flux[:,0] #store total [OIII] 5007A emission line flux
+        PNe_df["[OIII] Flux"] = total_Flux[:,0]                       #store total [OIII] 5007A emission line flux
     
         PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2] # store [OIII]/Hb ratio
     
-        PNe_df["Ha Flux"] = total_Flux[:, 1] # store total Ha flux.
+        PNe_df["Ha Flux"] = total_Flux[:, 1]                          # store total Ha flux.
         
         PNe_df["redchi"] = chi_2_r
     
@@ -314,7 +314,7 @@ if fit_3D == "y":
                            PNe_df["Ha Flux"].round(20),
                            PNe_df["m 5007"].round(2),
                            PNe_df["M 5007"].round(2)],
-                           PNe_df["redchi"],
+                           PNe_df["redchi"].round(2),
                            names=("PNe number", "x", "y", "[OIII] Flux", "A/rN" "[OIII]/Hb", "Ha Flux", "m 5007", "M 5007", "redchi"))
         ascii.write(PNe_table, "exported_data/"+"{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
         ascii.write(PNe_table, "exported_data/"+"{}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of galaxy data.
@@ -403,4 +403,4 @@ if fit_3D == "y":
     print("PNe analysis complete.")
 
 elif fit_3D == "n":
-    print("Exiting PNe fitting script.")
+    print("End of PNe fitting script.")

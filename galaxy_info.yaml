@@ -55,13 +55,10 @@ FCC167:
 FCC170:
   Distance: 18.7
   Galaxy name: FCC170
-  best fit FWHM: 4.0
-  best fit beta: 2.5
   emissions:
     OIII_1: [100, null, null, null]
     OIII_2: [5, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC170_data/FCC170_pablo/FCC170_residuals.fits
-  wave start: 5035.0
   wavelength: FCC170_data/FCC170_pablo/wavelength.npy
   z: 0.00575
 

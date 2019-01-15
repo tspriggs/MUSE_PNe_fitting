@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Multi wavelength analysis model
 
@@ -19,8 +18,8 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
         r_d = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / r_d**2.
         return Amp * ((1 + rr_gg)**(-beta))
-
-
+    
+    # Use Moffat function to return array of fluxes for each emission's amplitude.
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
 
     # 1D Gaussian standard deviation from FWHM
@@ -77,28 +76,6 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err, z):
         return np.concatenate([resid[x] for x in sorted(resid)],0)
     else:
         return resid["resid_000"]
-
-
-#def Gaussian_1D_res(params, x, data, error, spec_num):
-#    Amp = params["Amp"]
-#    wave = params["wave"]
-#    FWHM = params["FWHM"]
-#    Gauss_bkg = params["Gauss_bkg"]
-#    Gauss_grad = params["Gauss_grad"]
-#
-#    Gauss_std = FWHM / 2.35482
-#    return ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
-#             (Amp/3.) * np.exp(- 0.5 * (x - (wave - 47.9399))** 2 / Gauss_std**2.))
-#
-#    #return (data - model) / error
-#
-#def MUSE_1D_residual(params, l, data, error, spec_num, list_to_append):
-#    model = Gaussian_1D_res(params, l, data, error, spec_num)
-#    list_to_append.clear()
-#    list_to_append.append(data - model)
-#    list_to_append.append(np.std(data - model))
-#
-#    return (data - model)/ error
 
 
 def PNextractor(x, y, n_pix, data, wave=None, dim=1):
