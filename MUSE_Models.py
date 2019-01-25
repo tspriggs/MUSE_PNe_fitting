@@ -31,7 +31,7 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     def Gauss(Amp_1D, wave):
         return np.array([(G_bkg + (G_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])
 
-    model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0)
+    model_spectra = np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)])
 
     return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
 
