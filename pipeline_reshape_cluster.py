@@ -43,8 +43,8 @@ raw_galaxy = galaxy + 'center.fits'
 #vsys = {'FCC153':1638, 'FCC170': 1769., 'FCC177':1567, "FCC167":1841}
 vsys = {galaxy:float(vel)}
 
-hdu = fits.open(directory + raw_galaxy)
-huduu = fits.open(directory +galaxy+"center_AllSpectra.fits")
+hdu = fits.open("../"+raw_galaxy)
+huduu = fits.open(galaxy+"center_AllSpectra.fits")
 
 data  = hdu[1].data
 #stat  = hdu[2].data
@@ -91,11 +91,11 @@ signal = np.nanmedian(spec,axis=0)
 #snr    = signal / noise
 
 # Open the residuals and the emission cube obtained with GandALF
-hdu1, hdu2      = fits.open(directory+galaxy+'center_gandalf-residuals_SPAXEL.fits'), fits.open(directory+galaxy+'center_gandalf-emission_SPAXEL.fits')
+hdu1, hdu2      = fits.open(galaxy+'center_gandalf-residuals_SPAXEL.fits'), fits.open(galaxy+'center_gandalf-emission_SPAXEL.fits')
 data1, data2    = hdu1[1].data, (hdu2[1].data)
 resid, emission = data1['RESIDUALS'], data2['EMISSION'].T
 
-hdu  = fits.open(directory+galaxy+'center_gandalf_SPAXEL.fits')
+hdu  = fits.open(galaxy+'center_gandalf_SPAXEL.fits')
 data = hdu[2].data
 #AoN  = data['AoN'][:,11]
 
@@ -122,4 +122,4 @@ resid_list = np.swapaxes(np.copy(resid_tot), 1, 0) # shape swapped to x*y, lambd
 #save_cube(emission_tot.reshape((s[0],s[1],s[2])),hdrr['LOGLAM'],directory + "reshaped_cubes/"+galaxy+'_emission.fits')
 #save_cube(AoN_tot.reshape((s[1],s[2])),hdrr['LOGLAM'],directory + "reshaped_cubes/"+galaxy+'_AoN.fits')
 
-save_list(resid_list, hdrr["LOGLAM"], directory+galaxy+"center_residuals_list_long.fits")
+save_list(resid_list, hdrr["LOGLAM"], galaxy+"center_residuals_list_long.fits")
