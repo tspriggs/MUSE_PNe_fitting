@@ -102,7 +102,7 @@ FCC219:
     hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
     nII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})']
     nII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})']
-  residual cube: FCC219_data/FCC219center_residuals_list.fits
+  residual cube: FCC219_data/FCC219center_residuals_list_long.fits
   wavelength: FCC219_data/wavelength.npy
   z: 0.006498
 
