@@ -313,8 +313,8 @@ if fit_3D == "y":
                            PNe_df["[OIII]/Hb"].round(2),
                            PNe_df["Ha Flux"].round(20),
                            PNe_df["m 5007"].round(2),
-                           PNe_df["M 5007"].round(2)],
-                           PNe_df["redchi"].round(2),
+                           PNe_df["M 5007"].round(2),
+                           PNe_df["redchi"].round(2)],
                            names=("PNe number", "x", "y", "[OIII] Flux", "A/rN" "[OIII]/Hb", "Ha Flux", "m 5007", "M 5007", "redchi"))
         ascii.write(PNe_table, "exported_data/"+"{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
         ascii.write(PNe_table, "exported_data/"+"{}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of galaxy data.
