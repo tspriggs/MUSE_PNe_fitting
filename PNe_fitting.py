@@ -2,7 +2,9 @@ import yaml
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from astropy.wcs import WCS, utils, wcs
 from astropy.table import Table
+from astropy.coordinates import SkyCoord
 from astropy.io import ascii, fits
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
@@ -29,7 +31,11 @@ else:
 
 
 # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
+if choose_galaxy == "FCC219":
+    x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+else:
+    y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
+
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
 non_zero_index = np.squeeze(np.where(hdulist[0].data[:,0] != 0.))
@@ -83,13 +89,13 @@ if fit_1D == "y":
 
     # setup LMfit paramterts
     params = Parameters()
-    params.add("Amp",value=70., min=0.001)
+    params.add("Amp",value=150., min=0.001)
     params.add("wave", value=5007.0*(1+z),
                min=5007.0*(1+z)-40,
                max=5007.0*(1+z)+40) # wavelength (mean) starts at redshift informed position, transforming 5007 to the expected value. set to a range of 40 A around starting position.
     params.add("FWHM", value=2.81, vary=False) # Line Spread Function
     params.add("Gauss_bkg", value=0.001)
-    params.add("Gauss_grad", value=0.001)
+    params.add("Gauss_grad", value=0.0001)
 
     for i in non_zero_index:
         fit_results = minimize(spaxel_by_spaxel, params, args=(wavelength, hdulist[0].data[i], input_errors[i], i), nan_policy="propagate")
@@ -139,9 +145,14 @@ if fit_1D == "y":
 
 
 # If spaxel-by-spaxel fit has already been done, fit_1D is n, proceed to 3D fit.
-elif fit_3D == "n":
+elif fit_1D == "n":
     print("Moving on...")
 
+
+################################################################################
+#################################### Fit 3D ####################################
+################################################################################
+    
 # Check is user wants to run the rest of the script, i.e. 3D model and PSF analysis
 fit_3D = input("Fit the detected [OIII] sources in 3D + PSF analysis? (y/n)")
 if fit_3D == "y":
@@ -150,7 +161,7 @@ if fit_3D == "y":
     # load from saved files
 
     # Read in list of x and y coordinates of detected sources for 3D fitting.
-    x_y_list = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/sep_x_y_list.npy")
+    x_y_list = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/PNe_x_y_list.npy")
     x_PNe = np.array([x[0] for x in x_y_list]) # separate out from the list the list of x coordinates, as well as y coordinates.
     y_PNe = np.array([y[1] for y in x_y_list])
 
@@ -160,7 +171,17 @@ if fit_3D == "y":
     # create Pandas dataframe for storage of values from the 3D fitter.
     PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "Flux error","[OIII]/Hb","Ha Flux", "V (km/s)", "m 5007", "M 5007", "M 5007 error", "A/rN", "redchi"))
     PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
-
+    
+    if choose_galaxy == "FCC167" or choose_galaxy == "FCC219":
+        hdu_wcs = fits.open(choose_galaxy+"_data/"+choose_galaxy+"center.fits")
+        hdr_wcs = hdu_wcs[1].header
+        wcs_obj = WCS(hdr_wcs, naxis=2)
+        
+        for i in np.arange(0, len(x_PNe)):
+            Ra_Dec = utils.pixel_to_skycoord(x_PNe[i],y_PNe[i], wcs_obj).to_string("hmsdms", precision=2).split()
+            PNe_df.loc[i,"Ra (J2000)"] = Ra_Dec[0]
+            PNe_df.loc[i,"Dec (J2000)"] = Ra_Dec[1]
+    
     # Read in Objective Residual Cube .fits file.
     obj_residual_cube = fits.open("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.fits")
 
@@ -215,13 +236,13 @@ if fit_3D == "y":
 
     # generate default parameters using above function.
     # check PSF known or no
-    PSF_check = imput("please enter PSF values: FWHM, beta: (if you do not know the PSF, enter n) ")
+    PSF_check = input("please enter PSF values: FWHM, beta: (if you do not know the PSF, enter n) ")
 
     if PSF_check == "n":
         gen_params(em_dict=emission_dict)
     else:
         PSF = [x.strip() for x in PSF_check.split(',')]
-        gen_params(FWHM=float(PSF[0]), beta=float(PSF[1], em_dict=emission_dict))
+        gen_params(FWHM=float(PSF[0]), beta=float(PSF[1]), em_dict=emission_dict)
 
     # Setup Numpy arrays for storing values from the fitter
     total_Flux = np.zeros((len(x_PNe), len(emission_dict)))                            # Total integrated flux of each emission, as measured for the PNe.
@@ -307,7 +328,7 @@ if fit_3D == "y":
         print("Distance Estimate from PNLF: ", Dist_est, "Mpc")
 
         # Construct a Astropy table to save certain values for each galaxy.
-        PNe_table = Table([np.arange(0,len(x_PNe)), np.round(x_PNe), np.round(y_PNe),
+        PNe_table = Table([np.arange(0,len(x_PNe)), PNe_df["Ra (J2000)"], PNe_df["Dec (J2000)"],
                            PNe_df["[OIII] Flux"].round(20),
                            PNe_df["A/rN"].round(1),
                            PNe_df["[OIII]/Hb"].round(2),
@@ -315,11 +336,11 @@ if fit_3D == "y":
                            PNe_df["m 5007"].round(2),
                            PNe_df["M 5007"].round(2),
                            PNe_df["redchi"].round(2)],
-                           names=("PNe number", "x", "y", "[OIII] Flux", "A/rN" "[OIII]/Hb", "Ha Flux", "m 5007", "M 5007", "redchi"))
-        ascii.write(PNe_table, "exported_data/"+"{}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
-        ascii.write(PNe_table, "exported_data/"+"{}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of galaxy data.
-        print("exported_data/"+galaxy_data["Galaxy name"]+ "_table.txt saved")
-        print("exported_data/"+galaxy_data["Galaxy name"]+ "_table_latex.txt saved")
+                           names=("PNe number", "Ra", "Dec", "[OIII] Flux", "A/rN", "[OIII]/Hb", "Ha Flux", "m 5007", "M 5007", "redchi"))
+        ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
+        ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of data.
+        print("exported_data/"+galaxy_data["Galaxy name"]+"/"+galaxy_data["Galaxy name"]+"_table.txt saved")
+        print("exported_data/"+galaxy_data["Galaxy name"]+"/"+galaxy_data["Galaxy name"]+"_table_latex.txt saved")
 
     print("Running 3D fitter")
     run_minimiser(PNe_multi_params) # Run the 3D model fitter.
@@ -387,13 +408,13 @@ if fit_3D == "y":
 
     # Plot out each full spectrum with fitted peaks
     for o in np.arange(0, len(x_PNe)):
-        plt.figure(figsize=(30,10))
+        plt.figure(figsize=(20,10))
         plt.plot(wavelength, np.sum(PNe_spectra[o],0), alpha=0.7, c="k") # data
         plt.plot(wavelength, np.sum(model_spectra_list[o],0), c="r") # model
         plt.axhline(residuals_list[o], c="b", alpha=0.6)
         plt.xlabel("Wavelength ($\AA$)", fontsize=18)
         plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
-        plt.ylim(-2000,20000)
+        plt.ylim(-2000,2000)
         plt.savefig("Plots/"+ galaxy_data["Galaxy name"] +"/full_spec_fits/PNe_{}".format(o))
 
         plt.clf()

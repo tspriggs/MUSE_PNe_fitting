@@ -23,7 +23,7 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
 
     # 1D Gaussian standard deviation from FWHM
-    G_std = 2.81 / 2.35482
+    G_std = 2.81 / 2.35482 # LSF
 
     # Convert flux to amplitude
     A_xy = np.array([F / (np.sqrt(2*np.pi) * G_std) for F in F_xy])
@@ -47,30 +47,30 @@ def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err, z):
     FWHM = PSF_params['FWHM']
     beta = PSF_params["beta"]
 
-    def generate_model(x, y, moffat_amp, FWHM, beta, Gauss_bkg, Gauss_grad, wave, z):
+    def gen_model(x, y, moffat_amp, FWHM, beta, Gauss_bkg, Gauss_grad, wave, z):
         gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2.) / gamma**2.
         F_OIII_xy = moffat_amp * (1. + rr_gg)**(-beta)
 
-        Gauss_std = 2.81 / 2.35482
+        Gauss_std = 2.81 / 2.35482 # LSF
 
         A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
 
-        model_spectra = [((Gauss_bkg + Gauss_grad * l) + Amp * np.exp(- 0.5 * (l - wave)** 2 / Gauss_std**2.) +
+        model_spectra = (Gauss_bkg + Gauss_grad * l) + [(Amp * np.exp(- 0.5 * (l - wave)** 2 / Gauss_std**2.) +
              (Amp/3.) * np.exp(- 0.5 * (l - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
 
         return model_spectra
 
-    list_of_models = {}
+    models = {}
     for k in np.arange(0, len(data)):
-        list_of_models["model_{:03d}".format(k)] = generate_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)],
-                                                                  PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta,
-                                                                  PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)],
-                                                                  PSF_params["wave_{:03d}".format(k)], z)
+        models["model_{:03d}".format(k)] = gen_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)],
+                                                       PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta,
+                                                       PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)],
+                                                       PSF_params["wave_{:03d}".format(k)], z)
 
     resid = {}
     for m in np.arange(0, len(data)):
-        resid["resid_{:03d}".format(m)] = ((data[m] - list_of_models["model_{:03d}".format(m)]) / err[m])
+        resid["resid_{:03d}".format(m)] = ((data[m] - models["model_{:03d}".format(m)]) / err[m])
 
     if len(resid) > 1.:
         return np.concatenate([resid[x] for x in sorted(resid)],0)

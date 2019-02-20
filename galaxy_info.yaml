@@ -48,8 +48,12 @@ FCC167:
   emissions:
     OIII_1: [100, null, null]
     OIII_2: [5, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
-  residual cube: FCC167_data/FCC167center_residuals_list.fits
-  wavelength: FCC167_data/wavelength.npy
+    ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})']
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
+    nII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})']
+    nII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})']
+  residual cube: FCC167_data/FCC167_emission_cube.fits
+  wavelength: FCC167_data/FCC167_wavelength.npy
   z: 0.006261
   
 FCC170:
@@ -96,13 +100,9 @@ FCC219:
   Distance: 20.2
   Galaxy name: FCC219
   emissions:
-    OIII_1: [100, null, null]
-    OIII_2: [5, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
-    ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})']
-    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
-    nII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})']
-    nII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})']
-  residual cube: FCC219_data/FCC219center_residuals_list_long.fits
+    OIII_1: [300, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
+  residual cube: FCC219_data/FCC219_residuals_list.fits
   wavelength: FCC219_data/wavelength.npy
   z: 0.006498
 
