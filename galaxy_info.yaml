@@ -102,6 +102,7 @@ FCC219:
   emissions:
     OIII_1: [300, null, null]
     OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
   residual cube: FCC219_data/FCC219_residuals_list.fits
   wavelength: FCC219_data/wavelength.npy
   z: 0.006498

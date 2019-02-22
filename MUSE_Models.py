@@ -7,6 +7,7 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict]
     x_0 = params['x_0']
     y_0 = params['y_0']
+    LSF = params["LSF"]
     M_FWHM = params["M_FWHM"]
     beta = params["beta"]
     wave_list = [params["wave_{}".format(em)] for em in emission_dict]
@@ -23,7 +24,7 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
 
     # 1D Gaussian standard deviation from FWHM
-    G_std = 2.81 / 2.35482 # LSF
+    G_std = LSF / 2.35482 # LSF
 
     # Convert flux to amplitude
     A_xy = np.array([F / (np.sqrt(2*np.pi) * G_std) for F in F_xy])
