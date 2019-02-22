@@ -2,7 +2,7 @@ import numpy as np
 
 # Multi wavelength analysis model
 
-def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
+def PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict):
     # loop through emission dict and append to Amp 2D and wave lists
     Amp_2D_list = [params["Amp_2D_{}".format(em)] for em in emission_dict]
     x_0 = params['x_0']
@@ -19,7 +19,7 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
         r_d = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / r_d**2.
         return Amp * ((1 + rr_gg)**(-beta))
-    
+
     # Use Moffat function to return array of fluxes for each emission's amplitude.
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
 
@@ -32,19 +32,19 @@ def MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict):
     def Gauss(Amp_1D, wave):
         return np.array([(G_bkg + (G_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])
 
-    model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0)
+    model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0) # sum up each emission cube to construct integrated model.
 
     return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
 
-def MUSE_3D_residual(params, l, x_2D, y_2D, data, error, PNe_number, emission_dict, list_to_append_data):
-    model = MUSE_3D_OIII_multi_wave(params, l, x_2D, y_2D, data, emission_dict)
+def PNe_residuals_3D(params, l, x_2D, y_2D, data, error, PNe_number, emission_dict, list_to_append_data):
+    model = PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict)
     list_to_append_data.clear()
     list_to_append_data.append(data-model[0])
     list_to_append_data.append(model[1])
 
     return (data - model[0]) / error
 
-def PSF_residuals(PSF_params, l, x_2D, y_2D, data, err, z):
+def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
     FWHM = PSF_params['FWHM']
     beta = PSF_params["beta"]
 
@@ -112,7 +112,7 @@ def data_cube_y_x(n):
             solution = True
         else:
             val-=1
-    
+
     if int(val) > int(val2):
        return int(val2), int(val), n
     else:
