@@ -33,27 +33,30 @@ def PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict):
         return np.array([(G_bkg + (G_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])
 
     model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0) # sum up each emission cube to construct integrated model.
-
+    
     return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
 
 def PNe_residuals_3D(params, l, x_2D, y_2D, data, error, PNe_number, emission_dict, list_to_append_data):
     model = PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict)
     list_to_append_data.clear()
     list_to_append_data.append(data-model[0])
-    list_to_append_data.append(model[1])
-
-    return (data - model[0]) / error
+    list_to_append_data.append(model[1])    
+    zero_mask = np.where(data[:,0]!=0)
+    
+    return (data[zero_mask] - model[0][zero_mask]) / error[zero_mask]
 
 def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
     FWHM = PSF_params['FWHM']
     beta = PSF_params["beta"]
-
-    def gen_model(x, y, moffat_amp, FWHM, beta, Gauss_bkg, Gauss_grad, wave, z):
+    LSF = PSF_params["LSF"]
+    zero_mask = np.where(data[:,0]!=0)
+    
+    def gen_model(x, y, moffat_amp, FWHM, beta, LSF, Gauss_bkg, Gauss_grad, wave, z):
         gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2.) / gamma**2.
         F_OIII_xy = moffat_amp * (1. + rr_gg)**(-beta)
 
-        Gauss_std = 2.81 / 2.35482 # LSF
+        Gauss_std = LSF / 2.35482 # LSF
 
         A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
 
@@ -63,16 +66,16 @@ def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
         return model_spectra
 
     models = {}
-    for k in np.arange(0, len(data)):
+    for k in np.arange(0, len(data[zero_mask])):
         models["model_{:03d}".format(k)] = gen_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)],
-                                                       PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta,
+                                                       PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta, LSF,
                                                        PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)],
                                                        PSF_params["wave_{:03d}".format(k)], z)
-
+    
     resid = {}
-    for m in np.arange(0, len(data)):
-        resid["resid_{:03d}".format(m)] = ((data[m] - models["model_{:03d}".format(m)]) / err[m])
-
+    for m in np.arange(0, len(data[zero_mask])):
+        resid["resid_{:03d}".format(m)] = ((data[zero_mask][m] - models["model_{:03d}".format(m)][zero_mask]) / err[m][zero_mask])
+    
     if len(resid) > 1.:
         return np.concatenate([resid[x] for x in sorted(resid)],0)
     else:

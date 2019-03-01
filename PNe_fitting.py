@@ -111,7 +111,7 @@ if fit_1D == "y":
     spaxel_params = Parameters()
     spaxel_params.add("Amp",value=150., min=0.001)
     spaxel_params.add("wave", value=5007.0*(1+z), min=5007.0*(1+z)-40, max=5007.0*(1+z)+40) #Starting position calculated from redshift value of galaxy.
-    spaxel_params.add("FWHM", value=2.81, vary=False) # Line Spread Function
+    spaxel_params.add("FWHM", value=galaxy_data["LSF"], vary=False) # Line Spread Function
     spaxel_params.add("Gauss_bkg", value=0.001)
     spaxel_params.add("Gauss_grad", value=0.0001)
 
@@ -328,7 +328,7 @@ if fit_3D == "y":
         PNe_df["[OIII] Flux"] = total_flux[:,0]                       #store total [OIII] 5007A emission line flux
 
         if "hb" in emission_dict:
-            PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2] # store [OIII]/Hb ratio
+            PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_flux[:,2] # store [OIII]/Hb ratio
 
         if "ha" in emission_dict:
             PNe_df["Ha Flux"] = total_Flux[:, 1]                          # store total Ha flux.
@@ -353,7 +353,7 @@ if fit_3D == "y":
                            PNe_df["[OIII] Flux"].round(20),
                            PNe_df["m 5007"].round(2),
                            PNe_df["A/rN"].round(1),
-                           PNe_df["[OIII]/Hb"].round(2),
+                           PNe_df["[OIII]/Hb"].round(2),],
                            names=("PNe number", "Ra", "Dec", "[OIII] Flux", "m 5007", "A/rN", "[OIII]/Hb"))
         ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
         ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of data.
