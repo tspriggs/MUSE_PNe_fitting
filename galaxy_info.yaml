@@ -43,14 +43,14 @@ FCC147:
   z: 0.004443
   
 FCC167:
-  Distance: 18.7
+  Distance: 21.2
   Galaxy name: FCC167
-  FWHM: 3.687
-  FWHM_err: 0.039
-  beta: 2.234
-  beta_err: 0.113
-  LSF: 3.076
-  LSF_err: 0.021
+  FWHM: 3.617
+  FWHM_err: 0.060
+  beta: 1.714
+  beta_err: 0.114
+  LSF: 3.175
+  LSF_err: 0.031
   emissions:
     OIII_1: [100, null, null]
     OIII_2: [5, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
@@ -102,12 +102,12 @@ FCC193:
 FCC219:
   Distance: 20.2
   Galaxy name: FCC219
-  FWHM: 4.106
-  FWHM_err: 0.057
-  beta: 3.077
-  beta_err: 0.282
-  LSF: 3.019
-  LSF_err: 0.03
+  FWHM: 4.225
+  FWHM_err: 0.050
+  beta: 3.929
+  beta_err: 0.505
+  LSF: 3.0589
+  LSF_err: 0.0251
   emissions:
     OIII_1: [300, null, null]
     OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']

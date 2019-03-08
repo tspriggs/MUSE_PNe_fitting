@@ -49,7 +49,6 @@ def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
     FWHM = PSF_params['FWHM']
     beta = PSF_params["beta"]
     LSF = PSF_params["LSF"]
-    zero_mask = np.where(data[:,0]!=0)
     
     def gen_model(x, y, moffat_amp, FWHM, beta, LSF, Gauss_bkg, Gauss_grad, wave, z):
         gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
@@ -66,15 +65,15 @@ def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
         return model_spectra
 
     models = {}
-    for k in np.arange(0, len(data[zero_mask])):
+    for k in np.arange(0, len(data)):
         models["model_{:03d}".format(k)] = gen_model(PSF_params["x_{:03d}".format(k)], PSF_params["y_{:03d}".format(k)],
                                                        PSF_params["moffat_amp_{:03d}".format(k)], FWHM, beta, LSF,
                                                        PSF_params["gauss_grad_{:03d}".format(k)], PSF_params["gauss_bkg_{:03d}".format(k)],
                                                        PSF_params["wave_{:03d}".format(k)], z)
     
     resid = {}
-    for m in np.arange(0, len(data[zero_mask])):
-        resid["resid_{:03d}".format(m)] = ((data[zero_mask][m] - models["model_{:03d}".format(m)][zero_mask]) / err[m][zero_mask])
+    for m in np.arange(0, len(data)):
+        resid["resid_{:03d}".format(m)] = ((data[m] - models["model_{:03d}".format(m)]) / err[m])
     
     if len(resid) > 1.:
         return np.concatenate([resid[x] for x in sorted(resid)],0)
