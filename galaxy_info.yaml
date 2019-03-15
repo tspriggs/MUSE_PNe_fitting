@@ -45,11 +45,11 @@ FCC147:
 FCC167:
   Distance: 21.2
   Galaxy name: FCC167
-  FWHM: 3.617
-  FWHM_err: 0.060
-  beta: 1.714
-  beta_err: 0.114
-  LSF: 3.175
+  FWHM: 3.639
+  FWHM_err: 0.062
+  beta: 1.526
+  beta_err: 0.092
+  LSF: 3.273
   LSF_err: 0.031
   emissions:
     OIII_1: [100, null, null]
