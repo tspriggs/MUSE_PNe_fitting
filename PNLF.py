@@ -16,29 +16,38 @@
 #         in a new folder called FCCXXX_data/center/
 
 # Opening the residual cube getting with GandALF
-def open_data(choose_galaxy,region):
-    # Load in the residual data, in list form
-    hdulist = fits.open(choose_galaxy+"_data/"+region+"/"+choose_galaxy+"_residuals_list.fits") # Path to data
-    res_hdr = hdulist[0].header # extract header from residual cube
+from astropy.io import fits
+import numpy as np
+from MUSE_Models import data_cube_y_x
+import matplotlib.pyplot as plt
 
+def open_data(gal_name):
+    # Load in the residual data, in list form
+    hdulist = fits.open(gal_name+"_data/"+gal_name+"_residuals_list.fits") # Path to data
+    res_hdr = hdulist[0].header # extract header from residual cube
+    
     # Check to see if the wavelength is in the fits fileby checking length of fits file.
     if len(hdulist) == 2: # check to see if HDU data has 2 units (data, wavelength)
         wavelength = np.exp(hdulist[1].data)
     else:
         wavelength = np.load(galaxy_data["wavelength"])
-
+    
     # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-    if (choose_galaxy == 'FCC153') & (region == "center"):
+    if gal_name == "FCC219":
+        x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+    else:
         y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
-    elif (choose_galaxy != 'FCC153') & (region == "center"):
-        x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-    if (choose_galaxy == 'FCC153') & (region == "halo"):
-        x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-    elif (choose_galaxy != 'FCC153') & (region == "halo"):
-        if choose_galaxy == 'FCC177':
-            x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-        else:
-            y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
+#     if (choose_galaxy == 'FCC153') & (region == "center"):
+#         y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
+#     elif (choose_galaxy != 'FCC153') & (region == "center"):
+#         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+#     if (choose_galaxy == 'FCC153') & (region == "halo"):
+#         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+#     elif (choose_galaxy != 'FCC153') & (region == "halo"):
+#         if choose_galaxy == 'FCC177':
+#             x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+#         else:
+#             y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
 
     return x_data, y_data, hdulist, wavelength
 
@@ -62,10 +71,10 @@ def robust_sigma(y, zero=False):
 
         return sigma
 
-def completeness(galaxy,mag,params,D,image,peak,region):
+def completeness(galaxy,mag,params,D,image,peak=3, mask=False):
 
     n_pixels = 7
-    x_data, y_data, hdulist, wavelength = open_data(galaxy, region)
+    x_data, y_data, hdulist, wavelength = open_data(galaxy)
 
     print('\n- Fitting the residual cube to avoid the wiggles -')
     new_res = []
@@ -85,15 +94,16 @@ def completeness(galaxy,mag,params,D,image,peak,region):
     Noise_map_cen  = rN.reshape(y_data, x_data)
 
     # mask out regions where sep masks
-    #Y, X = np.mgrid[:y_data, :x_data]
-    #xe = xc
-    #ye = yc
-    #length= 15
-    #width = 15
-    #alpha = 0.15
-    #elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
+    if (galaxy == "FCC167") & (mask==True):
+        Y, X = np.mgrid[:y_data, :x_data]
+        xe = 236
+        ye = 195
+        length= 170
+        width = 70
+        alpha = 0.15
+        elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
 
-    #Noise_map_cen[elip_mask_gal == True] = 0.0
+        Noise_map_cen[elip_mask_gal == True] = np.nan
 
     #x_data, y_data = open_data(galaxy, 'halo')
     #Noise_map_hal  = np.abs(np.std(fits.open(hal_file)[0].data, axis=1))
@@ -104,7 +114,7 @@ def completeness(galaxy,mag,params,D,image,peak,region):
     x_fit = np.array([item[0] for item in coordinates])
     y_fit = np.array([item[1] for item in coordinates])
 
-    n_pixels = 7
+    n_pixels = 9
 
     # Setup range of Absolute Magnitudes to be converted to 1D max A values
 
@@ -118,7 +128,7 @@ def completeness(galaxy,mag,params,D,image,peak,region):
 
     def gaussian(x, amplitude, mean, stddev, bkg, grad):
         return (bkg + grad*x + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
-                     (np.abs(amplitude)/3.) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 / (stddev**2.)))
+                     (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 / (stddev**2.)))
 
     bins, bins_cens, other = plt.hist(mag, bins=10, edgecolor="black", linewidth=0.8, label="M 5007 > "+str(peak)+"A/rN", alpha=0.5)
     plt.close()
@@ -183,4 +193,4 @@ def completeness(galaxy,mag,params,D,image,peak,region):
     PNLF = np.exp(0.307*Abs_M) * (1-np.exp(3*((-4.47 - Abs_M)))) #3000 * np.exp(-0.307*(5. * np.log10(18.7) + 25.)) *
     PNLF[0] = 0.0
 
-    return PNLF, PNLF*ratio_counter_cen, Abs_M
+    return PNLF, PNLF*ratio_counter_cen, Abs_M, Noise_map_cen, Noise_mask_cen

@@ -19,10 +19,10 @@ def PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict):
         r_d = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
         rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / r_d**2.
         return Amp * ((1 + rr_gg)**(-beta))
-
+                
     # Use Moffat function to return array of fluxes for each emission's amplitude.
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
-
+    
     # 1D Gaussian standard deviation from FWHM
     G_std = LSF / 2.35482 # LSF
 
@@ -37,13 +37,13 @@ def PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict):
     return model_spectra, [np.max(A_xy[0]), F_xy, A_xy, model_spectra]
 
 def PNe_residuals_3D(params, l, x_2D, y_2D, data, error, PNe_number, emission_dict, list_to_append_data):
-    model = PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict)
+    model, useful_info = PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict)
     list_to_append_data.clear()
-    list_to_append_data.append(data-model[0])
-    list_to_append_data.append(model[1])    
+    list_to_append_data.append(data-model)
+    list_to_append_data.append(useful_info)    
     zero_mask = np.where(data[:,0]!=0)
     
-    return (data[zero_mask] - model[0][zero_mask]) / error[zero_mask]
+    return (data[zero_mask] - model[zero_mask]) / error[zero_mask]
 
 def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
     FWHM = PSF_params['FWHM']
@@ -60,7 +60,7 @@ def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
         A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
 
         model_spectra = (Gauss_bkg + Gauss_grad * l) + [(Amp * np.exp(- 0.5 * (l - wave)** 2 / Gauss_std**2.) +
-             (Amp/3.) * np.exp(- 0.5 * (l - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
+             (Amp/2.85) * np.exp(- 0.5 * (l - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
 
         return model_spectra
 

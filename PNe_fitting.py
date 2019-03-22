@@ -12,7 +12,7 @@ from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_
 
 # Load in yaml file to query galaxy properties
 with open("galaxy_info.yaml", "r") as yaml_data:
-    galaxy_info = yaml.load(yaml_data)
+    galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
 
 # Queries user for a galaxy name, in the form of FCC000, and taking the relevant info from the yaml file
 choose_galaxy = input("Please type which Galaxy you want to analyse, use FCC000 format: ")
@@ -79,7 +79,7 @@ def spaxel_by_spaxel(params, x, data, error, spec_num):
     Gauss_std = FWHM / 2.35482 # FWHM to Standard Deviation calculation.
 
     model = ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
-             (Amp/3.) * np.exp(- 0.5 * (x - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.))
+             (Amp/2.85) * np.exp(- 0.5 * (x - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.))
 
     # Saves both the Residual noise level of the fit, alongside the 'data residual' (data-model) array from the fit.
     list_of_rN[spec_num] = np.std(data - model)
@@ -102,7 +102,7 @@ if fit_1D == "y":
     input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std] # Intially use the standard deviation of each spectra as the uncertainty for the spaxel fitter.
 
     # Setup numpy arrays for storage of best fit values.
-    best_fit_A = np.zeros((len(hdulist[0].data),2))
+    gauss_A = np.zeros(len(hdulist[0].data))
     list_of_rN = np.zeros(len(hdulist[0].data))
     data_residuals = np.zeros((len(hdulist[0].data),len(wavelength)))
     obj_residuals = np.zeros((len(hdulist[0].data),len(wavelength)))
@@ -118,18 +118,16 @@ if fit_1D == "y":
     # Loop through spectra from list format of data.
     for i in non_zero_index:
         fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, hdulist[0].data[i], input_errors[i], i), nan_policy="propagate")
-        best_fit_A[i] = [fit_results.params["Amp"], fit_results.params["Amp"].stderr]
+        gauss_A[i] = fit_results.params["Amp"].value
         obj_residuals[i] = fit_results.residual
 
-    gauss_A = np.array([A[0] for A in best_fit_A])
-    A_err = np.array([A[1] for A in best_fit_A])
     A_rN = np.array([A / rN for A,rN in zip(gauss_A, list_of_rN)])
     Gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
 
     # Save A/rN, Gauss A, Guass F and rN arrays as npy files.
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/A_rN_cen", A_rN)
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_A_cen", gauss_A)
-    np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_A_err_cen", A_err)
+    #np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_A_err_cen", A_err)
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_F_cen", Gauss_F)
     np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/rN", list_of_rN)
 
@@ -187,7 +185,7 @@ if fit_3D == "y":
     PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, hdulist[0].data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
 
     # create Pandas dataframe for storage of values from the 3D fitter.
-    PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "Flux error","[OIII]/Hb","Ha Flux", "V (km/s)", "m 5007", "M 5007", "M 5007 error", "A/rN", "redchi"))
+    PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "V (km/s)", "m 5007", "M 5007", "[OIII] Flux", "Flux error", "A/rN", "redchi", "Filter"))
     PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
 
     if choose_galaxy == "FCC167" or choose_galaxy == "FCC219":
@@ -233,11 +231,11 @@ if fit_3D == "y":
 
     # Function to generate the parameters for the 3D model and fitter. Built to be able to handle a primary emission ([OIII] here).
     # Buil to fit for other emissions lines, as many as are resent in the emission dictionary.
-    def gen_params(wave=5007*(1+z), FWHM=4.0, beta=2.5, em_dict=None):
+    def gen_params(wave=5007*(1+z), FWHM=4.0, beta=2.5, LSF=2.81, em_dict=None):
         # loop through emission dictionary to add different element parameters
         for em in em_dict:
             # Amplitude parameter for each emission
-            PNe_3D_params.add('Amp_2D_{}'.format(em), value=emission_dict[em][0], min=0.01, expr=emission_dict[em][1])
+            PNe_3D_params.add('Amp_2D_{}'.format(em), value=emission_dict[em][0], min=0.001, max=1e5, expr=emission_dict[em][1])
             # Wavelength parameter for each emission
             if emission_dict[em][2] == None:
                 PNe_3D_params.add("wave_{}".format(em), value=wave, min=wave-40., max=wave+40.)
@@ -245,10 +243,11 @@ if fit_3D == "y":
                 PNe_3D_params.add("wave_{}".format(em), expr=emission_dict[em][2].format(z))
 
         # Add the rest of the paramters for the 3D fitter here, including the PSF (Moffat FWHM (M_FWHM) and beta)
-        PNe_3D_params.add('x_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
-        PNe_3D_params.add('y_0', value=(n_pixels/2.), min=0.01, max=n_pixels)
+        PNe_3D_params.add('x_0', value=((n_pixels//2.) +1), min=0.1, max=n_pixels)
+        PNe_3D_params.add('y_0', value=((n_pixels//2.) +1), min=0.1, max=n_pixels)
         PNe_3D_params.add("M_FWHM", value=FWHM, vary=False)
         PNe_3D_params.add("beta", value=beta, vary=False)
+        PNe_3D_params.add("LSF", value=LSF, vary=False)
         PNe_3D_params.add("Gauss_bkg",  value=0.00001)
         PNe_3D_params.add("Gauss_grad", value=0.00001)
 
@@ -272,7 +271,7 @@ if fit_3D == "y":
     mean_wave_list = np.zeros((len(x_PNe), len(emission_dict)))                        # List of the measured wavelength positions for each emission
     residuals_list = np.zeros(len(x_PNe))                                              # List of the residual noise level of each fit.
     list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength))) # List of arrays of best fit residuals (data-model)
-    chi_2_r = np.zeros((len(x_PNe)))
+    redchi = np.zeros((len(x_PNe)))
 
     # Setup Numpy arrays for storing the errors from the fitter.
     moff_A_err = np.zeros((len(x_PNe), len(emission_dict)))
@@ -303,7 +302,7 @@ if fit_3D == "y":
             model_spectra_list[PNe_num] = useful_stuff[1][3]
             emission_amp_list[PNe_num] = [PNe_3D_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
             mean_wave_list[PNe_num] = [PNe_3D_results.params["wave_{}".format(em)] for em in emission_dict]
-            chi_2_r[PNe_num] = PNe_3D_results.redchi
+            redchi[PNe_num] = PNe_3D_results.redchi
             list_of_x[PNe_num] = PNe_3D_results.params["x_0"]
             list_of_y[PNe_num] = PNe_3D_results.params["y_0"]
             Gauss_bkg[PNe_num] = PNe_3D_results.params["Gauss_bkg"]
