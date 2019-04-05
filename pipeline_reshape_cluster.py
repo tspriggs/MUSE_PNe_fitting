@@ -98,13 +98,11 @@ emission_tot[:,idx_good] = np.copy(emission)
 #rN_tot[:,idx_good] = np.copy(rN)
 AoN_tot[idx_good] = np.copy(AoN)
 
-cond = (hdrr['LOGLAM'] >= np.log(4900.0)) & (hdrr['LOGLAM'] <= np.log(5100.0))
+cond = (hdrr['LOGLAM'] >= np.log(lmin_lmax[0])) & (hdrr['LOGLAM'] <= np.log(lmin_lmax[1]))
 tmp  = hdrr['LOGLAM'][cond]
 resid_tot = resid_tot[cond,:]
 #rN_tot = rN_tot[cond,:]
 s[0] = len(tmp)
-
-
 
 # Rearrange cube to list for saving to a list format .fits file
 resid_list = np.swapaxes(np.copy(resid_tot), 1, 0) # shape swapped to x*y, lambda

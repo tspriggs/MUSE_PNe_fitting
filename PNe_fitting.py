@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord
 from astropy.io import ascii, fits
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
-from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, data_cube_y_x
+from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, data_cube_y_x, robust_sigma
 
 # Load in yaml file to query galaxy properties
 with open("galaxy_info.yaml", "r") as yaml_data:
@@ -52,6 +52,13 @@ coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
 x_fit = np.array([item[0] for item in coordinates])
 y_fit = np.array([item[1] for item in coordinates])
 
+# Progress bar
+
+def progbar(curr, total, full_progbar):
+    frac = curr/total
+    filled_progbar = round(frac*full_progbar)
+    print('\r', '#'*filled_progbar + '-'*(full_progbar-filled_progbar), '[{:>7.2%}]'.format(frac), end='')
+
 # Defines spaxel by spaxel fitting model
 def spaxel_by_spaxel(params, x, data, error, spec_num):
     """
@@ -82,7 +89,7 @@ def spaxel_by_spaxel(params, x, data, error, spec_num):
              (Amp/2.85) * np.exp(- 0.5 * (x - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.))
 
     # Saves both the Residual noise level of the fit, alongside the 'data residual' (data-model) array from the fit.
-    list_of_rN[spec_num] = np.std(data - model)
+    list_of_rN[spec_num] = robust_sigma(data - model)
     data_residuals[spec_num] = data - model
 
     return (data - model) / error
@@ -98,7 +105,7 @@ if fit_1D == "y":
     # Run Spaxel by Spaxel fitter
     print("Fitting Spaxel by Spaxel for [OIII] doublet.")
 
-    list_of_std = np.abs(np.std(hdulist[0].data ,1))
+    list_of_std = np.abs([robust_sigma(dat) for dat in hdulist[0].data])
     input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std] # Intially use the standard deviation of each spectra as the uncertainty for the spaxel fitter.
 
     # Setup numpy arrays for storage of best fit values.
@@ -116,7 +123,8 @@ if fit_1D == "y":
     spaxel_params.add("Gauss_grad", value=0.0001)
 
     # Loop through spectra from list format of data.
-    for i in non_zero_index:
+    for j,i in enumerate(non_zero_index):
+        progbar(j, len(non_zero_index), 40)
         fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, hdulist[0].data[i], input_errors[i], i), nan_policy="propagate")
         gauss_A[i] = fit_results.params["Amp"].value
         obj_residuals[i] = fit_results.residual

@@ -50,7 +50,7 @@ def reconstructed_image(choose_galaxy):
 
     return data, wave
 
-def completeness(galaxy, mag, params, D, image, peak, mask=False):
+def completeness(galaxy, mag, params, D, image, peak, mask=False, c1=0.307):
 
     def robust_sigma(y, zero=False):
             """
@@ -73,7 +73,7 @@ def completeness(galaxy, mag, params, D, image, peak, mask=False):
 
             return sigma
 
-    n_pixels = 7
+    n_pixels = 9
     x_data, y_data, hdulist, wavelength = open_data(galaxy)
 
     #print('\n- Fitting the residual cube to avoid the wiggles -')
@@ -103,7 +103,8 @@ def completeness(galaxy, mag, params, D, image, peak, mask=False):
         alpha = 0.15
         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
 
-        Noise_map_cen[elip_mask_gal == True] = np.nan
+        Noise_map_cen[elip_mask_gal == True] = 0.0 #np.nan
+        image[elip_mask_gal == True] = 0.0 # np.nan
 
     #x_data, y_data = open_data(galaxy, 'halo')
     #Noise_map_hal  = np.abs(np.std(fits.open(hal_file)[0].data, axis=1))
@@ -170,8 +171,8 @@ def completeness(galaxy, mag, params, D, image, peak, mask=False):
     #pdb.set_trace()
     zeros = []
     for i,a in enumerate(max_1D_A_cen):
-        temp = np.ones_like(Noise_mask_cen)
-        temp[((a / Noise_mask_cen) < peak)] = 0.0
+        #temp = np.ones_like(Noise_mask_cen)
+        #temp[((a / Noise_mask_cen) < peak)] = 0.0
 
         #zeros.append(len(np.where(temp <= 0.0)[0])
 
@@ -190,7 +191,7 @@ def completeness(galaxy, mag, params, D, image, peak, mask=False):
     ##############
 
     #plt.figure(1,figsize=(15,20))
-    PNLF = np.exp(0.307*Abs_M) * (1-np.exp(3*((-4.5 - Abs_M)))) 
+    PNLF = np.exp(c1*Abs_M) * (1-np.exp(3*((-4.5 - Abs_M)))) 
     PNLF[0] = 0.0
 
     return PNLF, PNLF*ratio_counter_cen, Abs_M

@@ -116,6 +116,28 @@ def data_cube_y_x(n):
             val-=1
 
     if int(val) > int(val2):
-       return int(val2), int(val), n
+        return int(val2), int(val), n
     else:
-       return int(val), int(val2), n
+        return int(val), int(val2), n
+
+
+def robust_sigma(y, zero=False):
+    """
+    Biweight estimate of the scale (standard deviation).
+    Implements the approach described in
+    "Understanding Robust and Exploratory Data Analysis"
+    Hoaglin, Mosteller, Tukey ed., 1983, Chapter 12B, pg. 417
+
+    """
+    y = np.ravel(y)
+    d = y if zero else y - np.nanmedian(y)
+
+    mad = np.nanmedian(np.abs(d))
+    u2 = (d/(9.0*mad))**2  # c = 9
+    good = u2 < 1.0
+    u1 = 1.0 - u2[good]
+    num = y.size * ((d[good]*u1**2)**2).sum()
+    den = (u1*(1.0 - 5.0*u2[good])).sum()
+    sigma = np.sqrt(num/(den*(den - 1.0)))  # see note in above reference
+
+    return sigma
