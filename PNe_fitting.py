@@ -117,7 +117,7 @@ if fit_1D == "y":
     # setup LMfit paramterts
     spaxel_params = Parameters()
     spaxel_params.add("Amp",value=150., min=0.001)
-    spaxel_params.add("wave", value=5007.0*(1+z), min=5007.0*(1+z)-40, max=5007.0*(1+z)+40) #Starting position calculated from redshift value of galaxy.
+    spaxel_params.add("wave", value=5007.0*(1+z)-3, min=5007.0*(1+z)-40, max=5007.0*(1+z)+40) #Starting position calculated from redshift value of galaxy.
     spaxel_params.add("FWHM", value=galaxy_data["LSF"], vary=False) # Line Spread Function
     spaxel_params.add("Gauss_bkg", value=0.001)
     spaxel_params.add("Gauss_grad", value=0.0001)
@@ -156,7 +156,7 @@ if fit_1D == "y":
 
     # Plot A_5007
     plt.figure(figsize=(20,20))
-    plt.imshow(gauss_A.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=80)
+    plt.imshow(gauss_A.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
     plt.colorbar()
     plt.savefig("Plots/"+ galaxy_data["Galaxy name"]+"/A_5007_map.png")
 
@@ -193,8 +193,10 @@ if fit_3D == "y":
     PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, hdulist[0].data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
 
     # create Pandas dataframe for storage of values from the 3D fitter.
-    PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "V (km/s)", "m 5007", "M 5007", "[OIII] Flux", "Flux error", "A/rN", "redchi", "Filter"))
-    PNe_df["PNe number"] = np.arange(1,len(x_PNe)+1)
+    PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "V (km/s)", "m 5007", "M 5007", "[OIII] Flux", "[OIII] Flux error","A/rN", "redchi", "Filter"))
+    PNe_df["PNe number"] = np.arange(0,len(x_PNe))
+    PNe_df["Filter"] = "Y"
+
 
     if choose_galaxy == "FCC167" or choose_galaxy == "FCC219":
         hdu_wcs = fits.open(choose_galaxy+"_data/"+choose_galaxy+"center.fits")
@@ -218,7 +220,7 @@ if fit_3D == "y":
         extract_data = np.array([PNe_spectrum_extractor(x, y, n_pix, data, x_data, wave=wavelength) for x,y in zip(x_P, y_P)])
         array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
         for p in np.arange(0, len(x_P)):
-            list_of_std = np.abs(np.std(extract_data[p], 1))
+            list_of_std = np.abs(robust_sigma(dat) for dat in extract_data[p])
             array_to_fill[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
 
         return array_to_fill
@@ -251,24 +253,13 @@ if fit_3D == "y":
                 PNe_3D_params.add("wave_{}".format(em), expr=emission_dict[em][2].format(z))
 
         # Add the rest of the paramters for the 3D fitter here, including the PSF (Moffat FWHM (M_FWHM) and beta)
-        PNe_3D_params.add('x_0', value=((n_pixels//2.) +1), min=0.1, max=n_pixels)
-        PNe_3D_params.add('y_0', value=((n_pixels//2.) +1), min=0.1, max=n_pixels)
+        PNe_3D_params.add('x_0', value=((n_pixels//2.) +1), min=((n_pixels//2.) +1)-3, max=((n_pixels//2.) +1)+3)
+        PNe_3D_params.add('y_0', value=((n_pixels//2.) +1), min=((n_pixels//2.) +1)-3, max=((n_pixels//2.) +1)+3)
         PNe_3D_params.add("M_FWHM", value=FWHM, vary=False)
         PNe_3D_params.add("beta", value=beta, vary=False)
         PNe_3D_params.add("LSF", value=LSF, vary=False)
-        PNe_3D_params.add("Gauss_bkg",  value=0.00001)
-        PNe_3D_params.add("Gauss_grad", value=0.00001)
-
-    # generate default parameters using above function.
-    # check PSF known or no
-    PSF_check = input("please enter PSF values: FWHM, beta: (if you do not know the PSF, enter n) ")
-
-    if PSF_check == "n":
-        print("Using default PSF values.....")
-        gen_params(em_dict=emission_dict)
-    else:
-        PSF = [x.strip() for x in PSF_check.split(',')]
-        gen_params(FWHM=float(PSF[0]), beta=float(PSF[1]), em_dict=emission_dict)
+        PNe_3D_params.add("Gauss_bkg",  value=0.0001)
+        PNe_3D_params.add("Gauss_grad", value=0.0001)
 
     # Setup Numpy arrays for storing values from the fitter
     total_flux = np.zeros((len(x_PNe), len(emission_dict)))                            # Total integrated flux of each emission, as measured for the PNe.
@@ -279,7 +270,6 @@ if fit_3D == "y":
     mean_wave_list = np.zeros((len(x_PNe), len(emission_dict)))                        # List of the measured wavelength positions for each emission
     residuals_list = np.zeros(len(x_PNe))                                              # List of the residual noise level of each fit.
     list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength))) # List of arrays of best fit residuals (data-model)
-    redchi = np.zeros((len(x_PNe)))
 
     # Setup Numpy arrays for storing the errors from the fitter.
     moff_A_err = np.zeros((len(x_PNe), len(emission_dict)))
@@ -300,9 +290,11 @@ if fit_3D == "y":
     # Define a function that contains all the steps needed for fitting, including the storage of important values, calculations and pandas assignment.
     def run_minimiser(parameters):
         for PNe_num in np.arange(0, len(x_PNe)):
+            progbar(int(PNe_num)+1, len(x_PNe), 40)
             useful_stuff = [] # Used to store other outputs from the 3D model function: maximum spectral amplitude, flux arrays for each emission, A_xy, model spectra
             #run minimizer fitting routine
-            PNe_3D_results = minimize(PNe_residuals_3D, PNe_3D_params, args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
+            PNe_minimizer     = lmfit.Minimizer(PNe_residuals_3D,PNe_3D_params, fcn_args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
+            multi_fit_results = PNe_minimizer.minimize()
             total_flux[PNe_num] = np.sum(useful_stuff[1][1],1) * 1e-20
             list_of_fit_residuals[PNe_num] = useful_stuff[0]
             A_2D_list[PNe_num] = useful_stuff[1][0]
@@ -310,7 +302,6 @@ if fit_3D == "y":
             model_spectra_list[PNe_num] = useful_stuff[1][3]
             emission_amp_list[PNe_num] = [PNe_3D_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
             mean_wave_list[PNe_num] = [PNe_3D_results.params["wave_{}".format(em)] for em in emission_dict]
-            redchi[PNe_num] = PNe_3D_results.redchi
             list_of_x[PNe_num] = PNe_3D_results.params["x_0"]
             list_of_y[PNe_num] = PNe_3D_results.params["y_0"]
             Gauss_bkg[PNe_num] = PNe_3D_results.params["Gauss_bkg"]
@@ -324,13 +315,42 @@ if fit_3D == "y":
             Gauss_grad_err[PNe_num] = PNe_3D_results.params["Gauss_grad"].stderr
 
         # Amplitude / residul Noise calculation
-        list_of_rN = np.array([np.std(PNe_res) for PNe_res in list_of_fit_residuals])
+        list_of_rN = np.array([robust_sigma(PNe_res) for PNe_res in list_of_fit_residuals])
         PNe_df["A/rN"] = A_2D_list[:,0] / list_of_rN # Using OIII amplitude
+
+        # chi square analysis
+        gauss_list, redchi, Chi_sqr = [], [], []
+        for p in range(len(x_PNe)):
+            PNe_n = np.copy(PNe_spectra[p])
+            flux_1D = np.copy(F_xy_list[p][0])
+            A_n = ((flux_1D) / (np.sqrt(2*np.pi) * 1.19))
+
+            def gaussian(x, amplitude, mean, stddev, bkg, grad):
+                return ((bkg + grad*x) + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 /    (stddev**2.)) +
+                (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 /  (stddev**2.)))
+
+                list_of_gauss = [gaussian(wavelength, A, mean_wave_list[p][0], 1.19,Gauss_bkg[p],  Gauss_grad[p]) for A in A_n]
+                for kk in range(len(PNe_n)):
+                    temp = np.copy(list_of_gauss[kk])
+                    idx  = np.where(PNe_n[kk] == 0.0)[0]
+                    temp[idx] = 0.0
+                    PNe_n[kk,idx] = 1.0
+                    list_of_gauss[kk] = np.copy(temp)
+            rN   = robust_sigma(PNe_n - list_of_gauss)
+            res  = PNe_n - list_of_gauss
+            Chi2 = np.sum((res**2)/(rN**2))
+            s    = np.shape(PNe_n)
+            redchi.append(Chi2/(len(wavelength)*n_pixels**2 - PNe_minimizer.nfree))
+            gauss_list.append(list_of_gauss)
+            Chi_sqr.append(Chi2)
+
+        PNe_df['Chi2']   = Chi_sqr
+        PNe_df["redchi"] = redchi
 
         # de-redshift the fitted wavelengths to get the velocity
         de_z_means = mean_wave_list[:,0] / (1 + z)
 
-        PNe_df["V (km/s)"] = (c * (de_z_means - 5007.) / 5007.) / 1000.
+        PNe_df["V (km/s)"] = (c * (de_z_means - 5006.77) / 5006.77) / 1000.
 
         PNe_df["[OIII] Flux"] = total_flux[:,0]                       #store total [OIII] 5007A emission line flux
 
@@ -340,20 +360,9 @@ if fit_3D == "y":
         if "ha" in emission_dict:
             PNe_df["Ha Flux"] = total_Flux[:, 1]                          # store total Ha flux.
 
-        PNe_df["redchi"] = chi_2_r
-
-        # This is used by Pandas to calculate the Absolute Magnitude of each PNe
-        def log_10(x):
-            return np.log10(x)
 
         # Calculate the apparent and Absolute Magnitudes for each PNe
-        PNe_df["m 5007"] = -2.5 * PNe_df["[OIII] Flux"].apply(log_10) - 13.74       # Apparent Magnitude
-        dM =  5. * np.log10(D) + 25.                                                # Distance modulus
-        PNe_df["M 5007"] = PNe_df["m 5007"] - dM                                    # Absolute Magnitude
-
-        # Use the brightest PNe in m_5007 to estimate the Distance.
-        Dist_est = 10.**(((PNe_df["m 5007"].min() + 4.5) -25.) / 5.)
-        print("Distance Estimate from PNLF: ", Dist_est, "Mpc")
+        PNe_df["m 5007"] = -2.5 * np.log10(PNe_df["[OIII] Flux"].values) - 13.74       # Apparent Magnitude
 
         # Construct a Astropy table to save certain values for each galaxy.
         PNe_table = Table([np.arange(0,len(x_PNe)), PNe_df["Ra (J2000)"], PNe_df["Dec (J2000)"],
@@ -368,33 +377,40 @@ if fit_3D == "y":
         print("exported_data/"+galaxy_data["Galaxy name"]+"/"+galaxy_data["Galaxy name"]+"_table_latex.txt saved")
 
     print("Running 3D fitter")
+    gen_params(wave=5007*(1+z)-3, FWHM=galaxy_data["FWHM"], beta=galaxy_data["beta"], LSF=galaxy_data["LSF"], em_dict=emission_dict)
     run_minimiser(PNe_3D_params) # Run the 3D model fitter.
 
-    # Plot and save the histogram of m_5007
-    plt.figure( figsize=(12,10))
-    bins, bins_cens, other = plt.hist(PNe_df["m 5007"].loc[PNe_df["A/rN"]>2], bins=10, edgecolor="black", linewidth=0.8, label="m 5007 > 2 * A/rN", alpha=0.5)
-    plt.xlim(26.0,30.0)
-    plt.xlabel("$m_{5007}$", fontsize=24)
-    plt.ylabel("N Sources/bin", fontsize=24)
-    plt.legend(fontsize=15)
-    plt.savefig("Plots/"+ galaxy_data["Galaxy name"]+"/m_5007_histogram.png")
-    #bins_cens = bins_cens[:-1]
+    ## The Great Filter - goes here
+    PNe_df["Filter"] = "Y"
+    PNe_df.loc[PNe_df["A/rN"]<3., "Filter"] = "N"
+    # reduced Chi sqr cut
+    redchi_med = np.median(PNe_df["redchi"].values)
+    redchi_std = robust_sigma(PNe_df["redchi"].values)
+    lower_redchi = redchi_med - 3*redchi_std
+    upper_redchi = redchi_med + 3*redchi_std
+    PNe_df.loc[(PNe_df["redchi"]>=upper_redchi) & (PNe_df["redchi"]<=lower_redchi), "Filter"] = "N"
 
-    # Here we start the PSF analysis
+
+    ## FCC167
+    if gal_name == "FCC167":
+        PNe_df.loc[PNe_df["PNe number"]==30, "Filter"] = "N" # Over luminous [OIII] source
+        PNe_df.loc[PNe_df["PNe number"]==15, "Filter"] = "N" # SNR maybe, extended source with dual peaked [OIII] 5007
+
+    ## Error estimation goes here....
+
+    ## Distance estimation goes here...
+
+    ## M_5007 calculation goes here....
+
+    # Here we run the PSF analysis if needed.....
     # First ask which to attempt: brightest or pre-selected PNe
     # if brightest, then ask how many PNe to use from a list of the brightest in m_5007
     # if pre-selected, then ask for which PNe numbers to use.
-    if PSF_check == "n":
-        use_brightest = input("Use n Brightest PNe? (y/n) ")
-        if use_brightest == "y":
-            n_bright = input("How many brightest PNe would you like to fit for the PSF? Please enter a number greater than 0: ")
-            sel_PNe = PNe_df.nlargest(int(n_bright), "A/rN").index.values # query the PNe dataframe for the n brightest PNe in m_5007.
-        elif use_brightest == "n":
-            which_PNe = input("Which PNe would you like to use for PSF analysis? Please enter numbers, separated by spaces: ")
-            # Devise system for PNe choise based upon low background (radial?)
-            sel_PNe = [int(i) for i in which_PNe.split()]
+    fit_for_PSF = input("Do you wish to fit for PSF? [y/n] ")
+    if fit_for_PSF == "y":
+        sel_PNe = PNe_df.loc[PNe_df["Filter"]=="Y"].nlargest(10, "A/rN").index.value
 
-        print(sel_PNe)
+        print("Using the 10 brightest PNe in A/rN. Selected PNe are: " + sel_PNe)
 
         selected_PNe = PNe_spectra[sel_PNe] # Select PNe from the PNe minicubes
         selected_PNe_err = obj_error_cube[sel_PNe] # Select associated errors from the objective error cubes
@@ -414,6 +430,7 @@ if fit_3D == "y":
 
         PSF_params.add('FWHM', value=4.0, min=0.01, max=12., vary=True)
         PSF_params.add("beta", value=4.0, min=0.01, max=12., vary=True)
+        PSF_params.add("LSF",  value=3.0, min=0.01, max=12., vary=True)
 
         print("Fitting for PSF")
         PSF_results = minimize(PSF_residuals_3D, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err, z), nan_policy="propagate")
@@ -421,11 +438,19 @@ if fit_3D == "y":
         #determine PSF values and feed back into 3D fitter
 
         fitted_FWHM = PSF_results.params["FWHM"].value
+        fitted_FWHM_err = PSF_results.params["FWHM"].stderr
         fitted_beta = PSF_results.params["beta"].value
+        fitted_beta_err = PSF_results.params["beta"].stderr
+        fitted_LSF  = PSF_results.params["LSF"].value
+        fitted_LSF_err  = PSF_results.params["LSF"].stderr
+
+        print("Fitted FWHM and error: {0} +/- {1}".format(fitted_FWHM, fitted_FWHM_err)) # print FWHM
+        print("Fitted beta and error: {0} +/- {1}".format(fitted_beta, fitted_beta_err)) # print beta
+        print("Fitted LSF and error:  {0} +/- {1}".format(fitted_LSF, fitted_LSF_err)) # print LSF
 
         #Fit PNe with updated PSF
         gen_params(FWHM=fitted_FWHM, beta=fitted_beta, em_dict=emission_dict) # set params up with fitted FWHM and beta values
-        print("Fitting with PSF")
+        print("Fitting PNe again with fitted PSF values.")
         run_minimiser(PNe_3D_params) # run fitting section again with new values
 
     else:
@@ -440,7 +465,7 @@ if fit_3D == "y":
         plt.xlabel("Wavelength ($\AA$)", fontsize=18)
         plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
         plt.ylim(-1500,3000)
-        plt.savefig("Plots/"+ galaxy_data["Galaxy name"] +"/full_spec_fits/PNe_{}".format(p))
+        plt.savefig("Plots/"+ galaxy_data["Galaxy name"] +"/full_spec_fits/PNe_{}.pdf".format(p))
 
         plt.clf()
 
@@ -448,5 +473,22 @@ if fit_3D == "y":
 
     print("PNe analysis complete.")
 
+    # Plot galaxy A/rN map with circled sources, indicating filter status of object, plus masked out area.
+
+
+
+    # PNLF
+
+
+
+    # Alpha value calculation
+
+
+
+
+
+
+
+
 elif fit_3D == "n":
-    print("End of PNe fitting script.")
+    print("This is the end of PNe analysis script. Goodbye")
