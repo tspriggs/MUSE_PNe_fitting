@@ -6,17 +6,20 @@ from astropy.wcs import WCS, utils, wcs
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from astropy.io import ascii, fits
+from ppxf_gal_L import ppxf_L_tot
 from matplotlib.patches import Rectangle, Ellipse, Circle
+from PNLF import open_data, reconstructed_image, completeness
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, data_cube_y_x, robust_sigma
+
 
 # Load in yaml file to query galaxy properties
 with open("galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
 
 # Queries user for a galaxy name, in the form of FCC000, and taking the relevant info from the yaml file
-choose_galaxy = input("Please type which Galaxy you want to analyse, use FCC000 format: ")
-galaxy_data = galaxy_info[choose_galaxy]
+galaxy_name = input("Please type which Galaxy you want to analyse, use FCC000 format: ")
+galaxy_data = galaxy_info[galaxy_name]
 
 # Load in the residual data, in list form
 hdulist = fits.open(galaxy_data["residual cube"]) # Path to data
@@ -31,7 +34,7 @@ else:
 
 
 # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-if choose_galaxy == "FCC219":
+if galaxy_name == "FCC219":
     x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
 else:
     y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
@@ -46,6 +49,8 @@ c = 299792458.0 # speed of light
 
 z = galaxy_data["z"] # Redshift - taken from simbad / NED - read in from yaml file
 D = galaxy_data["Distance"] # Distance in Mpc - from Simbad / NED - read in from yaml file
+gal_mask = galaxy_data["mask"]
+gal_vel = galaxy_data["velocity"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
 coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
@@ -117,7 +122,7 @@ if fit_1D == "y":
     # setup LMfit paramterts
     spaxel_params = Parameters()
     spaxel_params.add("Amp",value=150., min=0.001)
-    spaxel_params.add("wave", value=5007.0*(1+z)-3, min=5007.0*(1+z)-40, max=5007.0*(1+z)+40) #Starting position calculated from redshift value of galaxy.
+    spaxel_params.add("wave", value=5007.0*(1+z), min=5007.0*(1+z)-40, max=5007.0*(1+z)+40) #Starting position calculated from redshift value of galaxy.
     spaxel_params.add("FWHM", value=galaxy_data["LSF"], vary=False) # Line Spread Function
     spaxel_params.add("Gauss_bkg", value=0.001)
     spaxel_params.add("Gauss_grad", value=0.0001)
@@ -133,17 +138,17 @@ if fit_1D == "y":
     Gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
 
     # Save A/rN, Gauss A, Guass F and rN arrays as npy files.
-    np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/A_rN_cen", A_rN)
-    np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_A_cen", gauss_A)
-    #np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_A_err_cen", A_err)
-    np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/gauss_F_cen", Gauss_F)
-    np.save("exported_data/"+ galaxy_data["Galaxy name"] +"/rN", list_of_rN)
+    np.save("exported_data/"+ galaxy_name +"/A_rN_cen", A_rN)
+    np.save("exported_data/"+ galaxy_name +"/gauss_A_cen", gauss_A)
+    #np.save("exported_data/"+ galaxy_name +"/gauss_A_err_cen", A_err)
+    np.save("exported_data/"+ galaxy_name +"/gauss_F_cen", Gauss_F)
+    np.save("exported_data/"+ galaxy_name +"/rN", list_of_rN)
 
     # save the data and obj res in fits file format to us memmapping.
     hdu_data_res = fits.PrimaryHDU(data_residuals)
     hdu_obj_res = fits.PrimaryHDU(obj_residuals)
-    hdu_data_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.fits", overwrite=True)
-    hdu_obj_res.writeto("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.fits", overwrite=True)
+    hdu_data_res.writeto("exported_data/"+ galaxy_name +"/resids_data.fits", overwrite=True)
+    hdu_obj_res.writeto("exported_data/"+ galaxy_name +"/resids_obj.fits", overwrite=True)
 
     print("Cube fitted, data saved.")
 
@@ -152,21 +157,21 @@ if fit_1D == "y":
     plt.figure(figsize=(20,20))
     plt.imshow(A_rN.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=1, vmax=8)
     plt.colorbar()
-    plt.savefig("Plots/"+ galaxy_data["Galaxy name"]+"/A_rN_map.png")
+    plt.savefig("Plots/"+ galaxy_name+"/A_rN_map.png")
 
     # Plot A_5007
     plt.figure(figsize=(20,20))
     plt.imshow(gauss_A.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
     plt.colorbar()
-    plt.savefig("Plots/"+ galaxy_data["Galaxy name"]+"/A_5007_map.png")
+    plt.savefig("Plots/"+ galaxy_name+"/A_5007_map.png")
 
     # Plot F_5007
     plt.figure(figsize=(20,20))
     plt.imshow(Gauss_F.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
     plt.colorbar()
-    plt.savefig("Plots/"+ galaxy_data["Galaxy name"]+"/F_5007_map.png")
+    plt.savefig("Plots/"+ galaxy_name+"/F_5007_map.png")
 
-    print("Plots saved in Plots/"+galaxy_data["Galaxy name"])
+    print("Plots saved in Plots/"+galaxy_name)
 
 
 # If spaxel-by-spaxel fit has already been done, fit_1D is n, proceed to 3D fit.
@@ -185,7 +190,7 @@ if fit_3D == "y":
     # load from saved files
 
     # Read in list of x and y coordinates of detected sources for 3D fitting.
-    x_y_list = np.load("exported_data/"+ galaxy_data["Galaxy name"] +"/PNe_x_y_list.npy")
+    x_y_list = np.load("exported_data/"+ galaxy_name +"/PNe_x_y_list.npy")
     x_PNe = np.array([x[0] for x in x_y_list]) # separate out from the list the list of x coordinates, as well as y coordinates.
     y_PNe = np.array([y[1] for y in x_y_list])
 
@@ -198,8 +203,8 @@ if fit_3D == "y":
     PNe_df["Filter"] = "Y"
 
 
-    if choose_galaxy == "FCC167" or choose_galaxy == "FCC219":
-        hdu_wcs = fits.open(choose_galaxy+"_data/"+choose_galaxy+"center.fits")
+    if galaxy_name == "FCC167" or galaxy_name == "FCC219":
+        hdu_wcs = fits.open(galaxy_name+"_data/"+galaxy_name+"center.fits")
         hdr_wcs = hdu_wcs[1].header
         wcs_obj = WCS(hdr_wcs, naxis=2)
 
@@ -209,10 +214,10 @@ if fit_3D == "y":
             PNe_df.loc[i,"Dec (J2000)"] = Ra_Dec[1]
 
     # Read in Objective Residual Cube .fits file.
-    obj_residual_cube = fits.open("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_obj.fits")
+    obj_residual_cube = fits.open("exported_data/"+ galaxy_name +"/resids_obj.fits")
 
     # Read in Data Residual Cube .fits file.
-    data_residual_cube = fits.open("exported_data/"+ galaxy_data["Galaxy name"] +"/resids_data.fits")
+    data_residual_cube = fits.open("exported_data/"+ galaxy_name +"/resids_data.fits")
 
     # Function to extract the uncertainties and transform them into a standard deviation version for fitting purposes.
     def uncertainty_cube_construct(data, x_P, y_P, n_pix):
@@ -329,13 +334,13 @@ if fit_3D == "y":
                 return ((bkg + grad*x) + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 /    (stddev**2.)) +
                 (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 /  (stddev**2.)))
 
-                list_of_gauss = [gaussian(wavelength, A, mean_wave_list[p][0], 1.19,Gauss_bkg[p],  Gauss_grad[p]) for A in A_n]
-                for kk in range(len(PNe_n)):
-                    temp = np.copy(list_of_gauss[kk])
-                    idx  = np.where(PNe_n[kk] == 0.0)[0]
-                    temp[idx] = 0.0
-                    PNe_n[kk,idx] = 1.0
-                    list_of_gauss[kk] = np.copy(temp)
+            list_of_gauss = [gaussian(wavelength, A, mean_wave_list[p][0], 1.19,Gauss_bkg[p],  Gauss_grad[p]) for A in A_n]
+            for kk in range(len(PNe_n)):
+                temp = np.copy(list_of_gauss[kk])
+                idx  = np.where(PNe_n[kk] == 0.0)[0]
+                temp[idx] = 0.0
+                PNe_n[kk,idx] = 1.0
+                list_of_gauss[kk] = np.copy(temp)
             rN   = robust_sigma(PNe_n - list_of_gauss)
             res  = PNe_n - list_of_gauss
             Chi2 = np.sum((res**2)/(rN**2))
@@ -371,16 +376,16 @@ if fit_3D == "y":
                            PNe_df["A/rN"].round(1),
                            PNe_df["[OIII]/Hb"].round(2),],
                            names=("PNe number", "Ra", "Dec", "[OIII] Flux", "m 5007", "A/rN", "[OIII]/Hb"))
-        ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table.txt".format(galaxy_data["Galaxy name"]), format="tab", overwrite=True) # Save table in tab separated format.
+        ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table.txt".format(galaxy_name), format="tab", overwrite=True) # Save table in tab separated format.
         ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of data.
-        print("exported_data/"+galaxy_data["Galaxy name"]+"/"+galaxy_data["Galaxy name"]+"_table.txt saved")
-        print("exported_data/"+galaxy_data["Galaxy name"]+"/"+galaxy_data["Galaxy name"]+"_table_latex.txt saved")
+        print("exported_data/"+galaxy_name+"/"+galaxy_name+"_table.txt saved")
+        print("exported_data/"+galaxy_name+"/"+galaxy_name+"_table_latex.txt saved")
 
     print("Running 3D fitter")
     gen_params(wave=5007*(1+z)-3, FWHM=galaxy_data["FWHM"], beta=galaxy_data["beta"], LSF=galaxy_data["LSF"], em_dict=emission_dict)
     run_minimiser(PNe_3D_params) # Run the 3D model fitter.
 
-    ## The Great Filter - goes here
+    ## The Great Filter #####
     PNe_df["Filter"] = "Y"
     PNe_df.loc[PNe_df["A/rN"]<3., "Filter"] = "N"
     # reduced Chi sqr cut
@@ -396,11 +401,58 @@ if fit_3D == "y":
         PNe_df.loc[PNe_df["PNe number"]==30, "Filter"] = "N" # Over luminous [OIII] source
         PNe_df.loc[PNe_df["PNe number"]==15, "Filter"] = "N" # SNR maybe, extended source with dual peaked [OIII] 5007
 
-    ## Error estimation goes here....
+    ##### Error estimation #####
+    def Moffat_err(Moff_A, FWHM, beta, x_0, y_0):
+        gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
+        rr_gg = ((np.array(x_fit) - x_0)**2 + (np.array(y_fit) - y_0)**2) / gamma**2
+        F_OIII_xy_dist = Moff_A * (1 + rr_gg)**(-beta)
+    
+        return np.sum(F_OIII_xy_dist*1e-20)
+    
+    def error_sim(n_sim, n_PNe):
+        mean_flux = np.ones(n_PNe)
+        flux_err  = np.ones(n_PNe)
+        mean_m5007 = np.ones(n_PNe)
+        m5007_err = np.ones(n_PNe)
+        for n in np.arange(0,n_PNe):
+            Moff_A_dist = np.random.normal(emission_amp_list[n][0], moff_A_err[n][0],n_sim)
+            FWHM_dist = np.random.normal(galaxy_data["FWHM"], galaxy_data["FWHM_err"], n_sim)
+            beta_dist = np.random.normal(galaxy_data["beta"], galaxy_data["beta_err"], n_sim)
+            x_0_dist = np.random.normal(list_of_x[n], x_0_err[n][0], n_sim)
+            y_0_dist = np.random.normal(list_of_y[n], y_0_err[n][0], n_sim)
+            
+            flux_array = [Moffat_err(Moff_A_dist[i], FWHM_dist[i], beta_dist[i], x_0_dist[i], y_0_dist[i]) for i in range(0,n_sim)]
+            
+            mean_flux[n], flux_err[n] = norm.fit(flux_array)
+            
+            mean_m5007[n], m5007_err[n] = norm.fit(-2.5*np.log10(flux_array)-13.72)
+    
+        return mean_flux, flux_err, mean_m5007, m5007_err
+    
+    mean_flux, PNe_df["Flux error"], mean_m5007, PNe_df["m 5007 error"] = error_sim(5000, len(x_PNe))
 
-    ## Distance estimation goes here...
-
-    ## M_5007 calculation goes here....
+    ## Show F_err in percentage terms
+    PNe_df["F[OIII] err percent"] = (PNe_df["Flux error"] / PNe_df["[OIII] Flux"])*100
+    
+    #### Distance estimation #######
+    p_n = int(PNe_df.loc[PNe_df["Filter"]=="Y"].nsmallest(1, "m 5007").index.values)
+    flux = PNe_df["[OIII] Flux"].iloc[p_n]
+    flux_err = PNe_df["Flux error"].iloc[p_n]
+    m = PNe_df["m 5007"].iloc[p_n]
+    m_err = PNe_df["m 5007 error"].iloc[p_n]
+    
+    Dist_est = 10.**(((m + 4.51) -25.) / 5.)
+    dist_diff_p = 10.**(((m+m_err + 4.51) -25.) / 5.)
+    dist_diff_m = 10.**(((m-m_err + 4.51) -25.) / 5.)
+    print("Distance Estimate from PNLF: ", "{:.3f}".format(Dist_est), "Mpc, +{0:.4f} -{1:.4f}".format(dist_diff_p-Dist_est, Dist_est-dist_diff_m),"Mpc")
+    
+    dM =  5. * np.log10(Dist_est) + 25.
+    dM_lower = 5. * np.log10(dist_diff_p) + 25.
+    dM_upper = 5. * np.log10(dist_diff_m) + 25.
+    
+    print("dM = {:.4f}".format(dM),"+/- {:.4f}".format(dM-dM_upper))
+    
+    PNe_df["M 5007"] = PNe_df["m 5007"] - dM
 
     # Here we run the PSF analysis if needed.....
     # First ask which to attempt: brightest or pre-selected PNe
@@ -465,7 +517,7 @@ if fit_3D == "y":
         plt.xlabel("Wavelength ($\AA$)", fontsize=18)
         plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
         plt.ylim(-1500,3000)
-        plt.savefig("Plots/"+ galaxy_data["Galaxy name"] +"/full_spec_fits/PNe_{}.pdf".format(p))
+        plt.savefig("Plots/"+ galaxy_name +"/full_spec_fits/PNe_{}.pdf".format(p))
 
         plt.clf()
 
@@ -475,18 +527,98 @@ if fit_3D == "y":
 
     # Plot galaxy A/rN map with circled sources, indicating filter status of object, plus masked out area.
 
+    plt.figure(figsize=(20,20))
+    plt.imshow(A_rN_plot_shape, origin="lower", cmap="CMRmap",  vmin=1.5, vmax=8)
+    ax = plt.gca()
+    cb=plt.colorbar(fraction=0.0455, pad=0.04)
+    cb.set_label("A/rN",fontsize=30)
+    cb.ax.tick_params(labelsize=22)
+    
+    plt.xlabel("x (pixels)", fontsize=30)
+    plt.ylabel("y (pixels)", fontsize=30)
+    
+    plt.tick_params(labelsize = 22)
+    
+    plt.ylim(0,440)
+    plt.xlim(0,435)
+    
+    Y, X = np.mgrid[:y_data, :x_data]
+    xe, ye, length, width, alpha = gal_mask
+    
+    elip_gal = Ellipse((xe, ye), width, length, angle=alpha*(180/np.pi), fill=False, color="white", ls="--")
+    ax.add_artist(elip_gal)
+    
+    for i, item in enumerate(x_y_list):
+        if PNe_df.iloc[i].Filter == "Y":
+            ax = plt.gca()
+            circ = plt.Circle((item[0],item[1]),4, color="white",lw=1.0, fill=False, alpha=0.7)
+            ax.add_artist(circ)
+        elif PNe_df.iloc[i].Filter == "N":
+            ax = plt.gca()
+            circ = plt.Circle((item[0],item[1]),4, color="red",lw=1.0, fill=False, alpha=0.7)
+        ax.add_artist(circ)
+        if item[0]<240.:
+            ax.annotate(i, (item[0]+4, item[1]-2), color="white", size=10)
+        else:
+            ax.annotate(i, (item[0]+4, item[1]+1), color="white", size=10)
+
+    ##### PNLF #####
+    
+    x_data_cen, y_data_cen, map_cen, aux = open_data(galaxy_name)
+    
+    image, wave = reconstructed_image(galaxy_name)
+    image = image.reshape([y_data_cen,x_data_cen])
+    
+    mag = PNe_df["M 5007"].loc[PNe_df["Filter"]=="Y"].values
+    
+    # Total PNLF
+    PNLF, PNLF_corr, Abs_M = completeness(gal_name, mag, PNe_multi_params, Dist_est, image, peak=3., mask_params=gal_mask, mask=True, c1=0.307 ) # Estimating the completeness for the central pointing
+    
+    # Getting the normalisation
+    total_norm = np.sum(PNLF_corr)*abs(Abs_M[1]-Abs_M[0])
+    
+    # Scaling factor
+    scal = len(mag)/total_norm
+    
+    # Constraining to -2.0 in magnitude
+    idx = np.where(Abs_M <= -2.0)
+    
+    # Total number of PNe
+    tot_N_PNe = np.sum(PNLF_corr[idx]*scal)*abs(Abs_M[1]-Abs_M[0])
+    
+    step = Abs_M[1]-Abs_M[0]
+    N_PNe = np.sum(PNLF[:25]*scal)*step
+    print("Number of PNe from PNLF: ", "{:.1f}".format(N_PNe), "+/- {:.1f}".format(np.sqrt(N_PNe)))
+    
+    plt.figure(figsize=(14,10))
+    
+    binwidth = 0.2
+    hist = plt.hist(mag, bins=np.arange(min(mag), max(mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue')
+    
+    ymax = max(hist[0])
+    
+    plt.plot(Abs_M, PNLF*scal*binwidth, '-', color='blue', marker="o")
+    plt.plot(Abs_M, PNLF_corr*scal*binwidth,'-.', color='blue')
+    
+    plt.xlabel('$M_{5007}$', fontsize=20)
+    plt.ylabel('N PNe', fontsize=20)
+    #plt.yticks(np.arange(0,ymax+4, 5))
+    
+    plt.xlim(-5.0,-2.0) 
+    plt.ylim(0,ymax+20)
+        
+    plt.savefig("Plots/"+galaxy_name+"/"+galaxy_name+"_PNLF.pdf")
 
 
-    # PNLF
-
-
-
-    # Alpha value calculation
-
-
-
-
-
+    ##### Alpha value calculation #####
+    
+    file_name = gal_name+"_data/"+gal_name+"center.fits"
+    # take velocity from yaml file
+        
+    lum_g_bol = ppxf_L_tot(file=file_name, mask_params=gal_mask, mask=True, redshift=z, vel=gal_vel, dist_mod=dM)
+    
+    alpha_2_5 = N_PNe/lum_g_bol
+    log_alpha = np.log10(alpha_2_5)
 
 
 

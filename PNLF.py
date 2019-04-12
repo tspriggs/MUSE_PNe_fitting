@@ -1,49 +1,36 @@
-# PARAMETERS:
-#
-# galaxy: galaxy name
-#
-# mag: array of absolute magnitudes (M 5007)
-#
-# params: A dictionary with the values of M_FWHM and BETA of the PSF
-#
-# D: Distance in Mpc
-#
-# image: reconstructed white image of the galaxy
-#
-# peak: minimum signal-to-noise of the PNLF (typically >3)
-#
-# region: region of analysis. If there is just one region put the FCCXXX_residuals_list.fits
-#         in a new folder called FCCXXX_data/center/
-
-# Opening the residual cube getting with GandALF
-from astropy.io import fits
+import yaml
 import numpy as np
-from MUSE_Models import data_cube_y_x
+import pandas as pd
 import matplotlib.pyplot as plt
+from astropy.table import Table
+from astropy.io import ascii, fits
+from matplotlib.patches import Rectangle, Ellipse, Circle
+from lmfit import minimize, Minimizer, report_fit, Model, Parameters
+from MUSE_Models import PNe_spectrum_extractor, data_cube_y_x
 
-def open_data(gal_name):
+def open_data(choose_galaxy):
     # Load in the residual data, in list form
-    hdulist = fits.open(gal_name+"_data/"+gal_name+"_residuals_list.fits") # Path to data
+    hdulist = fits.open(choose_galaxy+"_data/"+choose_galaxy+"_residuals_list.fits") # Path to data
     res_hdr = hdulist[0].header # extract header from residual cube
-    
+
     # Check to see if the wavelength is in the fits fileby checking length of fits file.
     if len(hdulist) == 2: # check to see if HDU data has 2 units (data, wavelength)
         wavelength = np.exp(hdulist[1].data)
     else:
         wavelength = np.load(galaxy_data["wavelength"])
-    
+
     # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-    if gal_name == "FCC219":
+    if choose_galaxy == "FCC219":
         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
     else:
         y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     if (choose_galaxy == 'FCC153') & (region == "center"):
+#     if (choose_galaxy == 'FCC153'):
 #         y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     elif (choose_galaxy != 'FCC153') & (region == "center"):
+#     elif (choose_galaxy != 'FCC153'):
 #         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     if (choose_galaxy == 'FCC153') & (region == "halo"):
+#     if (choose_galaxy == 'FCC153'):
 #         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     elif (choose_galaxy != 'FCC153') & (region == "halo"):
+#     elif (choose_galaxy != 'FCC153'):
 #         if choose_galaxy == 'FCC177':
 #             x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
 #         else:
@@ -51,41 +38,43 @@ def open_data(gal_name):
 
     return x_data, y_data, hdulist, wavelength
 
-def robust_sigma(y, zero=False):
-        """
-        Biweight estimate of the scale (standard deviation).
-        Implements the approach described in
-        "Understanding Robust and Exploratory Data Analysis"
-        Hoaglin, Mosteller, Tukey ed., 1983, Chapter 12B, pg. 417
-        """
-        y = np.ravel(y)
-        d = y if zero else y - np.nanmedian(y)
+def reconstructed_image(choose_galaxy):
+    hdu  = fits.open(choose_galaxy+"_data/"+choose_galaxy+'center.fits')
+    data = hdu[1].data
+    hdr  = hdu[1].header
+    s    = np.shape(data)
+    wave = hdr['CRVAL3']+(np.arange(s[0])-hdr['CRPIX3'])*hdr['CD3_3']
 
-        mad = np.nanmedian(np.abs(d))
-        u2 = (d/(9.0*mad))**2  # c = 9
-        good = u2 < 1.0
-        u1 = 1.0 - u2[good]
-        num = y.size * ((d[good]*u1**2)**2).sum()
-        den = (u1*(1.0 - 5.0*u2[good])).sum()
-        sigma = np.sqrt(num/(den*(den - 1.0)))  # see note in above reference
+    cond = (wave >= 4900.0) & (wave <= 5100.0)
+    data = np.sum(data[cond,:,:],axis=0)
 
-        return sigma
+    return data, wave
 
-def completeness(galaxy,mag,params,D,image,peak=3, mask=False):
+def completeness(galaxy, mag, params, D, image, peak, mask_params, mask=False, c1=0.307):
 
-    n_pixels = 7
+    def robust_sigma(y, zero=False):
+            """
+            Biweight estimate of the scale (standard deviation).
+            Implements the approach described in
+            "Understanding Robust and Exploratory Data Analysis"
+            Hoaglin, Mosteller, Tukey ed., 1983, Chapter 12B, pg. 417
+
+            """
+            y = np.ravel(y)
+            d = y if zero else y - np.nanmedian(y)
+
+            mad = np.nanmedian(np.abs(d))
+            u2 = (d/(9.0*mad))**2  # c = 9
+            good = u2 < 1.0
+            u1 = 1.0 - u2[good]
+            num = y.size * ((d[good]*u1**2)**2).sum()
+            den = (u1*(1.0 - 5.0*u2[good])).sum()
+            sigma = np.sqrt(num/(den*(den - 1.0)))  # see note in above reference
+
+            return sigma
+
+    n_pixels = 9
     x_data, y_data, hdulist, wavelength = open_data(galaxy)
-
-    print('\n- Fitting the residual cube to avoid the wiggles -')
-    new_res = []
-    for i in range(len(hdulist[0].data)):
-        poly = np.polyfit(wavelength,hdulist[0].data[i],6)
-        aux = 0
-        for j in range(len(poly)):
-            aux = aux+poly[j]*wavelength**(len(poly)-j-1)
-        new_res.append(hdulist[0].data[i]-aux)
-    hdulist[0].data = np.array(new_res)
-    print('\nDone!')
 
     rN = []
     for i in range(len(hdulist[0].data)):
@@ -94,17 +83,14 @@ def completeness(galaxy,mag,params,D,image,peak=3, mask=False):
     Noise_map_cen  = rN.reshape(y_data, x_data)
 
     # mask out regions where sep masks
-    if (galaxy == "FCC167") & (mask==True):
+    if mask == True:
+        xe, ye, length, width, alpha = mask_params
+        
         Y, X = np.mgrid[:y_data, :x_data]
-        xe = 236
-        ye = 195
-        length= 170
-        width = 70
-        alpha = 0.15
         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
 
-        Noise_map_cen[elip_mask_gal == True] = np.nan
-
+        Noise_map_cen[elip_mask_gal == True] = 0.0 #np.nan
+        image[elip_mask_gal == True] = 0.0 # np.nan
     #x_data, y_data = open_data(galaxy, 'halo')
     #Noise_map_hal  = np.abs(np.std(fits.open(hal_file)[0].data, axis=1))
     #Noise_map_hal  = Noise_map_hal.reshape(y_data, x_data)
@@ -128,16 +114,12 @@ def completeness(galaxy,mag,params,D,image,peak=3, mask=False):
 
     def gaussian(x, amplitude, mean, stddev, bkg, grad):
         return (bkg + grad*x + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
-                     (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 / (stddev**2.)))
+                     (np.abs(amplitude)/3.) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 / (stddev**2.)))
 
     bins, bins_cens, other = plt.hist(mag, bins=10, edgecolor="black", linewidth=0.8, label="M 5007 > "+str(peak)+"A/rN", alpha=0.5)
     plt.close()
-    #bins_cens = bins_cens[:-1] + dM
+
     bins_cens = Abs_M + dM
-
-    #bins = bins[2:]
-
-    #bins_cens = bins_cens[2:]
 
     app_m = bins_cens
 
@@ -165,32 +147,19 @@ def completeness(galaxy,mag,params,D,image,peak=3, mask=False):
     ratio_counter_cen = np.zeros(len(app_m)).astype(np.float128)
 
     M_5007_detlim = -2.5*np.log10(total_flux) - 13.74 - dM
-    #fig, axs = plt.subplots(2,3, figsize=(20, 10))
-    #axs = axs.ravel()
-    #pdb.set_trace()
+
     zeros = []
     for i,a in enumerate(max_1D_A_cen):
-        temp = np.ones_like(Noise_mask_cen)
-        temp[((a / Noise_mask_cen) < peak)] = 0.0
-
-        #zeros.append(len(np.where(temp <= 0.0)[0])
-
-        #if zeros[i]
         ratio_counter_cen[i] = (np.nansum(image[((a / Noise_mask_cen) > peak)])/np.nansum(image)).astype(np.float128)
-
-        #print('A:',a)
-        #print('R:', ratio_counter_cen[i])
-        #print('Noise:',len(np.where(temp <= 0.0)[0]))
-        #print('I:',i)
-
-        #Noise_mask_plot_cen.append(Noise_mask_cen)
 
     ##############
     #    PNLF    #
     ##############
 
-    #plt.figure(1,figsize=(15,20))
-    PNLF = np.exp(0.307*Abs_M) * (1-np.exp(3*((-4.47 - Abs_M)))) #3000 * np.exp(-0.307*(5. * np.log10(18.7) + 25.)) *
+    PNLF = np.exp(c1*Abs_M) * (1-np.exp(3*((-4.5 - Abs_M)))) 
     PNLF[0] = 0.0
 
-    return PNLF, PNLF*ratio_counter_cen, Abs_M, Noise_map_cen, Noise_mask_cen
+    return PNLF, PNLF*ratio_counter_cen, Abs_M
+
+
+
