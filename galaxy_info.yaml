@@ -94,10 +94,19 @@ FCC190:
 FCC193:
   Distance: 21.2
   Galaxy name: FCC193
+  velocity: 998
+  FWHM: 3.762
+  FWHM_err: 0.0351
+  beta: 2.061
+  beta_err: 0.092
+  LSF: 3.146
+  LSF_err: 0.018
+  mask: [172, 405, 70, 50, 0.5]
   emissions:
-    OIII_1: [100, null, null, null]
-    OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
-  residual cube: FCC193_data/FCC193center_residuals_list.fits
+    OIII_1: [100, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+  residual cube: FCC193_data/FCC193_residuals_list.fits
   wavelength: FCC193_data/wavelength.npy
   z: 0.003336
   

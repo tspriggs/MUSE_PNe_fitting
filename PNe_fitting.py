@@ -1,7 +1,11 @@
 import yaml
+import lmfit
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy as sp
+from scipy.stats import norm
+from scipy import stats
 from astropy.wcs import WCS, utils, wcs
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
@@ -225,7 +229,7 @@ if fit_3D == "y":
         extract_data = np.array([PNe_spectrum_extractor(x, y, n_pix, data, x_data, wave=wavelength) for x,y in zip(x_P, y_P)])
         array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
         for p in np.arange(0, len(x_P)):
-            list_of_std = np.abs(robust_sigma(dat) for dat in extract_data[p])
+            list_of_std = np.abs([robust_sigma(dat) for dat in extract_data[p]])            
             array_to_fill[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
 
         return array_to_fill
@@ -270,7 +274,7 @@ if fit_3D == "y":
     total_flux = np.zeros((len(x_PNe), len(emission_dict)))                            # Total integrated flux of each emission, as measured for the PNe.
     A_2D_list = np.zeros((len(x_PNe), len(emission_dict)))                             # Amplitude from the Moffat function
     F_xy_list = np.zeros((len(x_PNe), len(emission_dict), len(PNe_spectra[0])))        # Array of flux arrays for each emission.
-    emission_amp_list = np.zeros((len(x_PNe), len(emission_dict)))                     # List of each emission's amplitude
+    moff_A = np.zeros((len(x_PNe), len(emission_dict)))                     # List of each emission's amplitude
     model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))    # Array of the model spectral fits
     mean_wave_list = np.zeros((len(x_PNe), len(emission_dict)))                        # List of the measured wavelength positions for each emission
     residuals_list = np.zeros(len(x_PNe))                                              # List of the residual noise level of each fit.
@@ -298,22 +302,22 @@ if fit_3D == "y":
             progbar(int(PNe_num)+1, len(x_PNe), 40)
             useful_stuff = [] # Used to store other outputs from the 3D model function: maximum spectral amplitude, flux arrays for each emission, A_xy, model spectra
             #run minimizer fitting routine
-            PNe_minimizer     = lmfit.Minimizer(PNe_residuals_3D,PNe_3D_params, fcn_args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
-            multi_fit_results = PNe_minimizer.minimize()
+            PNe_minimizer = lmfit.Minimizer(PNe_residuals_3D, PNe_3D_params, fcn_args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
+            PNe_3D_results = PNe_minimizer.minimize()
             total_flux[PNe_num] = np.sum(useful_stuff[1][1],1) * 1e-20
             list_of_fit_residuals[PNe_num] = useful_stuff[0]
             A_2D_list[PNe_num] = useful_stuff[1][0]
             F_xy_list[PNe_num] = useful_stuff[1][1]
             model_spectra_list[PNe_num] = useful_stuff[1][3]
-            emission_amp_list[PNe_num] = [PNe_3D_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
+            moff_A[PNe_num] = [PNe_3D_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
             mean_wave_list[PNe_num] = [PNe_3D_results.params["wave_{}".format(em)] for em in emission_dict]
             list_of_x[PNe_num] = PNe_3D_results.params["x_0"]
             list_of_y[PNe_num] = PNe_3D_results.params["y_0"]
             Gauss_bkg[PNe_num] = PNe_3D_results.params["Gauss_bkg"]
             Gauss_grad[PNe_num] = PNe_3D_results.params["Gauss_grad"]
             #save errors
-            moff_A_err[PNe_num] = [PNe_3D_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
-            mean_wave_err[PNe_num] = [PNe_3D_results.params["wave_{}".format(em)] for em in emission_dict]
+            moff_A_err[PNe_num] = [PNe_3D_results.params["Amp_2D_{}".format(em)].stderr for em in emission_dict]
+            mean_wave_err[PNe_num] = [PNe_3D_results.params["wave_{}".format(em)].stderr for em in emission_dict]
             x_0_err[PNe_num] = PNe_3D_results.params["x_0"].stderr
             y_0_err[PNe_num] = PNe_3D_results.params["y_0"].stderr
             Gauss_bkg_err[PNe_num] = PNe_3D_results.params["Gauss_bkg"].stderr
@@ -369,20 +373,11 @@ if fit_3D == "y":
         # Calculate the apparent and Absolute Magnitudes for each PNe
         PNe_df["m 5007"] = -2.5 * np.log10(PNe_df["[OIII] Flux"].values) - 13.74       # Apparent Magnitude
 
-        # Construct a Astropy table to save certain values for each galaxy.
-        PNe_table = Table([np.arange(0,len(x_PNe)), PNe_df["Ra (J2000)"], PNe_df["Dec (J2000)"],
-                           PNe_df["[OIII] Flux"].round(20),
-                           PNe_df["m 5007"].round(2),
-                           PNe_df["A/rN"].round(1),
-                           PNe_df["[OIII]/Hb"].round(2),],
-                           names=("PNe number", "Ra", "Dec", "[OIII] Flux", "m 5007", "A/rN", "[OIII]/Hb"))
-        ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table.txt".format(galaxy_name), format="tab", overwrite=True) # Save table in tab separated format.
-        ascii.write(PNe_table, "exported_data/"+"{0}/{0}_table_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of data.
-        print("exported_data/"+galaxy_name+"/"+galaxy_name+"_table.txt saved")
-        print("exported_data/"+galaxy_name+"/"+galaxy_name+"_table_latex.txt saved")
-
     print("Running 3D fitter")
-    gen_params(wave=5007*(1+z)-3, FWHM=galaxy_data["FWHM"], beta=galaxy_data["beta"], LSF=galaxy_data["LSF"], em_dict=emission_dict)
+    if galaxy_name == "FCC219":
+        gen_params(wave=5007*(1+z)-3, FWHM=galaxy_data["FWHM"], beta=galaxy_data["beta"], LSF=galaxy_data["LSF"], em_dict=emission_dict)
+    else:
+        gen_params(wave=5007*(1+z), FWHM=galaxy_data["FWHM"], beta=galaxy_data["beta"], LSF=galaxy_data["LSF"], em_dict=emission_dict)
     run_minimiser(PNe_3D_params) # Run the 3D model fitter.
 
     ## The Great Filter #####
@@ -397,7 +392,7 @@ if fit_3D == "y":
 
 
     ## FCC167
-    if gal_name == "FCC167":
+    if galaxy_name == "FCC167":
         PNe_df.loc[PNe_df["PNe number"]==30, "Filter"] = "N" # Over luminous [OIII] source
         PNe_df.loc[PNe_df["PNe number"]==15, "Filter"] = "N" # SNR maybe, extended source with dual peaked [OIII] 5007
 
@@ -408,14 +403,14 @@ if fit_3D == "y":
         F_OIII_xy_dist = Moff_A * (1 + rr_gg)**(-beta)
     
         return np.sum(F_OIII_xy_dist*1e-20)
-    
+        
     def error_sim(n_sim, n_PNe):
         mean_flux = np.ones(n_PNe)
         flux_err  = np.ones(n_PNe)
         mean_m5007 = np.ones(n_PNe)
         m5007_err = np.ones(n_PNe)
         for n in np.arange(0,n_PNe):
-            Moff_A_dist = np.random.normal(emission_amp_list[n][0], moff_A_err[n][0],n_sim)
+            Moff_A_dist = np.random.normal(moff_A[n][0], moff_A_err[n][0],n_sim)
             FWHM_dist = np.random.normal(galaxy_data["FWHM"], galaxy_data["FWHM_err"], n_sim)
             beta_dist = np.random.normal(galaxy_data["beta"], galaxy_data["beta_err"], n_sim)
             x_0_dist = np.random.normal(list_of_x[n], x_0_err[n][0], n_sim)
@@ -428,7 +423,7 @@ if fit_3D == "y":
             mean_m5007[n], m5007_err[n] = norm.fit(-2.5*np.log10(flux_array)-13.72)
     
         return mean_flux, flux_err, mean_m5007, m5007_err
-    
+
     mean_flux, PNe_df["Flux error"], mean_m5007, PNe_df["m 5007 error"] = error_sim(5000, len(x_PNe))
 
     ## Show F_err in percentage terms
@@ -444,6 +439,7 @@ if fit_3D == "y":
     Dist_est = 10.**(((m + 4.51) -25.) / 5.)
     dist_diff_p = 10.**(((m+m_err + 4.51) -25.) / 5.)
     dist_diff_m = 10.**(((m-m_err + 4.51) -25.) / 5.)
+    print("\n")
     print("Distance Estimate from PNLF: ", "{:.3f}".format(Dist_est), "Mpc, +{0:.4f} -{1:.4f}".format(dist_diff_p-Dist_est, Dist_est-dist_diff_m),"Mpc")
     
     dM =  5. * np.log10(Dist_est) + 25.
@@ -453,7 +449,23 @@ if fit_3D == "y":
     print("dM = {:.4f}".format(dM),"+/- {:.4f}".format(dM-dM_upper))
     
     PNe_df["M 5007"] = PNe_df["m 5007"] - dM
-
+    
+    ### Construct Table of filtered PNe, ready for paper
+    # Construct a Astropy table to save certain values for each galaxy.
+    y_idx = PNe_df.loc[PNe_df["Filter"]=="Y"].index.values
+    PNe_table = Table([np.arange(0,len(y_idx)), PNe_df["Ra (J2000)"].loc[PNe_df["Filter"]=="Y"], PNe_df["Dec (J2000)"].loc[PNe_df["Filter"]=="Y"],
+                       PNe_df["[OIII] Flux"].loc[PNe_df["Filter"]=="Y"].round(20),
+                       PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].round(2),
+                       PNe_df["A/rN"].loc[PNe_df["Filter"]=="Y"].round(1),],
+                       names=("PNe number", "Ra", "Dec", "[OIII] Flux", "m 5007", "A/rN"))
+    ascii.write(PNe_table, "exported_data/"+"{0}/{0}_fit_data.txt".format(galaxy_name), format="tab", overwrite=True) # Save table in tab separated format.
+    ascii.write(PNe_table, "exported_data/"+"{0}/{0}_fit_data_latex.txt".format(galaxy_data["Galaxy name"]), format="latex", overwrite=True) # Save latex table of data.
+    print("exported_data/"+galaxy_name+"/"+galaxy_name+"_table.txt saved")
+    print("exported_data/"+galaxy_name+"/"+galaxy_name+"_table_latex.txt saved")
+    
+    
+    
+    
     # Here we run the PSF analysis if needed.....
     # First ask which to attempt: brightest or pre-selected PNe
     # if brightest, then ask how many PNe to use from a list of the brightest in m_5007
@@ -509,26 +521,30 @@ if fit_3D == "y":
         print("Plotting each PNe spectra with best-fit model.")
 
     # Plot out each full spectrum with fitted peaks
-    for p in np.arange(0, len(x_PNe)):
-        plt.figure(figsize=(20,10))
-        plt.plot(wavelength, np.sum(PNe_spectra[p],0), alpha=0.7, c="k") # data
-        plt.plot(wavelength, np.sum(model_spectra_list[p],0), c="r") # model
-        plt.axhline(residuals_list[p], c="b", alpha=0.6)
-        plt.xlabel("Wavelength ($\AA$)", fontsize=18)
-        plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
-        plt.ylim(-1500,3000)
-        plt.savefig("Plots/"+ galaxy_name +"/full_spec_fits/PNe_{}.pdf".format(p))
-
-        plt.clf()
+#     for p in np.arange(0, len(x_PNe)):
+#         plt.figure(figsize=(20,10))
+#         plt.plot(wavelength, np.sum(PNe_spectra[p],0), alpha=0.7, c="k") # data
+#         plt.plot(wavelength, np.sum(model_spectra_list[p],0), c="r") # model
+#         plt.axhline(residuals_list[p], c="b", alpha=0.6)
+#         plt.xlabel("Wavelength ($\AA$)", fontsize=18)
+#         plt.ylabel("Flux Density ($10^{-20}$ $erg s^{-1}$ $cm^{-2}$ $\AA^{-1}$ $arcsec^{-2}$)", fontsize=18)
+#         plt.ylim(-1500,3000)
+#         plt.savefig("Plots/"+ galaxy_name +"/full_spec_fits/PNe_{}.pdf".format(p))
+# 
+#         plt.clf()
 
     #Run the rest of the analysis
 
     print("PNe analysis complete.")
 
     # Plot galaxy A/rN map with circled sources, indicating filter status of object, plus masked out area.
+    
+    A_rN_plot = np.load("exported_data/"+galaxy_name+"/A_rN_cen.npy")
+    A_rN_plot_shape = A_rN_plot.reshape(y_data, x_data)
 
     plt.figure(figsize=(20,20))
     plt.imshow(A_rN_plot_shape, origin="lower", cmap="CMRmap",  vmin=1.5, vmax=8)
+    #plt.imshow(Flux_1D_cube, origin="lower", cmap="CMRmap",  vmin=10, vmax=100)
     ax = plt.gca()
     cb=plt.colorbar(fraction=0.0455, pad=0.04)
     cb.set_label("A/rN",fontsize=30)
@@ -539,86 +555,92 @@ if fit_3D == "y":
     
     plt.tick_params(labelsize = 22)
     
-    plt.ylim(0,440)
-    plt.xlim(0,435)
+    #plt.ylim(250,)
+    #plt.xlim(0,435)
     
     Y, X = np.mgrid[:y_data, :x_data]
     xe, ye, length, width, alpha = gal_mask
     
+    if galaxy_name=="FCC219":
+        plt.ylim(0,440)
+        plt.xlim(0,440)
+    
+
     elip_gal = Ellipse((xe, ye), width, length, angle=alpha*(180/np.pi), fill=False, color="white", ls="--")
     ax.add_artist(elip_gal)
     
     for i, item in enumerate(x_y_list):
         if PNe_df.iloc[i].Filter == "Y":
             ax = plt.gca()
-            circ = plt.Circle((item[0],item[1]),4, color="white",lw=1.0, fill=False, alpha=0.7)
+            circ = plt.Circle((item[0],item[1]),4, color="white",lw=1.2, fill=False, alpha=0.8)
             ax.add_artist(circ)
         elif PNe_df.iloc[i].Filter == "N":
             ax = plt.gca()
-            circ = plt.Circle((item[0],item[1]),4, color="red",lw=1.0, fill=False, alpha=0.7)
+            circ = plt.Circle((item[0],item[1]),4, color="grey",lw=1.5, fill=False, alpha=0.8)
         ax.add_artist(circ)
-        if item[0]<240.:
-            ax.annotate(i, (item[0]+4, item[1]-2), color="white", size=10)
-        else:
-            ax.annotate(i, (item[0]+4, item[1]+1), color="white", size=10)
-
+        #if item[0]<240.:
+        #    ax.annotate(i, (item[0]+4, item[1]-2), color="white", size=10)
+        #else:
+        #    ax.annotate(i, (item[0]+4, item[1]+1), color="white", size=10)
+    
     ##### PNLF #####
     
     x_data_cen, y_data_cen, map_cen, aux = open_data(galaxy_name)
-    
+
     image, wave = reconstructed_image(galaxy_name)
     image = image.reshape([y_data_cen,x_data_cen])
     
     mag = PNe_df["M 5007"].loc[PNe_df["Filter"]=="Y"].values
     
     # Total PNLF
-    PNLF, PNLF_corr, Abs_M = completeness(gal_name, mag, PNe_multi_params, Dist_est, image, peak=3., mask_params=gal_mask, mask=True, c1=0.307 ) # Estimating the completeness for the central pointing
+    PNLF, PNLF_corr, Abs_M = completeness(galaxy_name, mag, PNe_3D_params, Dist_est, image, peak=3., mask_params=gal_mask, mask=True, c1=0.307 ) # Estimating the completeness for the central pointing
     
     # Getting the normalisation
     total_norm = np.sum(PNLF_corr)*abs(Abs_M[1]-Abs_M[0])
     
     # Scaling factor
     scal = len(mag)/total_norm
-    
+
     # Constraining to -2.0 in magnitude
     idx = np.where(Abs_M <= -2.0)
-    
     # Total number of PNe
     tot_N_PNe = np.sum(PNLF_corr[idx]*scal)*abs(Abs_M[1]-Abs_M[0])
     
-    step = Abs_M[1]-Abs_M[0]
-    N_PNe = np.sum(PNLF[:25]*scal)*step
-    print("Number of PNe from PNLF: ", "{:.1f}".format(N_PNe), "+/- {:.1f}".format(np.sqrt(N_PNe)))
-    
-    plt.figure(figsize=(14,10))
+    plt.figure(figsize=(18,14))
     
     binwidth = 0.2
     hist = plt.hist(mag, bins=np.arange(min(mag), max(mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue')
     
     ymax = max(hist[0])
     
-    plt.plot(Abs_M, PNLF*scal*binwidth, '-', color='blue', marker="o")
-    plt.plot(Abs_M, PNLF_corr*scal*binwidth,'-.', color='blue')
+    plt.plot(Abs_M, PNLF*scal*binwidth, '-', color='blue', marker="o", label="PNLF")
+    plt.plot(Abs_M, PNLF_corr*scal*binwidth,'-.', color='blue', label="Completeness corrected PNLF")
     
-    plt.xlabel('$M_{5007}$', fontsize=20)
-    plt.ylabel('N PNe', fontsize=20)
+    plt.xlabel('$M_{5007}$', fontsize=26)
+    plt.ylabel('N PNe', fontsize=26)
     #plt.yticks(np.arange(0,ymax+4, 5))
     
-    plt.xlim(-5.0,-2.0) 
-    plt.ylim(0,ymax+20)
-        
+    plt.xlim(-5.0,-2.0); plt.ylim(0,ymax+20);
+    plt.tick_params(labelsize = 22)
+    
+    #plt.axvline(PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].values.min() - 31.63)
+    plt.legend(loc=2, fontsize=20)
     plt.savefig("Plots/"+galaxy_name+"/"+galaxy_name+"_PNLF.pdf")
-
-
+    
+    
     ##### Alpha value calculation #####
     
-    file_name = gal_name+"_data/"+gal_name+"center.fits"
-    # take velocity from yaml file
-        
+    file_name = galaxy_name+"_data/"+galaxy_name+"center.fits"
+    
     lum_g_bol = ppxf_L_tot(file=file_name, mask_params=gal_mask, mask=True, redshift=z, vel=gal_vel, dist_mod=dM)
     
     alpha_2_5 = N_PNe/lum_g_bol
     log_alpha = np.log10(alpha_2_5)
+    print("$\alpha_{2.5}$ = {}".format(alpha_2_5))
+    print("log($\alpha_{2.5}$) = {}".format(log_alpha))
+    print("\n")
+    print("$L_{tot}$ = {}".format(lum_g_bol))
+
 
 
 
