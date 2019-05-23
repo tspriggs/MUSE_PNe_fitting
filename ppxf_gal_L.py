@@ -5,11 +5,10 @@ from time import clock
 import glob
 import pyphot
 import matplotlib.pylab as plt
-
 from   ppxf.ppxf import ppxf
 import ppxf.ppxf_util as util
 
-def ppxf_L_tot(file, mask_params, redshift, vel, dist_mod, mask=False):
+def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod, mask=False):
     """
     Input: File - file name of the original MUSE cube (after data reduction)
                 - redshift of galaxy, taken from Simbad
@@ -21,22 +20,31 @@ def ppxf_L_tot(file, mask_params, redshift, vel, dist_mod, mask=False):
     #
     #hdu = fits.open(file)
     #gal_lin = hdu[0].data
-
     #gal_name = "FCC167" # can be changed
     orig_hdulist = fits.open(file)
 
     s = np.shape(orig_hdulist[1].data)
     # setup mask
     if mask == True:
-        xe, ye, length, width, alpha = mask_params
+        xe, ye, length, width, alpha = gal_mask_params
         Y, X = np.mgrid[:s[1], :s[2]]
         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 +(((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
     
-        gal_mask = (np.isnan(orig_hdulist[1].data[0,:,:])==False) & (elip_mask_gal==False)
+        gal_mask = (np.isnan(orig_hdulist[1].data[50,:,:])==False) & (elip_mask_gal==False)
 
-        collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
+        #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
+        # Now mask the stars
+        star_mask_sum = 0
+        for star in star_mask_params:
+            xc, yc, rc = star
+            circ_mask = (Y - yc)**2 + (X - xc)**2 <= rc**2
+            star_mask_sum += circ_mask
+        
+        total_mask = gal_mask & (star_mask_sum == True)
+        
+        collapsed_spectra = np.nansum(orig_hdulist[1].data[50:, total_mask],1)
     else:
-        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2]),1)
+        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[50:,:],1)
     h1 = orig_hdulist[1].header
     gal_lin = collapsed_spectra
 
@@ -133,8 +141,8 @@ def ppxf_L_tot(file, mask_params, redshift, vel, dist_mod, mask=False):
     c = 299792.458
     #c = 299792458.0 # speed of light
     dv = (logLam2[0] - logLam1[0])*c  # km/s
-
     z = np.exp(vel/c) - 1   # Relation between velocity and redshift in pPXF
+    
     cond = np.exp(logLam1) <= 6900
     logLam1 = logLam1[cond]
     galaxy = galaxy[cond]; noise = noise[cond]

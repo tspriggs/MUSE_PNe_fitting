@@ -38,8 +38,10 @@ else:
 
 
 # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-if galaxy_name == "FCC219":
+if galaxy_name == "FCC219" or galaxy_name == "FCC219":
     x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+elif galaxy_name == "FCC161":
+    y_data, x_data = 451, 736
 else:
     y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
 

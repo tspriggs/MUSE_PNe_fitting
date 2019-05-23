@@ -7,6 +7,7 @@ from astropy.io import ascii, fits
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 from MUSE_Models import PNe_spectrum_extractor, data_cube_y_x
+import pdb as pdb
 
 def open_data(choose_galaxy):
     # Load in the residual data, in list form
@@ -20,21 +21,12 @@ def open_data(choose_galaxy):
         wavelength = np.load(galaxy_data["wavelength"])
 
     # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-    if choose_galaxy == "FCC219":
+    if choose_galaxy == "FCC219" or choose_galaxy =="FCC193" or choose_galaxy =="FCC083":
         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
+    elif choose_galaxy == "FCC161":
+        y_data, x_data = 451, 736
     else:
         y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     if (choose_galaxy == 'FCC153'):
-#         y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     elif (choose_galaxy != 'FCC153'):
-#         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     if (choose_galaxy == 'FCC153'):
-#         x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#     elif (choose_galaxy != 'FCC153'):
-#         if choose_galaxy == 'FCC177':
-#             x_data, y_data, n_data = data_cube_y_x(len(hdulist[0].data))
-#         else:
-#             y_data, x_data, n_data = data_cube_y_x(len(hdulist[0].data))
 
     return x_data, y_data, hdulist, wavelength
 
@@ -50,7 +42,8 @@ def reconstructed_image(choose_galaxy):
 
     return data, wave
 
-def completeness(galaxy, mag, params, D, image, peak, mask_params, mask=False, c1=0.307):
+def completeness(galaxy, mag, params, D, image, peak, gal_mask_params, 
+                 star_mask_params, mask=False, c1=0.307):
 
     def robust_sigma(y, zero=False):
             """
@@ -84,17 +77,25 @@ def completeness(galaxy, mag, params, D, image, peak, mask_params, mask=False, c
 
     # mask out regions where sep masks
     if mask == True:
-        xe, ye, length, width, alpha = mask_params
+        xe, ye, length, width, alpha = gal_mask_params
         
         Y, X = np.mgrid[:y_data, :x_data]
         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
-
-        Noise_map_cen[elip_mask_gal == True] = 0.0 #np.nan
-        image[elip_mask_gal == True] = 0.0 # np.nan
+        
+        star_mask_sum = 0
+        for star in star_mask_params:
+            xc, yc, rc = star
+            circ_mask = (Y - yc)**2 + (X - xc)**2 <= rc**2
+            star_mask_sum += circ_mask
+        
+        Noise_map_cen[elip_mask_gal+star_mask_sum == True] = 0.0 #np.nan
+        image[elip_mask_gal+star_mask_sum == True] = 0.0 # np.nan
+        image[image<0] = 0
     #x_data, y_data = open_data(galaxy, 'halo')
     #Noise_map_hal  = np.abs(np.std(fits.open(hal_file)[0].data, axis=1))
     #Noise_map_hal  = Noise_map_hal.reshape(y_data, x_data)
-
+    elif mask == False:
+        image[image<0] = 0
     # Construct the PNe FOV coordinate grid for use when fitting PNe.
     coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
     x_fit = np.array([item[0] for item in coordinates])
@@ -147,7 +148,7 @@ def completeness(galaxy, mag, params, D, image, peak, mask_params, mask=False, c
     ratio_counter_cen = np.zeros(len(app_m)).astype(np.float128)
 
     M_5007_detlim = -2.5*np.log10(total_flux) - 13.74 - dM
-
+    
     zeros = []
     for i,a in enumerate(max_1D_A_cen):
         ratio_counter_cen[i] = (np.nansum(image[((a / Noise_mask_cen) > peak)])/np.nansum(image)).astype(np.float128)
