@@ -55,7 +55,7 @@ c = 299792458.0 # speed of light
 
 z = galaxy_data["z"] # Redshift - taken from simbad / NED - read in from yaml file
 D = galaxy_data["Distance"] # Distance in Mpc - from Simbad / NED - read in from yaml file
-gal_mask = galaxy_data["mask"]
+gal_mask = galaxy_data["gal_mask"]
 gal_vel = galaxy_data["velocity"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.

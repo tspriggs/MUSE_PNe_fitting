@@ -34,17 +34,13 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
 
         #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
         # Now mask the stars
-        star_mask_sum = 0
-        for star in star_mask_params:
-            xc, yc, rc = star
-            circ_mask = (Y - yc)**2 + (X - xc)**2 <= rc**2
-            star_mask_sum += circ_mask
+        star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
         
-        total_mask = gal_mask & (star_mask_sum == True)
+        total_mask = gal_mask & ~star_mask_sum
         
-        collapsed_spectra = np.nansum(orig_hdulist[1].data[50:, total_mask],1)
+        collapsed_spectra = np.nansum(orig_hdulist[1].data[30:, total_mask],1)
     else:
-        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[50:,:],1)
+        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[30:,:],1)
     h1 = orig_hdulist[1].header
     gal_lin = collapsed_spectra
 

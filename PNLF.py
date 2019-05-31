@@ -82,12 +82,8 @@ def completeness(galaxy, mag, params, D, image, peak, gal_mask_params,
         Y, X = np.mgrid[:y_data, :x_data]
         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
         
-        star_mask_sum = 0
-        for star in star_mask_params:
-            xc, yc, rc = star
-            circ_mask = (Y - yc)**2 + (X - xc)**2 <= rc**2
-            star_mask_sum += circ_mask
-        
+        star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
+                
         Noise_map_cen[elip_mask_gal+star_mask_sum == True] = 0.0 #np.nan
         image[elip_mask_gal+star_mask_sum == True] = 0.0 # np.nan
         image[image<0] = 0
