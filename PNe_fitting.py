@@ -53,7 +53,8 @@ non_zero_index = np.squeeze(np.where(hdulist[0].data[:,0] != 0.))
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
 
-z = galaxy_data["z"] # Redshift - taken from simbad / NED - read in from yaml file
+gal_vel = galaxy_data["velocity"] 
+z = gal_vel*1e3 / c 
 D = galaxy_data["Distance"] # Distance in Mpc - from Simbad / NED - read in from yaml file
 gal_mask = galaxy_data["gal_mask"]
 gal_vel = galaxy_data["velocity"]
@@ -128,9 +129,9 @@ if fit_1D == "y":
     # setup LMfit paramterts
     spaxel_params = Parameters()
     spaxel_params.add("Amp",value=150., min=0.001)
-    spaxel_params.add("wave", value=5007.0*(1+z), min=5007.0*(1+z)-40, max=5007.0*(1+z)+40) #Starting position calculated from redshift value of galaxy.
+    spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-40, max=(500677*(1+z))+40) #Starting position calculated from redshift value of galaxy.
     spaxel_params.add("FWHM", value=galaxy_data["LSF"], vary=False) # Line Spread Function
-    spaxel_params.add("Gauss_bkg", value=0.001)
+    spaxel_params.add("Gauss_bkg", value=0.01)
     spaxel_params.add("Gauss_grad", value=0.0001)
 
     # Loop through spectra from list format of data.

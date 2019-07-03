@@ -83,9 +83,11 @@ def completeness(galaxy, mag, params, D, image, peak, gal_mask_params,
         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
         
         star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
-                
-        Noise_map_cen[elip_mask_gal+star_mask_sum == True] = 0.0 #np.nan
-        image[elip_mask_gal+star_mask_sum == True] = 0.0 # np.nan
+        
+        mask_indx = np.array(np.where((elip_mask_gal+star_mask_sum)==True))
+        
+        Noise_map_cen[mask_indx[0], mask_indx[1]] = 0.0 #np.nan
+        image[mask_indx[0], mask_indx[1]] = 0.0 # np.nan
         image[image<0] = 0
     #x_data, y_data = open_data(galaxy, 'halo')
     #Noise_map_hal  = np.abs(np.std(fits.open(hal_file)[0].data, axis=1))
@@ -101,7 +103,7 @@ def completeness(galaxy, mag, params, D, image, peak, gal_mask_params,
 
     # Setup range of Absolute Magnitudes to be converted to 1D max A values
 
-    Abs_M = np.linspace(-4.5,0.0,46) #bins_cens
+    Abs_M = np.arange(-4.52,0.04,0.1) #bins_cens
     dM = 5. * np.log10(D) + 25
 
     def moffat(amplitude, x_0, y_0, FWHM, beta):
@@ -153,7 +155,7 @@ def completeness(galaxy, mag, params, D, image, peak, gal_mask_params,
     #    PNLF    #
     ##############
 
-    PNLF = np.exp(c1*Abs_M) * (1-np.exp(3*((-4.5 - Abs_M)))) 
+    PNLF = np.exp(c1*Abs_M) * (1-np.exp(3*((-4.52 - Abs_M)))) 
     PNLF[0] = 0.0
 
     return PNLF, PNLF*ratio_counter_cen, Abs_M

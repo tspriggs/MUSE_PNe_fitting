@@ -1,20 +1,20 @@
 FCC083:
   Distance: 19.2
   Galaxy name: FCC083
-  velocity: 1516
+  velocity: 1532
   FWHM: 4.13
   FWHM_err: 0.05
   beta: 2.12
   beta_err: 0.15
   LSF: 3.34
   LSF_err: 0.03
-  mask: [170,180,70,45,2.3]
+  gal_mask: [170,180,70,45,2.3]
+  star_mask: [[1,1,1]]
   emissions:
     OIII_1: [100, null, null, null]
     OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC083_data/FCC083_residuals_list.fits
   wavelength: FCC083_data/wavelength.npy
-  z: 0.00507
   
 FCC119:
   Distance: 20.3
@@ -41,7 +41,7 @@ FCC143:
 FCC147:
   Distance: 20
   Galaxy name: FCC147
-  velocity: 1331.98
+  velocity: 1350
   FWHM: 4.89
   FWHM_err: 0.13
   beta: 1.33
@@ -55,12 +55,11 @@ FCC147:
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
   residual cube: FCC147_data/FCC147_residuals_list.fits
   wavelength: FCC147_data/wavelength.npy
-  z: 0.004443
 
 FCC161:
   Distance: 20
   Galaxy name: FCC161
-  velocity: 1365
+  velocity: 1369
   FWHM: 3.52
   FWHM_err: 0.04
   beta: 2.79
@@ -74,12 +73,11 @@ FCC161:
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
   residual cube: FCC161_data/FCC161_residuals_list.fits
   wavelength: FCC161_data/wavelength.npy
-  z: 0.004563
 
 FCC167:
   Distance: 21.2
   Galaxy name: FCC167
-  velocity: 1841
+  velocity: 1878
   FWHM: 3.733
   FWHM_err: 0.087
   beta: 1.571
@@ -87,14 +85,13 @@ FCC167:
   LSF: 3.295
   LSF_err: 0.043
   gal_mask: [237,206,180,75,0.12]
-  star_mask: [[0,0,0]]
+  star_mask: [[1,1,1]]
   emissions:
     OIII_1: [100, null, null]
     OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
     hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
   residual cube: FCC167_data/FCC167_residuals_list.fits
   wavelength: FCC167_data/FCC167_wavelength.npy
-  z: 0.006261
   
 FCC170:
   Distance: 18.7
@@ -116,6 +113,24 @@ FCC182:
   wavelength: FCC182_data/wavelength.npy
   z: 0.005951
 
+FCC184:
+  Distance: 20
+  Galaxy name: FCC184
+  velocity: 1302.6
+  FWHM: 4.94
+  FWHM_err: 0.066
+  beta: 1.56
+  beta_err: 0.10
+  LSF: 3.54
+  LSF_err: 0.024
+  gal_mask: [210,220,120,120,0.01]
+  star_mask: [[1,1,1]]
+  emissions:
+    OIII_1: [100, null, null, null]
+    OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+  residual cube: FCC184_data/FCC184_residuals_list.fits
+  wavelength: FCC184_data/wavelength.npy
+
 FCC190:
   Distance: 20.3
   Galaxy name: FCC190
@@ -129,46 +144,45 @@ FCC190:
 FCC193:
   Distance: 21.2
   Galaxy name: FCC193
-  velocity: 1000.11
+  velocity: 976
   FWHM: 3.587
   FWHM_err: 0.033
   beta: 2.26
   beta_err: 0.11
   LSF: 3.06
   LSF_err: 0.018
-  gal_mask: [171, 407, 90, 60, 0.5]
+  gal_mask: [171, 407, 90, 60, 0.6]
   star_mask: [[1,1,1]]
   emissions:
     OIII_1: [100, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
   residual cube: FCC193_data/FCC193_residuals_list.fits
   wavelength: FCC193_data/wavelength.npy
-  z: 0.003336
   
 FCC219:
   Distance: 20.2
   Galaxy name: FCC219
-  velocity: 1942
-  FWHM: 4.071
-  FWHM_err: 0.058
-  beta: 2.55
-  beta_err: 0.235
-  LSF: 3.133
-  LSF_err: 0.029
-  gal_mask: [193,80,162,80,0.01]
-  star_mask: [[299,153,10]]
+  velocity: 1933
+  FWHM: 4.07
+  FWHM_err: 0.063
+  beta: 2.708
+  beta_err: 0.29
+  LSF: 3.12
+  LSF_err: 0.032
+  gal_mask: [190,77,145,75,0.0]
+  star_mask: [[299,153,7]]
   emissions:
     OIII_1: [100, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
     hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
   residual cube: FCC219_data/FCC219_residuals_list.fits
   wavelength: FCC219_data/wavelength.npy
-  z: 0.006498
+
 
 FCC249:
   Distance: 22.9
   Galaxy name: FCC249
-  velocity: 1660
+  velocity: 1579
   FWHM: 4.84
   FWHM_err: 0.092
   beta: 1.59
@@ -182,13 +196,12 @@ FCC249:
     OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC249_data/FCC249_residuals_list.fits
   wavelength: FCC249_data/wavelength.npy
-  z: 0.005551
 
 
 FCC255:
   Distance: 19.7
   Galaxy name: FCC255
-  velocity: 1288
+  velocity: 1328
   FWHM: 3.82
   FWHM_err: 0.04
   beta: 2.94
@@ -202,22 +215,29 @@ FCC255:
     OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC255_data/FCC255center_residuals_list.fits
   wavelength: FCC255_data/wavelength.npy
-  z: 0.004306
   
 FCC276:
   Distance: 19.6
   Galaxy name: FCC276
+  velocity: 1434
+  FWHM: 4.439
+  FWHM_err: 0.07
+  beta: 2.39
+  beta_err: 0.26
+  LSF: 3.31
+  LSF_err: 0.034
+  gal_mask: [623,197,100,70,0.7]
+  star_mask: [[1,1,1]]
   emissions:
     OIII_1: [100, null, null, null]
     OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
-  residual cube: FCC276_data/FCC276center_residuals_list.fits
+  residual cube: FCC276_data/FCC276_residuals_list.fits
   wavelength: FCC276_data/wavelength.npy
-  z: 0.004673
 
 FCC277:
   Distance: 20.5
   Galaxy name: FCC277
-  velocity: 1382
+  velocity: 1657
   FWHM: 4.17
   FWHM_err: 0.08
   beta: 2.24
@@ -231,7 +251,7 @@ FCC277:
     OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC277_data/FCC277_residuals_list.fits
   wavelength: FCC277_data/wavelength.npy
-  z: 0.00547
+
 
 FCC301:
   Distance: 19.7
@@ -246,7 +266,7 @@ FCC301:
 FCC310:
   Distance: 19.9
   Galaxy name: FCC310
-  velocity: 1382
+  velocity: 1383
   FWHM: 3.746
   FWHM_err: 0.08
   beta: 1.61
@@ -260,4 +280,3 @@ FCC310:
     OIII_2: [5, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   residual cube: FCC310_data/FCC310_residuals_list.fits
   wavelength: FCC310_data/wavelength.npy
-  z: 0.004620

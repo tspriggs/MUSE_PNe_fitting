@@ -30,17 +30,20 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
         Y, X = np.mgrid[:s[1], :s[2]]
         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 +(((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
     
-        gal_mask = (np.isnan(orig_hdulist[1].data[50,:,:])==False) & (elip_mask_gal==False)
+        gal_mask = (np.isnan(orig_hdulist[1].data[10,:,:])==False) & (elip_mask_gal==False)
 
         #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
         # Now mask the stars
         star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
         
-        total_mask = gal_mask & ~star_mask_sum
+        #total_mask = gal_mask & ~star_mask_sum # Galaxy region we want to sum, is marked with True here
         
-        collapsed_spectra = np.nansum(orig_hdulist[1].data[30:, total_mask],1)
+        mask_indx = np.array(np.where((gal_mask & ~star_mask_sum)==True)) # make an index list of the coordinates
+        
+        collapsed_spectra = np.nansum(orig_hdulist[1].data[1:,mask_indx[0],mask_indx[1]],1)
     else:
-        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[30:,:],1)
+        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[1:,:,:],1)
+    print("Cube has been collapsed.")
     h1 = orig_hdulist[1].header
     gal_lin = collapsed_spectra
 
