@@ -9,11 +9,14 @@ cvel      = 299792.458
 
 ######################################################
 # Storing the data in .fits file
-def save_cube(data,header,name):
+def save_cube(data,header,name, s):
     hdu  = fits.PrimaryHDU()
     hdu2 = fits.ImageHDU()
     hdu.data = np.copy(data)
     hdu2 = fits.ImageHDU(data=header, name='WAVELENGTH')
+    hdr = hdu.header
+    hdr.set("YAXIS", value=s[1])
+    hdr.set("XAXIS", value=s[2])
 
     print('Data cube recovered in -->',name)
 
@@ -21,11 +24,14 @@ def save_cube(data,header,name):
     HDUList = fits.HDUList([hdu, hdu2])
     HDUList.writeto(name, overwrite=True)
     
-def save_list(data, header, name):
+def save_list(data, header, name, s):
     hdu = fits.PrimaryHDU()
     hdu2 = fits.ImageHDU()
     hdu.data = np.copy(data)
     hdu2 = fits.ImageHDU(data = header, name="WAVELENGTH")
+    hdr = hdu.header
+    hdr.set("YAXIS", value=s[1])
+    hdr.set("XAXIS", value=s[2])
     
     print("Data to be saved in a list format.")
     HDUList = fits.HDUList([hdu, hdu2])
@@ -108,5 +114,5 @@ s[0] = len(tmp)
 resid_list = np.swapaxes(np.copy(resid_tot), 1, 0) # shape swapped to x*y, lambda
 
 # Save the data cubes
-save_list(resid_list, tmp, galaxy+"_residuals_list.fits")
-
+save_list(resid_list, tmp, galaxy+"_residuals_list.fits", s)
+save_cube(resid_tot.reshape((s[0],s[1],s[2])),tmp,directory + galaxy+"_residuals_cube.fits", s)

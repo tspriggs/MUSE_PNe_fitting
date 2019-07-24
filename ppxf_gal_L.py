@@ -42,7 +42,7 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
         
         collapsed_spectra = np.nansum(orig_hdulist[1].data[1:,mask_indx[0],mask_indx[1]],1)
     else:
-        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[1:,:,:],1)
+        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[1:,:],1)
     print("Cube has been collapsed.")
     h1 = orig_hdulist[1].header
     gal_lin = collapsed_spectra
@@ -180,7 +180,7 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
     BC_sun, M_sun = library(0,0,get_sun='Y')
 
     # Getting the bolometric luminosity (in solar luminosity) for the r-band
-    lum_bol_g = 10.0**(-0.4*(M_g-M_sun))*10.0**(-0.4*(BC_g-BC_sun))
+    lum_bol_g = 10.0**(-0.4*(M_g-M_sun)) * 10.0**(-0.4*(BC_g-BC_sun))
 
     return lum_bol_g
 
@@ -246,7 +246,7 @@ def transmission(lamb, spectra):
     # Apply an interpolation to get the transmission function
     aa = np.interp(lamb,l_rband,response_rband)
     #aa[np.where((lamb > max(l_rband)) | (lamb < min(l_rband)))] = 0
-
+    
     spectra_r_band = aa*spectra # Apply the transmission filter to the spectra
     dl = lamb[1]-lamb[0] # Spectral resolution
 

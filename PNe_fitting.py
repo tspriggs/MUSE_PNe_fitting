@@ -57,7 +57,6 @@ gal_vel = galaxy_data["velocity"]
 z = gal_vel*1e3 / c 
 D = galaxy_data["Distance"] # Distance in Mpc - from Simbad / NED - read in from yaml file
 gal_mask = galaxy_data["gal_mask"]
-gal_vel = galaxy_data["velocity"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
 coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
