@@ -104,23 +104,6 @@ def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     return data[np.ravel(ind)]
 
 
-def data_cube_y_x(n):
-    nsqrt = np.ceil(np.sqrt(n))
-    solution = False
-    val = nsqrt
-    while not solution:
-        val2 = int(n/val)
-        if val2 * val == float(n):
-            solution = True
-        else:
-            val-=1
-
-    if int(val) > int(val2):
-        return int(val2), int(val), n
-    else:
-        return int(val), int(val2), n
-
-
 def robust_sigma(y, zero=False):
     """
     Biweight estimate of the scale (standard deviation).

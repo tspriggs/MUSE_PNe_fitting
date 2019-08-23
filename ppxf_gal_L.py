@@ -8,7 +8,9 @@ import matplotlib.pylab as plt
 from   ppxf.ppxf import ppxf
 import ppxf.ppxf_util as util
 
-def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod, mask=False):
+# def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod):#, mask=False):
+def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod):#, mask=False):
+
     """
     Input: File - file name of the original MUSE cube (after data reduction)
                 - redshift of galaxy, taken from Simbad
@@ -17,37 +19,55 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
     """
     
     # Read a galaxy spectrum and define the wavelength range
-    #
-    #hdu = fits.open(file)
-    #gal_lin = hdu[0].data
-    #gal_name = "FCC167" # can be changed
-    orig_hdulist = fits.open(file)
-
-    s = np.shape(orig_hdulist[1].data)
-    # setup mask
-    if mask == True:
-        xe, ye, length, width, alpha = gal_mask_params
-        Y, X = np.mgrid[:s[1], :s[2]]
-        elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 +(((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
     
-        gal_mask = (np.isnan(orig_hdulist[1].data[10,:,:])==False) & (elip_mask_gal==False)
+#     with fits.open(file) as orig_hdulist:
+#         orig_hdulist = fits.open(file)
+#         h1 = orig_hdulist[1].header
+#         s = np.shape(orig_hdulist[1].data)
+#         xe, ye, length, width, alpha = gal_mask_params
+#         Y, X = np.mgrid[:s[1], :s[2]]
+#         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
+#         
+#         gal_mask = (np.isnan(orig_hdulist[1].data[10,:,:])==False) & (elip_mask_gal==False)
+#         
+#         #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
+#         # Now mask the stars
+#         star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
+#         
+#         #total_mask = gal_mask & ~star_mask_sum # Galaxy region we want to sum, is marked with True here
+#         
+#         mask_indx = np.array(np.where((gal_mask & ~star_mask_sum)==True)) # make an index list of the coordinates
+#         indexed_data = np.array(orig_hdulist[1].data[:,mask_indx[0],mask_indx[1]])
+#         gal_lin = np.nansum(indexed_data,1)
+        
+#     orig_hdulist = fits.open(file)
 
-        #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
-        # Now mask the stars
-        star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
-        
-        #total_mask = gal_mask & ~star_mask_sum # Galaxy region we want to sum, is marked with True here
-        
-        mask_indx = np.array(np.where((gal_mask & ~star_mask_sum)==True)) # make an index list of the coordinates
-        
-        collapsed_spectra = np.nansum(orig_hdulist[1].data[1:,mask_indx[0],mask_indx[1]],1)
-    else:
-        collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[1:,:],1)
-    print("Cube has been collapsed.")
-    h1 = orig_hdulist[1].header
-    gal_lin = collapsed_spectra
-
-    lamRange1 = h1['CRVAL3'] + np.array([0., h1['CD3_3']*(h1['NAXIS3'] - 1)]) #IMPORTANTE: EL RANGO DE LAMBDAS ESTA EN ESCALA LOGARITMICA
+#     s = np.shape(orig_hdulist[1].data)
+#     # setup mask
+# #     if mask == True:
+#     xe, ye, length, width, alpha = gal_mask_params
+#     Y, X = np.mgrid[:s[1], :s[2]]
+#     elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
+    
+#     gal_mask = (np.isnan(orig_hdulist[1].data[10,:,:])==False) & (elip_mask_gal==False)
+    
+#     #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
+#     # Now mask the stars
+#     star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
+    
+#     #total_mask = gal_mask & ~star_mask_sum # Galaxy region we want to sum, is marked with True here
+    
+#     mask_indx = np.array(np.where((gal_mask & ~star_mask_sum)==True)) # make an index list of the coordinates
+#     indexed_data = np.array(orig_hdulist[1].data[:,mask_indx[0],mask_indx[1]])
+#     collapsed_spectra = np.nansum(indexed_data,1)
+#     collapsed_spectra = np.nansum(np.array(orig_hdulist[1].data[:,mask_indx[0],mask_indx[1]]),1)
+#     else:
+#         collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[1:,:],1)
+    
+#     h1 = orig_hdulist[1].header
+#     gal_lin = collapsed_spectra
+#     print("Cube has been collapsed.")
+    lamRange1 = header['CRVAL3'] + np.array([0., header['CD3_3']*(header['NAXIS3'] - 1)]) #IMPORTANTE: EL RANGO DE LAMBDAS ESTA EN ESCALA LOGARITMICA
     #Transformamos los pixeles en lambdas:
     #lam=np.linspace(lamRange1[0],lamRange[1],len(gal_lin[0,:]))
     FWHM_gal = 2.81  # SAURON has an instrumental resolution FWHM of 4.2A.
@@ -68,7 +88,7 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
     # lamRange1 = lamRange1/(1+z) # Compute approximate restframe wavelength range
     # FWHM_gal = FWHM_gal/(1+z)   # Adjust resolution in Angstrom
 
-    galaxy, logLam1, velscale = util.log_rebin(lamRange1, gal_lin)
+    galaxy, logLam1, velscale = util.log_rebin(lamRange1, int_spec)
     cond = np.exp(logLam1) <= 6900
     # Getting the apparent magnitude of the galaxy in the g-band
     mag_g, Flux_g = library(np.exp(logLam1[cond]),galaxy[cond]*1.0e-20)
@@ -96,19 +116,18 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
     lamRange2 = h2['CRVAL1'] + np.array([0., h2['CDELT1']*(h2['NAXIS1'] - 1)])
     sspNew, logLam2, velscale_temp = util.log_rebin(lamRange2, ssp, velscale=velscale/velscale_ratio)
     templates = np.empty((sspNew.size, len(vazdekis))) # PUT HERE THE DIRECTORY TO MILES_STARS
-    FWHM_tem = 2.51  # Vazdekis+10 spectra have a constant resolution FWHM of 2.51A.
-    velscale_ratio = 2  # adopts 2x higher spectral sampling for templates than for galaxy
+    
 
-    # Extract the wavelength range and logarithmically rebin one spectrum
-    # to a velocity scale 2x smaller than the SAURON galaxy spectrum, to determine
-    # the size needed for the array which will contain the template spectra.
-    #
-    hdu = fits.open(vazdekis[0])
-    ssp = hdu[0].data
-    h2 = hdu[0].header
-    lamRange2 = h2['CRVAL1'] + np.array([0., h2['CDELT1']*(h2['NAXIS1'] - 1)])
-    sspNew, logLam2, velscale_temp = util.log_rebin(lamRange2, ssp, velscale=velscale/velscale_ratio)
-    templates = np.empty((sspNew.size, len(vazdekis)))
+#     # Extract the wavelength range and logarithmically rebin one spectrum
+#     # to a velocity scale 2x smaller than the SAURON galaxy spectrum, to determine
+#     # the size needed for the array which will contain the template spectra.
+#     #
+#     hdu = fits.open(vazdekis[0])
+#     ssp = hdu[0].data
+#     h2 = hdu[0].header
+#     lamRange2 = h2['CRVAL1'] + np.array([0., h2['CDELT1']*(h2['NAXIS1'] - 1)])
+#     sspNew, logLam2, velscale_temp = util.log_rebin(lamRange2, ssp, velscale=velscale/velscale_ratio)
+#     templates = np.empty((sspNew.size, len(vazdekis)))
 
     # Convolve the whole Vazdekis library of spectral templates
     # with the quadratic difference between the SAURON and the
@@ -179,7 +198,7 @@ def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod,
     # Obtaining the bolometric correction of the Sun
     BC_sun, M_sun = library(0,0,get_sun='Y')
 
-    # Getting the bolometric luminosity (in solar luminosity) for the r-band
+    # Getting the bolometric luminosity (in solar luminosity) for the g-band
     lum_bol_g = 10.0**(-0.4*(M_g-M_sun)) * 10.0**(-0.4*(BC_g-BC_sun))
 
     return lum_bol_g
@@ -235,23 +254,26 @@ def library(lamb, spectra, filter='SDSS', band='g', get_sun='N'):
 def transmission(lamb, spectra):
 
     """ This function convolves the transmission function
-    of the r-band for the SLOAN filters with the provided
+    of the g-band for the SLOAN filters with the provided
     spectra. """
 
-    file = np.loadtxt("OMEGACAM_g_band_SDSS.txt") # PUT HERE THE PATH TO YOUR FILTER
-
+#     file = np.loadtxt("OMEGACAM_g_band_SDSS.txt") # PUT HERE THE PATH TO YOUR FILTER
+    file = np.loadtxt("Paranal_OmegaCAM.g_SDSS.dat") # PUT HERE THE PATH TO YOUR FILTER
+    
     # Getting the response function for different wavelenghts
-    l_rband, response_rband = file[:,0]*10.0, file[:,1]
+#     l_gband, response_gband = file[:,0]*10.0, file[:,1]
+    l_gband, response_gband = file[:,0], file[:,1]
+    
 
     # Apply an interpolation to get the transmission function
-    aa = np.interp(lamb,l_rband,response_rband)
+    aa = np.interp(lamb,l_gband,response_gband)
     #aa[np.where((lamb > max(l_rband)) | (lamb < min(l_rband)))] = 0
     
-    spectra_r_band = aa*spectra # Apply the transmission filter to the spectra
+    spectra_g_band = aa*spectra # Apply the transmission filter to the spectra
     dl = lamb[1]-lamb[0] # Spectral resolution
 
-    total_flux = np.sum(spectra)*dl; total_flux_r_band = np.sum(spectra_r_band)*dl
+    total_flux = np.sum(spectra)*dl; total_flux_g_band = np.sum(spectra_g_band)*dl
 
-    BC_r = total_flux/total_flux_r_band # Computing the bolometric correction
+    BC_g = total_flux/total_flux_g_band # Computing the bolometric correction
 
-    return -2.5*np.log10(BC_r)
+    return -2.5*np.log10(BC_g)

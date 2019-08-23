@@ -6,44 +6,52 @@ from scipy.stats import norm
 from scipy import stats
 import pdb as pdb
 from astropy.io import fits
-from MUSE_Models import data_cube_y_x
+from tqdm import tqdm
+import sys
+import yaml
+from MUSE_Models import robust_sigma
 
-def progbar(curr, total, full_progbar):
-    frac = curr/total
-    filled_progbar = round(frac*full_progbar)
-    print('\r', '#'*filled_progbar + '-'*(full_progbar-filled_progbar), '[{:>7.2%}]'.format(frac), end='')
+vary = sys.argv[1]
+if vary == "True":
+    vary_PSF = True
+elif vary == "False":
+    vary_PSF = False
 
+with open("galaxy_info.yaml", "r") as yaml_data:
+    galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
     
-def Moffat(amplitude, x_0, y_0, FWHM, beta):
-    r_d = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
-    rr_gg = ((x_fit - x_0)**2. + (y_fit - y_0)**2.) / r_d**2.
+galaxy_data = galaxy_info["FCC167"]
+    
+def moffat(amplitude, x_0, y_0, FWHM, beta):
+    gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
+    rr_gg = ((x_fit - x_0)**2. + (y_fit - y_0)**2.) / gamma**2.
     return amplitude * (1. + rr_gg)**(-beta)
 
-def Gaussian(x, amplitude, mean, LSF):
+def Gaussian(x, amplitude, mean, LSF, z):
     stddev = LSF / 2.35482
-    return (np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.))) + (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 / (stddev**2.))
+    return (np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.))) + (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.))
 
 def gen_noise(mu, std):
     noise = np.random.normal(mu, std, len(wavelength))
     return noise
 
-def gen_data(wave, amp, G_FWHM, mu, std, p_n, s_n):
+def gen_data(wave, amp, mean, G_FWHM, z, mu, std, p_n, s_n):
     ## Gauss
-    gauss_models = np.array([Gaussian(wave, a, wave[219], G_FWHM) + gen_noise(mu, std) for a in amp[p_n]])
+    gauss_models = np.array([Gaussian(wave, a, mean, G_FWHM, z) + gen_noise(mu, std) for a in amp[p_n]])
     ## error cube
-    list_of_std = [np.abs(np.std(spec)) for spec in gauss_models]
+    list_of_std = [np.abs(robust_sigma(spec)) for spec in gauss_models]
     error_cube = [np.repeat(list_of_std[i], len(wave)) for i in range(0,len(list_of_std))]
 
     return gauss_models, error_cube
 
-def gen_params(M_FWHM, beta, G_FWHM, M_FWHM_v = False, beta_v = False):
+def gen_params(M_FWHM, beta, G_FWHM, M_FWHM_v = False, beta_v = False, G_FWHM_v=False):
     sim_params.add('moffat_amp', value=70., min=0.01)
-    sim_params.add('x_0', value=((n_pixels//2.) +1), min=0.01, max=n_pixels)
-    sim_params.add('y_0', value=((n_pixels//2.) +1), min=0.01, max=n_pixels)
+    sim_params.add('x_0', value=((n_pixels//2.) +1),min=((n_pixels//2.) +1)-3, max=((n_pixels//2.) +1)+3)
+    sim_params.add('y_0', value=((n_pixels//2.) +1), min=((n_pixels//2.) +1)-3, max=((n_pixels//2.) +1)+3)
     sim_params.add('FWHM', value=M_FWHM, min=0.01, max=14.0, vary=M_FWHM_v)
     sim_params.add("beta", value=beta, min=0.01, max=14.0, vary=beta_v)
-    sim_params.add("mean", value=5030., min=5000, max=5070)
-    sim_params.add("Gauss_LSF", value=G_FWHM, vary=False)
+    sim_params.add("mean", value=5030., min=5015, max=5045)
+    sim_params.add("Gauss_LSF", value=G_FWHM, min=G_FWHM-0.5, max=G_FWHM+0.5, vary=G_FWHM_v)
     sim_params.add("Gauss_bkg", value=0.001)
     sim_params.add("Gauss_grad", value=0.001)
 
@@ -63,29 +71,59 @@ def sim_residual(params, x, data, error, PNe_number, run):
     rr_gg = ((x_fit - x_0)**2. + (y_fit - y_0)**2.) / gamma**2.
     F_OIII_xy = moffat_amp * (1. + rr_gg)**(-beta)
     # Convert Moffat flux to amplitude
-    A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * 1.19))
     Gauss_std = Gauss_LSF / 2.35482
+    A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
     #Construct model gaussian profiles for each amplitude value in cube
     model_spectra = [(Gauss_bkg + (Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - mean)** 2 / Gauss_std**2.) +
-             (Amp/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
+             (Amp/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / Gauss_std**2.)) for Amp in A_OIII_xy]
 
     # Store things
     list_of_fitted_flux[PNe_number, run] = F_OIII_xy
     list_of_total_fitted_flux[PNe_number, run] = np.sum(F_OIII_xy) * 1e-20
-    list_of_resids[PNe_number, run] = np.std(data - model_spectra)
+    list_of_resids[PNe_number, run] = robust_sigma(data - model_spectra)
     list_of_A_OIII[PNe_number, run] = np.max(A_OIII_xy)
-
+    list_of_model_spectra[PNe_number, run] = model_spectra
+    
     return (data - model_spectra) / error
 
-hdulist = fits.open("FCC167_data/FCC167_residuals_list.fits")
+def chi_square(sim_data, flux_array, wavelength, mean_wave, gal_LSF, G_bkg, G_grad, dof, n_pix, z):
+    # chi square analysis
+    PNe_n = np.copy(sim_data) # data
+    flux_1D = np.copy(flux_array) # flux list
+    A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (gal_LSF/ 2.35482)))
+    
+    def gaussian(x, amplitude, mean, FWHM, bkg, grad, z):
+        stddev = FWHM/ 2.35482
+        return ((bkg + grad*x) + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
+                (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.)))
+
+    list_of_gauss = [gaussian(wavelength, A, mean_wave, gal_LSF, G_bkg, G_grad, z) for A in A_n]
+    for kk in range(len(PNe_n)):
+        temp = np.copy(list_of_gauss[kk])
+        idx  = np.where(PNe_n[kk] == 0.0)[0]
+        temp[idx] = 0.0
+        PNe_n[kk,idx] = 1.0
+        list_of_gauss[kk] = np.copy(temp)
+    rN   = robust_sigma(sim_data - list_of_gauss) #data
+    res  = PNe_n - list_of_gauss #data
+    Chi2 = np.sum((res**2)/(rN**2))
+    s    = np.shape(PNe_n)
+    redchi = Chi2/((len(wavelength)*n_pix**2) - dof) #dof
+    Chi_sqr = Chi2 
+
+    return redchi, Chi_sqr
+    
+hdulist = fits.open("galaxy_data/FCC167_data/FCC167_residuals_list.fits")
 hdr = hdulist[0].header
-data = hdulist[0].data
-y_data, x_data, n_data = data_cube_y_x(len(data))
 
 wavelength = np.exp(hdulist[1].data)
-M_5007 = np.arange(-4.5, 0.0, 0.05)
-dM = 5 * np.log10(18.687) + 25
+M_5007 = np.arange(-4.52, -1.00, 0.05)
+dM = 5 * np.log10(18.739) + 25
 m_5007 = M_5007 + dM
+
+c = 299792458.0 # speed of light
+gal_vel = 1878
+z = gal_vel*1e3 / c
 
 total_flux_list = 10.**((m_5007 + 13.74) / -2.5)
 flux = total_flux_list / 1e-20
@@ -97,85 +135,126 @@ y_fit = np.array([item[1] for item in coordinates])
 
 n_PNe = len(m_5007)
 
-n_sim = 10
+n_sim = 200
 
 print("Number of PNe:", n_PNe)
 print("Number of Simulations:", n_sim)
 print("Total number of simulations to run:", n_PNe * n_sim)
 
-in_FWHM   = 3.8
-in_beta   = 2.4
-in_G_FWHM = 3.12
+init_g_FWHM = 3.281
+init_wave = wavelength[219]
+init_FWHM = 3.9
+init_beta = 2.4
 
 mu = 0.7634997156910988
-std = 5.764539800007041
+std = 5.890678560485462
 
-sum_initial = np.sum(Moffat(1., n_pixels/2., n_pixels/2., in_FWHM, in_beta))
+sum_initial = np.sum(moffat(1., n_pixels/2., n_pixels/2., init_FWHM, init_beta))
 input_moff_A = flux / sum_initial
 
 # Make moffat models = F_5007 (x,y)
-Moffat_models = np.array([Moffat(moff_A, n_pixels/2, n_pixels/2, in_FWHM, in_beta) for moff_A in input_moff_A])
+Moffat_models = np.array([moffat(moff_A, n_pixels/2, n_pixels/2, init_FWHM, init_beta) for moff_A in input_moff_A])
 
 # A_5007 (x,y)
-Amp_x_y = ((Moffat_models) / (np.sqrt(2.*np.pi) * 1.19))
+Amp_x_y = ((Moffat_models) / (np.sqrt(2.*np.pi) * (init_g_FWHM / 2.35482)))
 
 ## Storage
 list_of_A_OIII = np.zeros((n_PNe,n_sim))
 list_of_resids = np.zeros((n_PNe,n_sim))
 list_of_total_fitted_flux = np.zeros((n_PNe,n_sim))
 list_of_fitted_flux = np.zeros((n_PNe, n_sim, n_pixels**2))
+list_of_wave = np.zeros((n_PNe,n_sim))
+list_of_model_spectra = np.zeros((n_PNe, n_sim, n_pixels**2, len(wavelength)))
 
 list_of_M_amp = np.zeros((n_PNe,n_sim))
 list_of_FWHM = np.zeros((n_PNe,n_sim))
 list_of_beta = np.zeros((n_PNe,n_sim))
+list_of_g_FWHM = np.zeros((n_PNe,n_sim))
+list_of_g_grad = np.zeros((n_PNe,n_sim))
+list_of_g_bkg  = np.zeros((n_PNe,n_sim)) 
+
+list_of_red_chi = np.zeros((n_PNe,n_sim))
+list_of_chi_sqr = np.zeros((n_PNe,n_sim))
+
+list_of_red_chi_lmfit = np.zeros((n_PNe,n_sim))
+list_of_chi_sqr_lmfit = np.zeros((n_PNe,n_sim))
 ##
 
 ## Generate Parameters
 sim_params = Parameters()
-gen_params(M_FWHM=in_FWHM, beta=in_beta, G_FWHM=in_G_FWHM, M_FWHM_v=False, beta_v=False)
+gen_params(M_FWHM=init_FWHM, beta=init_beta, G_FWHM=init_g_FWHM, M_FWHM_v=vary_PSF, beta_v=vary_PSF,
+           G_FWHM_v=vary_PSF)
+gal_LSF = galaxy_data["LSF"]
 
-for p in range(n_PNe):
-    progbar(p, n_PNe, 20)
-    for s in range(n_sim):
-        sim_data, sim_error = gen_data(wavelength, Amp_x_y, in_G_FWHM, mu, std, p, s)
-        result = minimize(sim_residual, sim_params, args=(wavelength, sim_data, sim_error, p, s))
-        list_of_M_amp[p, s] = result.params["moffat_amp"]
-        list_of_FWHM[p, s] = result.params["FWHM"]
-        list_of_beta[p, s] = result.params["beta"]
+gauss_models = np.zeros((n_PNe,n_sim,n_pixels**2,len(wavelength)))
+for i in np.arange(0, n_PNe):
+    for j in np.arange(0, n_sim):
+        gauss_models[i,j] = np.array([Gaussian(wavelength, amp, init_wave, init_g_FWHM, z)+ gen_noise(mu, std) for amp in Amp_x_y[i]]) 
         
+#construct error cube
+error_cube = np.zeros((n_PNe, n_sim, n_pixels**2, len(wavelength)))
+
+for PNe_num in np.arange(0, n_PNe):
+    for sim_num in np.arange(0, n_sim):
+        list_of_std = [np.abs(robust_sigma(spec)) for spec in gauss_models[PNe_num, sim_num]]
+        error_cube[PNe_num, sim_num] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0,len(list_of_std))]
+
+
+for p in tqdm(range(n_PNe)):
+    for s in range(n_sim):
+        #sim_data, sim_error = gen_data(wavelength, Amp_x_y, init_wave, init_g_FWHM, z, mu, std, p, s)
+        result = minimize(sim_residual, sim_params, args=(wavelength, gauss_models[p,s], error_cube[p,s], p, s))
+        
+        list_of_M_amp[p, s] = result.params["moffat_amp"].value
+        list_of_FWHM[p, s] = result.params["FWHM"].value
+        list_of_beta[p, s] = result.params["beta"].value
+        list_of_g_FWHM[p, s] = result.params["Gauss_LSF"].value
+        list_of_wave[p, s] = result.params["mean"].value
+        list_of_g_grad[p,s] = result.params["Gauss_grad"].value
+        list_of_g_bkg[p,s] = result.params["Gauss_bkg"].value
+        list_of_red_chi_lmfit[p,s] = result.redchi
+        list_of_chi_sqr_lmfit[p,s] = result.chisqr
+        
+        list_of_red_chi[p,s], list_of_chi_sqr[p,s] = chi_square(gauss_models[p,s], list_of_fitted_flux[p,s],
+                                                                wavelength, result.params["mean"].value, 
+                                                                init_g_FWHM, result.params["Gauss_bkg"].value,
+                                                                result.params["Gauss_grad"].value, result.nvarys,
+                                                                n_pixels, z)
+
+
 A_by_rN = list_of_A_OIII / list_of_resids
 
-# Calculate Deltas
-
-m_5007_out = -2.5 * np.log10(list_of_total_fitted_flux) - 13.74
-
-#M_5007_out = m_5007_out - dM
-
-# create plots and delta params, out minus in
-delta_moff_amp = np.zeros((n_PNe,n_sim))
-for pne in np.arange(0, n_PNe):
-    for sim in np.arange(0, n_sim):
-        delta_moff_amp[pne, sim] = input_moff_A[pne] - list_of_M_amp[pne, sim]
-        #delta_moff_amp[pne, sim] = ((input_moff_A[pne] - list_of_M_amp[pne, sim])/input_moff_A[pne])*100
-
-delta_total_F = np.zeros((n_PNe,n_sim))
-for pne in np.arange(0, n_PNe):
-    for sim in np.arange(0, n_sim):
-        delta_total_F[pne, sim] =  (flux[pne]) - (list_of_total_fitted_flux[pne, sim]/1e-20)
-        #delta_total_F[pne, sim] =  ((flux[pne] - (list_of_total_fitted_flux[pne, sim]/1e-20))/flux[pne])*100
-        
-delta_m_5007 = np.zeros((n_PNe,n_sim))
-for pne in np.arange(0, n_PNe):
-    for sim in np.arange(0, n_sim):
-        delta_m_5007[pne, sim] = app_m_list[pne] - m_5007_out[pne, sim]
-        #delta_m_5007[pne, sim] = ((app_m_list[pne] - m_5007_out[pne, sim])/app_m_list[pne])*100
-        
-        
-delta_FWHM = init_FWHM - list_of_FWHM
-#delta_FWHM = ((init_FWHM - list_of_FWHM)/init_FWHM)*100
-delta_beta = init_beta - list_of_beta
-#delta_beta = ((init_beta - list_of_beta) / init_beta)*100
-
-delta_total_F = delta_total_F*1e-20
+if vary_PSF == True:
+    
+    #### Save files ####
+    np.save("exported_data/simulations/script/Free_PSF/input_moff_A", input_moff_A)
+    np.save("exported_data/simulations/script/Free_PSF/output_moff_A", list_of_M_amp)
+    np.save("exported_data/simulations/script/Free_PSF/output_FWHM", list_of_FWHM)
+    np.save("exported_data/simulations/script/Free_PSF/output_beta", list_of_beta)
+    np.save("exported_data/simulations/script/Free_PSF/A_by_rN", A_by_rN)
+    np.save("exported_data/simulations/script/Free_PSF/total_F", list_of_total_fitted_flux)
+    np.save("exported_data/simulations/script/Free_PSF/output_wave", list_of_wave)
+    np.save("exported_data/simulations/script/Free_PSF/output_g_FWHM", list_of_g_FWHM)
+    np.save("exported_data/simulations/script/Free_PSF/red_chi", list_of_red_chi)
+    np.save("exported_data/simulations/script/Free_PSF/chi_sqr", list_of_chi_sqr)
+    np.save("exported_data/simulations/script/Free_PSF/red_chi_lmfit", list_of_red_chi_lmfit)
+    np.save("exported_data/simulations/script/Free_PSF/chi_sqr_lmfit", list_of_chi_sqr_lmfit)
+    print("Free PSF result files saved.")
 
 
+elif vary_PSF == False:
+    
+    #### save files ####
+    np.save("exported_data/simulations/script/Fixed_PSF/input_moff_A", input_moff_A)
+    np.save("exported_data/simulations/script/Fixed_PSF/output_moff_A", list_of_M_amp)
+    np.save("exported_data/simulations/script/Fixed_PSF/output_FWHM", list_of_FWHM)
+    np.save("exported_data/simulations/script/Fixed_PSF/output_beta", list_of_beta)
+    np.save("exported_data/simulations/script/Fixed_PSF/A_by_rN", A_by_rN)
+    np.save("exported_data/simulations/script/Fixed_PSF/total_F", list_of_total_fitted_flux)
+    np.save("exported_data/simulations/script/Fixed_PSF/output_wave", list_of_wave)
+    np.save("exported_data/simulations/script/Fixed_PSF/output_g_FWHM", list_of_g_FWHM)
+    np.save("exported_data/simulations/script/Fixed_PSF/red_chi", list_of_red_chi)
+    np.save("exported_data/simulations/script/Fixed_PSF/chi_sqr", list_of_chi_sqr)
+    np.save("exported_data/simulations/script/Fixed_PSF/red_chi_lmfit", list_of_red_chi_lmfit)
+    np.save("exported_data/simulations/script/Fixed_PSF/chi_sqr_lmfit", list_of_chi_sqr_lmfit)
+    print("Fixed PSF result files saved.")

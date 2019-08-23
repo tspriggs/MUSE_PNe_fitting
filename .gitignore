@@ -3,18 +3,9 @@
 .ipynb_checkpoints
 __pycache__
 exported_data/
-M87_data/
-FCC255_data/
-FCC167_data/
-FCC170_data/
-FCC167_data/
-FCC170_data/
-FCC277_data/
-FCC083_data/
-*_data/
+galaxy_data/
 ICIC_work
-Plots/FCC219/full_spec_fits
-Plots/FCC167/full_spec_fits
+Plots/
 emiles
 gandalf_PNe/
 
