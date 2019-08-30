@@ -47,17 +47,19 @@ lmin_lmax = [x.strip() for x in wave_range.split(',')]
 centre = sys.argv[4]
 extra = sys.argv[5]
 
-if centre == 1:
-    cen = centre
+if centre == "1":
+    cen = "center"
 else:
     cen = ""
     print("Everything is fine")
 
-if extra != 0:
-    file_extra = extra
-else:
+if extra == "0":
     file_extra = ""
     print("Everything is fine")
+else:    
+    file_extra = extra
+    
+    
 
 
 WORK_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
@@ -66,7 +68,10 @@ DATA_DIR = f"/local/tspriggs/Fornax_data_cubes/{galaxy}/"
 
 # Check for and download the FCC000centre.fits file
 if os.path.isfile(f"/local/tspriggs/Fornax_data_cubes/{galaxy}center.fits") != True:
-    os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}center.fits {RAW_DIR}")
+    if (galaxy == "FCC167") | (galaxy == "FCC219"): # or
+        os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/MILES_stars_Guerou/{galaxy}/{galaxy}center.fits {RAW_DIR}")
+    else:
+        os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}center.fits {RAW_DIR}")
 else:
     print(f"{galaxy}center.fits already exits")
 
@@ -75,20 +80,25 @@ files_needed = [f"{galaxy}{cen}_AllSpectra.fits{file_extra}",
                 f"USED_PARAMS.fits{file_extra}", 
                 f"{galaxy}{cen}_gandalf-residuals_SPAXEL.fits{file_extra}", 
                 f"{galaxy}{cen}_gandalf-emission_SPAXEL.fits{file_extra}", 
-                f"{galaxy}{cen}_gandalf_SPAXEL.fits{file_extra}" ]
+                f"{galaxy}{cen}_gandalf_SPAXEL.fits{file_extra}",
+                f"{galaxy}{cen}_ppxf_SPAXELS.fits{file_extra}",
+                f"{galaxy}{cen}_table.fits{file_extra}"]
 
 # check to see if folder of galaxy already exits
-if os.path.isdir(f"{RAW_DIR}{galaxy}/") != True:
-    os.system(f"mkdir {RAW_DIR}{galaxy}")
-else:
+if os.path.isdir(f"{RAW_DIR}{galaxy}/") == True:
     print(f"{galaxy} folder already exists.")
+else:
+    os.system(f"mkdir {RAW_DIR}{galaxy}")
 
 # for file in list "files_needed", check for and download files needed.
 for file in files_needed:
-    if os.path.isfile(f"{DATA_DIR}/{file}") != True:
-        os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}center_center/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
-    else:
+    if os.path.isfile(f"{DATA_DIR}/{file}") == True:
         print(f"{file} already exists.")
+    else:
+        if (galaxy == "FCC167") | (galaxy == "FCC219"):
+            os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/MILES_stars_Guerou/{galaxy}/{galaxy}center_center/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
+        else:
+            os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}center_center/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
     
 
 hdu = fits.open(RAW_DIR+f"{galaxy}center.fits")

@@ -441,7 +441,7 @@ for i, item in enumerate(x_y_list):
 
 plt.savefig(PLOT_DIR+"_A_rN_circled.png", bbox_inches='tight')
 
-    
+PNe_df.to_csv(f"exported_data/{galaxy_name}/{galaxy_name}_PNe_df.csv")
 # #####################################################
 # ####################### PNLF ########################
 # #####################################################
