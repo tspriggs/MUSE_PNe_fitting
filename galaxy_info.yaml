@@ -84,12 +84,12 @@ FCC167:
   Distance: 21.2
   Galaxy name: FCC167
   velocity: 1878
-  FWHM: 3.67
-  FWHM_err: 0.07
-  beta: 1.54
-  beta_err: 0.1
-  LSF: 3.32
-  LSF_err: 0.03
+  FWHM: 3.65
+  FWHM_err: 0.1
+  beta: 1.85
+  beta_err: 0.22
+  LSF: 3.29
+  LSF_err: 0.06
   gal_mask: [235,206,160,70,0.12]
   gal_mask_bkp: [237,206,180,75,0.12]
   star_mask: [[1,1,1]]

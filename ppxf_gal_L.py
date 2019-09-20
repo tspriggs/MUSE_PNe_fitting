@@ -91,10 +91,12 @@ def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod):#, mask=False):
     galaxy, logLam1, velscale = util.log_rebin(lamRange1, int_spec)
     cond = np.exp(logLam1) <= 6900
     # Getting the apparent magnitude of the galaxy in the g-band
-    mag_g, Flux_g = library(np.exp(logLam1[cond]),galaxy[cond]*1.0e-20)
+    mag_g, Flux_g = library(np.exp(logLam1[cond]),galaxy[cond]*1.0e-20, band="g")
+    mag_r, Flux_r = library(np.exp(logLam1[cond]),galaxy[cond]*1.0e-20, band="r")
 
     # Converting to absolute magnitude
     M_g = mag_g - dist_mod
+    M_r = mag_r - dist_mod
 
     galaxy = galaxy/np.median(galaxy)  # Normalize spectrum to avoid numerical issues
     noise = np.full_like(galaxy, redshift)           # Assume constant noise per pixel here
@@ -161,7 +163,7 @@ def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod):#, mask=False):
     dv = (logLam2[0] - logLam1[0])*c  # km/s
     z = np.exp(vel/c) - 1   # Relation between velocity and redshift in pPXF
     
-    cond = np.exp(logLam1) <= 6900
+    cond = np.exp(logLam1) <= 7810#6900
     logLam1 = logLam1[cond]
     galaxy = galaxy[cond]; noise = noise[cond]
     goodPixels = util.determine_goodpixels(logLam1, lamRange2, z)
@@ -193,15 +195,18 @@ def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod):#, mask=False):
     print('Elapsed time in PPXF: %.2f s' % (clock() - t))
 
     # Pass the optimal template to get the bolometric correction for the g-band
-    BC_g = transmission(np.exp(logLam2), optimal_template)
+    BC_g = transmission(np.exp(logLam2), optimal_template, band="g")
+    BC_r = transmission(np.exp(logLam2), optimal_template, band="r")
 
     # Obtaining the bolometric correction of the Sun
-    BC_sun, M_sun = library(0,0,get_sun='Y')
+    BC_sun_g, M_sun_g = library(0,0,band="g",get_sun='Y')
+    BC_sun_r, M_sun_r = library(0,0,band="r",get_sun='Y')
 
     # Getting the bolometric luminosity (in solar luminosity) for the g-band
-    lum_bol_g = 10.0**(-0.4*(M_g-M_sun)) * 10.0**(-0.4*(BC_g-BC_sun))
+    lum_bol_g = 10.0**(-0.4*(M_g-M_sun_g)) * 10.0**(-0.4*(BC_g-BC_sun_g))
+    lum_bol_r = 10.0**(-0.4*(M_r-M_sun_r)) * 10.0**(-0.4*(BC_r-BC_sun_r))
 
-    return lum_bol_g
+    return lum_bol_g, lum_bol_r, mag_r, M_r
 
 
 # ====================================
@@ -226,7 +231,7 @@ def library(lamb, spectra, filter='SDSS', band='g', get_sun='N'):
         wave_sun = sun_obs.wavelength.magnitude
         spec_sun = sun_obs.flux.magnitude
 
-        BC_sun = transmission(wave_sun, spec_sun)
+        BC_sun = transmission(wave_sun, spec_sun, band)
 
         # Getting the Sun absolute magnitude
         fluxes = f.get_flux(wave_sun, spec_sun)
@@ -251,29 +256,29 @@ def library(lamb, spectra, filter='SDSS', band='g', get_sun='N'):
 # ====================================
 #        TRANSMISSION FUNCTION
 # ====================================
-def transmission(lamb, spectra):
+def transmission(lamb, spectra, band):
 
     """ This function convolves the transmission function
     of the g-band for the SLOAN filters with the provided
     spectra. """
 
 #     file = np.loadtxt("OMEGACAM_g_band_SDSS.txt") # PUT HERE THE PATH TO YOUR FILTER
-    file = np.loadtxt("Paranal_OmegaCAM.g_SDSS.dat") # PUT HERE THE PATH TO YOUR FILTER
+    file = np.loadtxt(f"Paranal_OmegaCAM.{band}_SDSS.dat") # PUT HERE THE PATH TO YOUR FILTER
     
     # Getting the response function for different wavelenghts
 #     l_gband, response_gband = file[:,0]*10.0, file[:,1]
-    l_gband, response_gband = file[:,0], file[:,1]
+    l_band, response_band = file[:,0], file[:,1]
     
 
     # Apply an interpolation to get the transmission function
-    aa = np.interp(lamb,l_gband,response_gband)
+    aa = np.interp(lamb,l_band,response_band)
     #aa[np.where((lamb > max(l_rband)) | (lamb < min(l_rband)))] = 0
     
-    spectra_g_band = aa*spectra # Apply the transmission filter to the spectra
+    spectra_band = aa*spectra # Apply the transmission filter to the spectra
     dl = lamb[1]-lamb[0] # Spectral resolution
 
-    total_flux = np.sum(spectra)*dl; total_flux_g_band = np.sum(spectra_g_band)*dl
+    total_flux = np.sum(spectra)*dl; total_flux_band = np.sum(spectra_band)*dl
 
-    BC_g = total_flux/total_flux_g_band # Computing the bolometric correction
+    BC = total_flux/total_flux_band # Computing the bolometric correction
 
-    return -2.5*np.log10(BC_g)
+    return -2.5*np.log10(BC)

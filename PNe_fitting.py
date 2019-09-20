@@ -240,8 +240,8 @@ def run_minimiser(parameters):
     
     
 
-
-gen_params(wave=5006.77*(1+z), FWHM=galaxy_data["FWHM"], beta=galaxy_data["beta"], LSF=galaxy_data["LSF"], em_dict=emission_dict)
+# 5006.77*(1+z)
+gen_params(wave=5030, FWHM=galaxy_data["FWHM"], beta=galaxy_data["beta"], LSF=galaxy_data["LSF"], em_dict=emission_dict)
     
 run_minimiser(PNe_multi_params)
 
@@ -439,7 +439,7 @@ for i, item in enumerate(x_y_list):
     #else:
     #    ax.annotate(i, (item[0]+4, item[1]+1), color="white", size=10)
 
-plt.savefig(PLOT_DIR+"_A_rN_circled.png", bbox_inches='tight')
+#plt.savefig(PLOT_DIR+"_A_rN_circled.png", bbox_inches='tight')
 
 PNe_df.to_csv(f"exported_data/{galaxy_name}/{galaxy_name}_PNe_df.csv")
 # #####################################################
@@ -525,11 +525,10 @@ gal_lin = np.nansum(good_spectra, 1)
         
 print("Cube has been collapsed...")
 
-
-L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z, vel=gal_vel, dist_mod=dM)
+L_bol_g, L_bol_r, m_r, M_r = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z, vel=gal_vel, dist_mod=dM)
 
 # ##### Alpha value calculation #####
-alpha_2_5 = N_PNe/L_bol
+alpha_2_5 = N_PNe/L_bol_g
 log_alpha = np.log10(alpha_2_5)
 
 plt.show()
@@ -542,10 +541,11 @@ print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table.txt")
 print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table_latex.txt")
 
 n_p = len(PNe_df.loc[PNe_df["Filter"]=="Y"])
-print(f"N PNe used:      {n_p}")
-print(f"PNLF N:          {N_PNe}")
-print(f"L_bol of:        {L_bol}")
-print(f"Distance of:     {Dist_est} +/- {Dist_err}")
-print(f"Distance Mod of: {dM} +/- {dM_err}")
+print(f"N PNe used:        {n_p}")
+print(f"PNLF N:            {N_PNe}")
+print(f"L_bol of:          {L_bol_g}")
+print(f"app mag in r band: {m_r}")
+print(f"Distance of:       {Dist_est} +/- {Dist_err}")
+print(f"Distance Mod of:   {dM} +/- {dM_err}")
 
 # print("This is the end of PNe analysis script. Goodbye")
