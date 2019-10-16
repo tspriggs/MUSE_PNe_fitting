@@ -1,17 +1,18 @@
 import sys
 import yaml
 import lmfit
+import argparse
+import scipy as sp
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import scipy as sp
 from tqdm import tqdm
-from scipy.stats import norm
 from scipy import stats
-from astropy.wcs import WCS, utils, wcs
+from scipy.stats import norm
 from astropy.table import Table
-from astropy.coordinates import SkyCoord
 from astropy.io import ascii, fits
+from astropy.wcs import WCS, utils, wcs
+from astropy.coordinates import SkyCoord
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, robust_sigma
@@ -20,7 +21,12 @@ with open("galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
 
 # Queries sys arguments for galaxy name
-galaxy_name = sys.argv[1]
+my_parser = argparse.ArgumentParser()
+
+my_parser.add_argument('--galaxy', action='store', type=str, required=True)
+args = my_parser.parse_args()
+galaxy_name = args.galaxy
+
 galaxy_data = galaxy_info[galaxy_name]
 
 DATA_DIR = "galaxy_data/"+galaxy_name+"_data/"+galaxy_name

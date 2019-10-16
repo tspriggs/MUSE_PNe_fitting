@@ -77,7 +77,6 @@ PNe_df["PNe number"] = np.arange(0,len(x_PNe))
 PNe_df["Filter"] = "Y"
 
 with fits.open(RAW_DIR+"center.fits") as hdu_wcs:
-    hdu_wcs = fits.open(RAW_DIR+"center.fits")
     hdr_wcs = hdu_wcs[1].header
     wcs_obj = WCS(hdr_wcs, naxis=2)
 

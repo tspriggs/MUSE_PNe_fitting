@@ -63,6 +63,23 @@ FCC147:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
+FCC153:
+  Distance: 20
+  Galaxy name: FCC153
+  velocity: 1642
+  FWHM: 3.61
+  FWHM_err: 0.08
+  beta: 1.9
+  beta_err: 0.18
+  LSF: 2.9
+  LSF_err: 0.04
+  gal_mask: [195,220, 200, 18, 1.5]
+  star_mask: [[1,1,1]]
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
 FCC161:
   Distance: 20
   Galaxy name: FCC161
@@ -103,6 +120,7 @@ FCC167:
 FCC170:
   Distance: 18.7
   Galaxy name: FCC170
+  gal_mask: [0,0,0,0,0]
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
