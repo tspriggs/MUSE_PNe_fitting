@@ -24,14 +24,19 @@ with open("galaxy_info.yaml", "r") as yaml_data:
 my_parser = argparse.ArgumentParser()
 
 my_parser.add_argument('--galaxy', action='store', type=str, required=True)
+my_parser.add_argument('--loc', action="store", type=str, required=True)
 args = my_parser.parse_args()
 galaxy_name = args.galaxy
+loc = args.loc
 
-galaxy_data = galaxy_info[galaxy_name]
+if loc == "0":
+    loc = ""
 
-DATA_DIR = "galaxy_data/"+galaxy_name+"_data/"+galaxy_name
-EXPORT_DIR = "exported_data/"+galaxy_name+"/"+galaxy_name
-PLOT_DIR = "Plots/"+galaxy_name+"/"+galaxy_name
+galaxy_data = galaxy_info[galaxy_name+"_"+loc]
+
+DATA_DIR = f"galaxy_data/{galaxy_name}_data/{galaxy_name}{loc}"
+EXPORT_DIR = f"exported_data/{galaxy_name}/{galaxy_name}{loc}"
+PLOT_DIR = f"Plots/{galaxy_name}/{galaxy_name}{loc}"
 
 # Load in the residual data, in list form
 hdulist = fits.open(DATA_DIR+"_residuals_list.fits") # Path to data
@@ -122,11 +127,14 @@ gauss_A = np.zeros(len(hdulist[0].data))
 list_of_rN = np.zeros(len(hdulist[0].data))
 data_residuals = np.zeros((len(hdulist[0].data),len(wavelength)))
 obj_residuals = np.zeros((len(hdulist[0].data),len(wavelength)))
+g_bkg  = np.zeros(len(hdulist[0].data))
+g_grad = np.zeros(len(hdulist[0].data))
+list_of_mean = np.zeros(len(hdulist[0].data))
 
 # setup LMfit paramterts
 spaxel_params = Parameters()
 spaxel_params.add("Amp",value=150., min=0.001)
-spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-15, max=(500677*(1+z))+15) #Starting position calculated from redshift value of galaxy.
+spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-25, max=(500677*(1+z))+25) #Starting position calculated from redshift value of galaxy.
 spaxel_params.add("FWHM", value=galaxy_data["LSF"], vary=False) # Line Spread Function
 spaxel_params.add("Gauss_bkg", value=0.01)
 spaxel_params.add("Gauss_grad", value=0.0001)
@@ -137,21 +145,58 @@ for j,i in tqdm(enumerate(non_zero_index), total=len(non_zero_index)):
     fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, hdulist[0].data[i], input_errors[i], i), nan_policy="propagate")
     gauss_A[i] = fit_results.params["Amp"].value
     obj_residuals[i] = fit_results.residual
+    g_bkg[i]  = fit_results.params["Gauss_bkg"].value
+    g_grad[i] = fit_results.params["Gauss_grad"].value
 
 A_rN = np.array([A / rN for A,rN in zip(gauss_A, list_of_rN)])
 Gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
+
+####
+# chi square analysis
+gauss_list, redchi, Chi_sqr = [], [], []
+for i in range(len(hdulist[0].data)):
+    spectra= np.copy(hdulist[0].data[i]) # copy data
+    flux_1D = np.copy(Gauss_F[i]) # copy list of flux
+    A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_data["LSF"]/ 2.35482)))
+
+    def gaussian(x, amplitude, mean, FWHM, bkg, grad, z):
+        stddev = FWHM / 2.35482
+        return ((bkg + grad*x) + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
+                (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.)))
+
+    gauss = gaussian(wavelength, A_n, list_of_mean[i], galaxy_data["LSF"], g_bkg[i], g_grad[i], z)
+
+    temp = np.copy(gauss)
+    idx  = np.where(spectra == 0.0)[0]
+    temp[idx] = 0.0
+    spectra[idx] = 1.0
+    gauss = np.copy(temp)
+    
+    rN   = robust_sigma(spectra - gauss)
+    res  = spectra - gauss
+    Chi2 = np.sum((res**2)/(rN**2))
+    s    = np.shape(spectra)
+    redchi.append(Chi2/ (len(wavelength) - fit_results.nvarys))
+    gauss_list.append(gauss)
+    Chi_sqr.append(Chi2)
+    
+######
+
+
 
 # Save A/rN, Gauss A, Guass F and rN arrays as npy files. Change to .fits soon maybe
 np.save(EXPORT_DIR+"_A_rN_cen", A_rN)
 np.save(EXPORT_DIR+"_gauss_A_cen", gauss_A)
 np.save(EXPORT_DIR+"_gauss_F_cen", Gauss_F)
 np.save(EXPORT_DIR+"_rN", list_of_rN)
+np.save(EXPORT_DIR+"_chi_sqr", Chi_sqr)
+np.save(EXPORT_DIR+"_red_chi", redchi)
 
 # save the data and obj res in fits file format to us memmapping.
 hdu_data_res = fits.PrimaryHDU(data_residuals)
 hdu_obj_res = fits.PrimaryHDU(obj_residuals)
-hdu_data_res.writeto("exported_data/"+ galaxy_name +"/"+galaxy_name+"_resids_data.fits", overwrite=True)
-hdu_obj_res.writeto("exported_data/"+ galaxy_name +"/"+galaxy_name+"_resids_obj.fits", overwrite=True)
+hdu_data_res.writeto(f"{EXPORT_DIR}_resids_data.fits", overwrite=True)
+hdu_obj_res.writeto(f"{EXPORT_DIR}_resids_obj.fits", overwrite=True)
 
 print("Cube fitted, data saved.")
 

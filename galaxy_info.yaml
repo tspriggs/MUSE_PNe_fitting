@@ -1,325 +1,448 @@
-FCC083:
+FCC083_center:
   Distance: 19.2
   Galaxy name: FCC083
   velocity: 1532
+  eff_r: 35.7
   FWHM: 4.18
   FWHM_err: 0.06
-  beta: 2.26
-  beta_err: 0.19
-  LSF: 3.34
+  beta: 2.35
+  beta_err: 0.2
+  LSF: 3.12
   LSF_err: 0.03
+  centre: [182, 183]
   gal_mask: [170,180,70,45,2.5]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   
-FCC119:
+FCC119_center:
   Distance: 20.3
   Galaxy name: FCC119
   velocity: 1409.7
+  eff_r: 17.4
   FWHM: 3.61
   FWHM_err: 0.10
   beta: 1.35
   beta_err: 0.11
   LSF: 3.21
   LSF_err: 0.05
+  centre: [1,1]
   gal_mask: [210,125,25,25,0.01]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   
-FCC143:
+FCC143_center:
   Distance: 19.3
   Galaxy name: FCC143
   velocity: 1379
+  eff_r: 11.0
   FWHM: 4.1
   FWHM_err: 0.19
   beta: 2.17
   beta_err: 0.56
   LSF: 3.25
   LSF_err: 0.09
+  centre: [1,1]
   gal_mask: [206,215,50,30,-0.1]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
   
-FCC147:
+FCC147_center:
   Distance: 20
   Galaxy name: FCC147
   velocity: 1350
+  eff_r: 24.8
   FWHM: 5.12
   FWHM_err: 0.14
   beta: 1.66
   beta_err: 0.25
   LSF: 3.61
   LSF_err: 0.05
+  centre: [391, 160]
   gal_mask: [420,140,115,95,1.4]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
-FCC153:
+FCC153_center:
   Distance: 20
   Galaxy name: FCC153
   velocity: 1642
+  eff_r: 19.8
   FWHM: 3.61
   FWHM_err: 0.08
   beta: 1.9
   beta_err: 0.18
   LSF: 2.9
   LSF_err: 0.04
+  centre: [1,1]
   gal_mask: [195,220, 200, 18, 1.5]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
 
-FCC161:
+FCC161_center:
   Distance: 20
   Galaxy name: FCC161
   velocity: 1369
-  FWHM: 3.52
+  eff_r: 28.6
+  FWHM: 3.56
   FWHM_err: 0.04
-  beta: 2.79
-  beta_err: 0.19
+  beta: 3.37
+  beta_err: 0.3
   LSF: 3.01
-  LSF_err: 0.02
+  LSF_err: 0.03
+  centre: [220, 220]
   gal_mask: [222,222, 50, 50, 0.1]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
   wavelength: FCC161_data/wavelength.npy
 
-FCC167:
+FCC167_center:
   Distance: 21.2
   Galaxy name: FCC167
   velocity: 1878
-  FWHM: 3.65
-  FWHM_err: 0.1
-  beta: 1.85
-  beta_err: 0.22
-  LSF: 3.29
-  LSF_err: 0.06
-  gal_mask: [235,206,160,70,0.12]
-  gal_mask_bkp: [237,206,180,75,0.12]
+  eff_r: 56.4
+  FWHM: 3.9
+  FWHM_err: 0.09
+  beta: 2.44
+  beta_err: 0.33
+  LSF: 3.32
+  LSF_err: 0.05
+  centre: [1,1]
+  gal_mask: [237,195,130,35,0.16]
+  gal_mask_bkp: [235,206,160,70,0.12]
   star_mask: [[1,1,1]]
+  my_filter: [32,10]
+  impostor_filter: [[12,21,31,39,45,69,108,],[98],[]]
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
   backup:
     hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
   wavelength: FCC167_data/FCC167_wavelength.npy
+
+FCC167_middle:
+  Distance: 21.2
+  Galaxy name: FCC167
+  velocity: 1878
+  eff_r: 56.4
+  FWHM: 5.85
+  FWHM_err: 0.18
+  beta: 1.36
+  beta_err: 0.23
+  LSF: 3.34
+  LSF_err: 0.05
+  centre: [1,1]
+  gal_mask: [1,1,1,1,1]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+  backup:
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
+  wavelength: FCC167_data/FCC167middle_wavelength.npy
   
-FCC170:
+FCC170_center:
   Distance: 18.7
   Galaxy name: FCC170
+  eff_r: 15.9
   gal_mask: [0,0,0,0,0]
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
-FCC177:
+FCC177_center:
   Distance: 19.6
   Galaxy name: FCC177
   velocity: 1591
+  eff_r: 35.9
   FWHM: 3.76
   FWHM_err: 0.053
   beta: 1.66
   beta_err: 0.89
   LSF: 3.02
   LSF_err: 0.024
+  centre: [1,1]
   gal_mask: [210,196,42,20,1.]
   star_mask: [[248,238,10]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
 
-FCC182:
+FCC182_center:
   Distance: 19.6
   Galaxy name: FCC182
   velocity: 1705.1
+  eff_r: 9.9
   FWHM: 4.13
   FWHM_err: 0.096
   beta: 3.11
   beta_err: 0.58
   LSF: 2.99
   LSF_err: 0.046
+  centre: [1,1]
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
 
-FCC184:
+FCC184_center:
   Distance: 20
   Galaxy name: FCC184
   velocity: 1302.6
+  eff_r: 35.5
   FWHM: 5.04
   FWHM_err: 0.1
   beta: 2.04
   beta_err: 0.27
   LSF: 3.47
   LSF_err: 0.038
-  gal_mask: [212,218,130,130,0.01]
+  centre: [223,217]
+  gal_mask: [218,220,110,110,0.01]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
-FCC190:
+FCC190_center:
   Distance: 20.3
   Galaxy name: FCC190
   velocity: 1794
+  eff_r: 18.3
   FWHM: 5.45
   FWHM_err: 0.087
   beta: 1.77
   beta_err: 0.18
   LSF: 3.25
   LSF_err: 0.027
+  centre: [315, 335]
   gal_mask: [304,315,66,66,0.1]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
-FCC193:
+FCC193_center:
   Distance: 21.2
   Galaxy name: FCC193
   velocity: 976
-  FWHM: 3.59
-  FWHM_err: 0.033
-  beta: 2.26
-  beta_err: 0.1
-  LSF: 3.06
-  LSF_err: 0.018
-  gal_mask: [166, 418, 70, 50, 0.7]
+  eff_r: 28.2
+  FWHM: 3.63
+  FWHM_err: 0.04
+  beta: 2.73
+  beta_err: 0.2
+  LSF: 3.01
+  LSF_err: 0.02
+  centre: [170, 418]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: []
+  interloper_filter: [13,78,89,123]
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
   
-FCC219:
+FCC219_center:
   Distance: 20.2
   Galaxy name: FCC219
   velocity: 1933
-  FWHM: 4.17
-  FWHM_err: 0.070
-  beta: 3.21
-  beta_err: 0.45
-  LSF: 3.1
-  LSF_err: 0.035
-  gal_mask: [195,73,150,85,0.0]
+  eff_r: 161.0
+  FWHM: 4.09
+  FWHM_err: 0.07
+  beta: 3.52
+  beta_err: 0.55
+  LSF: 3.07
+  LSF_err: 0.03
+  centre: [220, 220]
+  gal_mask: [195,50,40,40,0.0]
+  gal_mask_bkg: [195,73,150,85,0.0]
   star_mask: [[299,153,7]]
+  my_filter: [0]
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
   backup:  
     hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
 
+FCC219_halo:
+  Distance: 20.2
+  Galaxy name: FCC219
+  velocity: 1933
+  eff_r: 161.0
+  FWHM: 4.63
+  FWHM_err: 0.070
+  beta: 2.68
+  beta_err: 0.29
+  LSF: 3.05
+  LSF_err: 0.03
+  centre: [220, 220]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[0,0,0]]
+  my_filter: []
+  impostor_filter: []
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+  backup:  
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
 
-FCC249:
+FCC249_center:
   Distance: 22.9
   Galaxy name: FCC249
   velocity: 1579
+  eff_r: 9.6
   FWHM: 4.78
   FWHM_err: 0.12
   beta: 1.41
   beta_err: 0.15
   LSF: 3.77
   LSF_err: 0.05
+  centre: [1,1]
   gal_mask: [228,80,15,15,0.2]
   star_mask: [[107,261,7]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
 
-FCC255:
+FCC255_center:
   Distance: 19.7
   Galaxy name: FCC255
   velocity: 1328
+  eff_r: 13.8
   FWHM: 3.667
   FWHM_err: 0.05
   beta: 2.7
   beta_err: 0.27
   LSF: 2.73
   LSF_err: 0.029
+  centre: [1,1]
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[145, 271, 20],[337, 174, 25],[123, 185, 15]]
+  my_filter: [32]
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   
-FCC276:
+FCC276_center:
   Distance: 19.6
   Galaxy name: FCC276
   velocity: 1434
+  eff_r: 44.7
   FWHM: 4.45
   FWHM_err: 0.07
   beta: 2.49
   beta_err: 0.28
   LSF: 3.31
   LSF_err: 0.033
+  centre: [538, 215]
   gal_mask: [628,193,115,72,0.9]
   star_mask: [[1,1,1]]
+  my_filter: [20,40,79,85]
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
-FCC277:
+FCC277_center:
   Distance: 20.5
   Galaxy name: FCC277
   velocity: 1657
+  eff_r: 12.8
   FWHM: 4.17
   FWHM_err: 0.08
   beta: 2.24
   beta_err: 0.25
   LSF: 3.089
   LSF_err: 0.037
+  centre: [1,1]
   gal_mask: [282,230,40,40,1]
   star_mask: [[160, 285, 15],[259,246,15]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
 
-FCC301:
+FCC301_center:
   Distance: 19.7
   Galaxy name: FCC301
   velocity: 1043
-  FWHM: 3.8
+  eff_r: 11.7
+  FWHM: 4.17
   FWHM_err: 0.1
-  beta: 1.58
-  beta_err: 0.14
-  LSF: 2.87
-  LSF_err: 0.041
+  beta: 1.97
+  beta_err: 0.25
+  LSF: 3.07
+  LSF_err: 0.045
+  centre: [1,1]
   gal_mask: [1, 1, 1, 1, 1]
   star_mask: [[1, 1, 1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
   
-FCC310:
+FCC310_center:
   Distance: 19.9
   Galaxy name: FCC310
   velocity: 1383
+  eff_r: 35.6
   FWHM: 3.83
   FWHM_err: 0.061
   beta: 2.94
   beta_err: 0.33
   LSF: 3.00
   LSF_err: 0.032
+  centre: [208,310]
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[1, 1, 1]]
+  my_filter: []
+  impostor_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]

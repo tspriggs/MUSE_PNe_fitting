@@ -55,7 +55,7 @@ c = 299792458.0
 gal_vel = 1379
 z = gal_vel*1e3 / c
 
-L_bol_g, L_bol_r, m_r, M_r = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z, vel=gal_vel, dist_mod=dM)
+L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z, vel=gal_vel, dist_mod=dM)
 
 
 #FCC255 xe, ye, length, width, alpha = [gal_x, gal_y, 400, 200, -0.1]

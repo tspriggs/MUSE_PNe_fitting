@@ -16,9 +16,9 @@ def PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict):
 
     # Moffat model
     def Moffat(Amp, FWHM, beta, x, y):
-        r_d = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
-        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / r_d**2.
-        return Amp * ((1 + rr_gg)**(-beta))
+        alpha = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
+        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2) / alpha**2.
+        return Amp * (2 * ((beta -1)/(alpha**2))) * ((1 + rr_gg)**(-beta))
                 
     # Use Moffat function to return array of fluxes for each emission's amplitude.
     F_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0) for A in Amp_2D_list])
@@ -42,6 +42,9 @@ def PNe_residuals_3D(params, l, x_2D, y_2D, data, error, PNe_number, emission_di
     list_to_append_data.append(data-model)
     list_to_append_data.append(useful_info)    
     zero_mask = np.where(data[:,0]!=0)
+    #signal_cut = (useful_info[2][0]/robust_sigma(data[:50]))>=2
+    #list_to_append_data.append(signal_cut)
+    #model[signal_cut==False] = np.zeros_like(len(l))
     
     return (data[zero_mask] - model[zero_mask]) / error[zero_mask]
 
@@ -50,12 +53,12 @@ def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
     beta = PSF_params["beta"]
     LSF = PSF_params["LSF"]
     
-    def gen_model(x, y, moffat_amp, FWHM, beta, LSF, Gauss_bkg, Gauss_grad, wave, z):
-        gamma = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
-        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2.) / gamma**2.
-        F_OIII_xy = moffat_amp * (1. + rr_gg)**(-beta)
+    def gen_model(x, y, moffat_amp, FWHM, beta, g_LSF, Gauss_bkg, Gauss_grad, wave, z):
+        alpha = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
+        rr_gg = ((x_2D - x)**2. + (y_2D - y)**2.) / alpha**2.
+        F_OIII_xy = moffat_amp *(2 * ((beta -1)/(alpha**2))) * (1. + rr_gg)**(-beta)
 
-        Gauss_std = LSF / 2.35482 # LSF
+        Gauss_std = g_LSF / 2.35482 # LSF
 
         A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
 

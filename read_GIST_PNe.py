@@ -109,7 +109,7 @@ gandalf_df["[SII]II AON"]     = SII_II_AON
 # put m5007 values into gandalf_df
 gandalf_df["m 5007"] = m_5007
 gandalf_df["Filter"] = PNe_df["Filter"]
-
+# gandalf_df["Filter"]="Y"
 
 
 gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
@@ -234,7 +234,7 @@ ax = plt.gca()
 cb.ax.tick_params(labelsize=f_size)
 plt.scatter(Ha_SII_1, Ha_NII_1, s=p_s+150, facecolors="None", edgecolors="k",lw=1.2)
 
-for i in np.squeeze(np.where(HaNII_and_cond)):
+for i in zip(*np.where(HaNII_and_cond)):
     if (SII_I_AON[i] <3) | (SII_II_AON[i]<3):
         plotline1, caplines1, barlinecols1 = plt.errorbar(x=HaoSII[i], y=HaoNII[i], xerr=np.abs(HaoSII_corr[i]-HaoSII[i]), c="k", xuplims=True ,alpha=0.7, elinewidth=0.8, ls="None", capsize=0)
     caplines1[0].set_marker("|")
@@ -272,8 +272,7 @@ if plt_save == True:
 # Print statements for the index of imposters:
 # initial check for imposters using HII check, on objects with Ha alpha AON of 3
 m = gandalf_df["m 5007"].loc[HaNII_and_cond].values - dM
-HII_imp_indx = np.squeeze(np.where((ratio_cond_and < (10**((-0.37 * m) - 1.16)))))
-imposters = gandalf_df.loc[HaNII_and_cond].iloc[HII_imp_indx].index.values
+imposters = gandalf_df.loc[HaNII_and_cond].iloc[ratio_cond_and < (10**((-0.37 * m) - 1.16))].index.values
 print("First imposter check, PNe: ", imposters)
 
 HII_region_x = [10**0.5, 10**0.9]
@@ -293,8 +292,6 @@ print(f"HII imposters {HII_imposter}")
 
 p = int(PNe_df.loc[PNe_df["Filter"]=="Y"].nsmallest(1, "m 5007").index.values)
 
-# Plot out brightest SNR object with filter Y
-n = SNR[np.argmax(SII_II_AON[SNR])]
 
 
 
@@ -367,7 +364,10 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
 # PNe Plot
 emission_plot_maker(p, obj_t="PNe", sub_OIII=3.2e4, sub_Ha=4e4, )
 # SNR plot
-emission_plot_maker(n, obj_t="SNR", sub_OIII=1.2e4, sub_Ha=1.5e4, )
+# Plot out brightest SNR object with filter Y
+if len(SII_II_AON[SNR]) != 0:
+    n = SNR[np.argmax(SII_II_AON[SNR])]
+    emission_plot_maker(n, obj_t="SNR", sub_OIII=1.2e4, sub_Ha=1.5e4, )
 
 if show_plot == False:
     plt.close("all")
