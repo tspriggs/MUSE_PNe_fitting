@@ -13,7 +13,8 @@ FCC083_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[32,35],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -33,7 +34,8 @@ FCC119_center:
   gal_mask: [210,125,25,25,0.01]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -53,7 +55,8 @@ FCC143_center:
   gal_mask: [210,212,15,15,-0.1]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -74,7 +77,8 @@ FCC147_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -94,7 +98,8 @@ FCC153_center:
   gal_mask: [0,0, 0, 0, 0]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[16],[18,20],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -115,7 +120,8 @@ FCC161_center:
   gal_mask: [0,0, 0, 0, 0.1]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[31],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
@@ -134,10 +140,10 @@ FCC167_center:
   LSF_err: 0.05
   centre: [1,1]
   gal_mask: [237,195,130,35,0.16]
-  gal_mask_bkp: [235,206,160,70,0.12]
   star_mask: [[1,1,1]]
-  my_filter: [32,10]
-  impostor_filter: [[12,21,31,39,45,69,108,],[98],[]]
+  my_filter: [22]
+  impostor_filter: [[13,21,27],[68],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
@@ -160,7 +166,8 @@ FCC167_middle:
   gal_mask: [1,1,1,1,1]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
@@ -192,7 +199,8 @@ FCC177_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[248,238,10]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[8,30,31],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -213,7 +221,8 @@ FCC182_center:
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[4],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -234,7 +243,8 @@ FCC184_center:
   gal_mask: [218,220,110,110,0.01]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -254,7 +264,8 @@ FCC190_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[24],[20],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -274,7 +285,7 @@ FCC193_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
   interloper_filter: [13,78,89,123]
   emissions:
     OIII_1: [200, null, null]
@@ -296,7 +307,8 @@ FCC219_center:
   gal_mask_bkg: [195,73,150,85,0.0]
   star_mask: [[299,153,7]]
   my_filter: [0]
-  impostor_filter: []
+  impostor_filter: [[40], [16,41,42], [5,7]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
@@ -318,7 +330,8 @@ FCC219_halo:
   gal_mask: [0,0,0,0,0]
   star_mask: [[0,0,0]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
@@ -340,7 +353,8 @@ FCC249_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[107,261,7]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -361,7 +375,8 @@ FCC255_center:
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[145, 271, 20],[337, 174, 25],[123, 185, 15]]
   my_filter: [32]
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -381,7 +396,8 @@ FCC276_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: [20,40,79,85]
-  impostor_filter: []
+  impostor_filter: [[],[12,28,38],[]]
+  interloper_filter: [67]
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -401,7 +417,8 @@ FCC277_center:
   gal_mask: [0,0,0,0,0]
   star_mask: [[160, 285, 15],[259,246,15]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[15,19],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -422,7 +439,8 @@ FCC301_center:
   gal_mask: [1, 1, 1, 1, 1]
   star_mask: [[1, 1, 1]]
   my_filter: []
-  impostor_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -441,8 +459,9 @@ FCC310_center:
   centre: [208,310]
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[1, 1, 1]]
-  my_filter: []
-  impostor_filter: []
+  my_filter: [54]
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]

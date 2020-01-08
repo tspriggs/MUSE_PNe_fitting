@@ -1,22 +1,23 @@
+import sys
 import yaml
 import lmfit
 import argparse
+import scipy as sp
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import scipy as sp
+
 from tqdm import tqdm
-import sys
-from scipy.stats import norm, chi2
-from scipy import stats
-from astropy.wcs import WCS, utils, wcs
 from astropy.table import Table
-from astropy.coordinates import SkyCoord
+from scipy.stats import norm, chi2
 from astropy.io import ascii, fits
-from ppxf_gal_L import ppxf_L_tot
+from astropy.wcs import WCS, utils, wcs
+from astropy.coordinates import SkyCoord
 from matplotlib.patches import Rectangle, Ellipse, Circle
-from PNLF import open_data, reconstructed_image, completeness
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
+
+from ppxf_gal_L import ppxf_L_tot
+from PNLF import open_data, reconstructed_image, completeness
 from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, robust_sigma
 
 
@@ -37,11 +38,11 @@ galaxy_name = args.galaxy #input("Please type which Galaxy you want to analyse, 
 
 galaxy_data = galaxy_info[galaxy_name]
 
-RAW_DIR = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}"
-RAW_DAT = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}{loc}.fits"
-DATA_DIR = f"galaxy_data/{galaxy_name}_data/"
+RAW_DIR    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}"
+RAW_DAT    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}{loc}.fits"
+DATA_DIR   = f"galaxy_data/{galaxy_name}_data/"
 EXPORT_DIR = f"exported_data/{galaxy_name}/"
-PLOT_DIR = "Plots/"+galaxy_name+"/"+galaxy_name
+PLOT_DIR   = f"Plots/{galaxy_name}/{galaxy_name}"
 
 # Load in the residual data, in list form
 hdulist = fits.open(f"{DATA_DIR}{galaxy_name}{loc}_residuals_list.fits")
@@ -145,8 +146,8 @@ def gen_params(wave=5007, FWHM=4.0, FWHM_err=0.1, beta=2.5, beta_err=0.3, LSF=2.
     PNe_multi_params.add("Gauss_grad", value=0.0001, vary=True)#1, min=-2, max=2)
     
 # storage setup
-total_Flux = np.zeros((len(x_PNe),len(emission_dict)))
-A_2D_list = np.zeros((len(x_PNe),len(emission_dict)))
+total_Flux = np.zeros((len(x_PNe), len(emission_dict)))
+A_2D_list = np.zeros((len(x_PNe), len(emission_dict)))
 F_xy_list = np.zeros((len(x_PNe), len(emission_dict), len(PNe_spectra[0])))
 moff_A = np.zeros((len(x_PNe),len(emission_dict)))
 model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))
@@ -257,47 +258,72 @@ PNe_df.loc[PNe_df["A/rN"]<3.0, "Filter"] = "N"
 upper_chi = chi2.ppf(0.9973, ((n_pixels**2)*len(wavelength))-6) # 3 sigma = 0.9973
 PNe_df.loc[PNe_df["Chi2"]>=upper_chi, "Filter"] = "N" 
 
+## New filter read in area
+
+# read in 3 different filter lists:
+# my_filter = []
+# impostor_filter = [[],[],[]]
+# interloper_filter = []
 
 
+# list of objects that are chosen to be filtered out (bad fits, objviously not PN, over luminous, etc.)
+my_filter = galaxy_data["my_filter"]
+
+# Supernova remnants, HII regions and unknown impostor lists
+SNR_filter, HII_filter, unknown_imp_filter = galaxy_data["impostor_filter"]
+
+# Interloping objects list
+interloper_filter  = galaxy_data["interloper_filter"]
+
+## Apply filter
+
+[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in my_filter]
+[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in SNR_filter]
+[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in HII_filter]
+[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in unknown_imp_filter]
+[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in interloper_filter]
+
+##
 
 ## Current exclusion list - re-write to use yaml file
-## FCC167
-if (galaxy_name == "FCC167") & (loc=="center"):
-    PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N" # Over luminous PNe 
-    PNe_df.loc[PNe_df["PNe number"]==10, "Filter"] = "N"  # Double reading from source
-## FCC219
-elif (galaxy_name == "FCC219") & (loc=="center"):
-     PNe_df.loc[PNe_df["PNe number"]==0, "Filter"] = "N"
-elif galaxy_name == "FCC193":
-    PNe_df.loc[PNe_df["PNe number"]==143, "Filter"] = "N" 
-    PNe_df.loc[PNe_df["PNe number"]==141, "Filter"] = "N" 
-    PNe_df.loc[PNe_df["PNe number"]==84, "Filter"] = "N"
-    PNe_df.loc[PNe_df["PNe number"]==77, "Filter"] = "Y" 
-    PNe_df.loc[PNe_df["PNe number"]==94, "Filter"] = "Y" 
-#elif galaxy_name == "FCC147":
-    #PNe_df.loc[PNe_df["PNe number"]==41, "Filter"] = "N"
-# elif galaxy_name == "FCC249":
-#     PNe_df.loc[PNe_df["PNe number"]==2, "Filter"] = "N"
-elif galaxy_name == "FCC276":
-    PNe_df.loc[PNe_df["PNe number"]==20, "Filter"] = "N" # Overly bright object, sets D=15Mpc, could be overlap/super-position of two.
-    PNe_df.loc[PNe_df["PNe number"]==40, "Filter"] = "Y"
-    PNe_df.loc[PNe_df["PNe number"]==79, "Filter"] = "Y"
-    PNe_df.loc[PNe_df["PNe number"]==85, "Filter"] = "Y"
-# elif galaxy_name == "FCC184":
-#     PNe_df.loc[PNe_df["PNe number"]==15, "Filter"] = "N"
-#     PNe_df.loc[PNe_df["PNe number"]==35, "Filter"] = "N"
-elif galaxy_name == "FCC301":
-    PNe_df.loc[PNe_df["PNe number"]==14, "Filter"] = "N"
-    PNe_df.loc[PNe_df["PNe number"]==16, "Filter"] = "N"
-elif galaxy_name == "FCC255":
-    PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N"
-    
+# ## FCC167
+# if (galaxy_name == "FCC167") & (loc=="center"):
+#     PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N" # Over luminous PNe 
+#     PNe_df.loc[PNe_df["PNe number"]==10, "Filter"] = "N"  # Double reading from source
+# ## FCC219
+# elif (galaxy_name == "FCC219") & (loc=="center"):
+#      PNe_df.loc[PNe_df["PNe number"]==0, "Filter"] = "N"
+# elif galaxy_name == "FCC193":
+#     PNe_df.loc[PNe_df["PNe number"]==143, "Filter"] = "N" 
+#     PNe_df.loc[PNe_df["PNe number"]==141, "Filter"] = "N" 
+#     PNe_df.loc[PNe_df["PNe number"]==84, "Filter"] = "N"
+#     PNe_df.loc[PNe_df["PNe number"]==77, "Filter"] = "Y" 
+#     PNe_df.loc[PNe_df["PNe number"]==94, "Filter"] = "Y" 
+# #elif galaxy_name == "FCC147":
+#     #PNe_df.loc[PNe_df["PNe number"]==41, "Filter"] = "N"
+# # elif galaxy_name == "FCC249":
+# #     PNe_df.loc[PNe_df["PNe number"]==2, "Filter"] = "N"
+# elif galaxy_name == "FCC276":
+#     PNe_df.loc[PNe_df["PNe number"]==20, "Filter"] = "N" # Overly bright object, sets D=15Mpc, could be overlap/super-position of two.
+#     PNe_df.loc[PNe_df["PNe number"]==40, "Filter"] = "Y"
+#     PNe_df.loc[PNe_df["PNe number"]==79, "Filter"] = "Y"
+#     PNe_df.loc[PNe_df["PNe number"]==85, "Filter"] = "Y"
+# # elif galaxy_name == "FCC184":
+# #     PNe_df.loc[PNe_df["PNe number"]==15, "Filter"] = "N"
+# #     PNe_df.loc[PNe_df["PNe number"]==35, "Filter"] = "N"
+# elif galaxy_name == "FCC301":
+#     PNe_df.loc[PNe_df["PNe number"]==14, "Filter"] = "N"
+#     PNe_df.loc[PNe_df["PNe number"]==16, "Filter"] = "N"
+# elif galaxy_name == "FCC255":
+#     PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N"
+
+
 ## End of exclusion list
     
     
     
 ##### Error estimation #####
-ddef Moffat_err(Moff_A, FWHM, beta, x_0, y_0):
+def Moffat_err(Moff_A, FWHM, beta, x_0, y_0):
     alpha = FWHM / (2. * umath.sqrt(2.**(1./beta) - 1.))
     rr_gg = ((x_fit - x_0)**2 + (y_fit - y_0)**2) / alpha**2
     F_OIII_xy_dist = Moff_A * (2 * ((beta -1)/(alpha**2)))*(1 + rr_gg)**(-beta)
@@ -315,7 +341,7 @@ for i,p in enumerate(tqdm(range(len(x_PNe)))):
     y_0_dist    = N(list_of_y[p], y_0_err[p][0])
     
     flux_array = [Moffat_err(Moff_A_dist._mcpts[i], FWHM_dist._mcpts[i], beta_dist._mcpts[i], x_0_dist._mcpts[i], y_0_dist._mcpts[i]) for i in range(len(FWHM_dist._mcpts))]
-    
+
     flux_plus_minus[i, 0] = np.nanpercentile(flux_array, 84) - np.nanpercentile(flux_array, 50)
     flux_plus_minus[i, 1] = np.nanpercentile(flux_array, 50) - np.nanpercentile(flux_array, 16)
 
@@ -328,7 +354,7 @@ for i,p in enumerate(tqdm(range(len(x_PNe)))):
 
 PNe_df["Flux error up"] = flux_plus_minus[:,0]
 PNe_df["Flux error lo"] = flux_plus_minus[:,1]
-
+# 
 PNe_df["mag error up"] = mag_plus_minus[:,0]
 PNe_df["mag error lo"] = mag_plus_minus[:,1]
 
