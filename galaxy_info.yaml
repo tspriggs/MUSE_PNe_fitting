@@ -10,7 +10,7 @@ FCC083_center:
   LSF: 3.12
   LSF_err: 0.03
   centre: [182, 183]
-  gal_mask: [170,180,70,45,2.5]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: []
   impostor_filter: []
@@ -43,14 +43,14 @@ FCC143_center:
   Galaxy name: FCC143
   velocity: 1379
   eff_r: 11.0
-  FWHM: 4.1
-  FWHM_err: 0.19
-  beta: 2.17
-  beta_err: 0.56
-  LSF: 3.25
-  LSF_err: 0.09
+  FWHM: 4.03
+  FWHM_err: 0.13
+  beta: 2.02
+  beta_err: 0.33
+  LSF: 3.26
+  LSF_err: 0.06
   centre: [1,1]
-  gal_mask: [206,215,50,30,-0.1]
+  gal_mask: [210,212,15,15,-0.1]
   star_mask: [[1,1,1]]
   my_filter: []
   impostor_filter: []
@@ -64,14 +64,14 @@ FCC147_center:
   Galaxy name: FCC147
   velocity: 1350
   eff_r: 24.8
-  FWHM: 5.12
-  FWHM_err: 0.14
-  beta: 1.66
-  beta_err: 0.25
-  LSF: 3.61
-  LSF_err: 0.05
+  FWHM: 5.2
+  FWHM_err: 0.1
+  beta: 2.58
+  beta_err: 0.45
+  LSF: 3.48
+  LSF_err: 0.04
   centre: [391, 160]
-  gal_mask: [420,140,115,95,1.4]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: []
   impostor_filter: []
@@ -84,14 +84,14 @@ FCC153_center:
   Galaxy name: FCC153
   velocity: 1642
   eff_r: 19.8
-  FWHM: 3.61
+  FWHM: 3.62
   FWHM_err: 0.08
   beta: 1.9
-  beta_err: 0.18
+  beta_err: 0.17
   LSF: 2.9
   LSF_err: 0.04
   centre: [1,1]
-  gal_mask: [195,220, 200, 18, 1.5]
+  gal_mask: [0,0, 0, 0, 0]
   star_mask: [[1,1,1]]
   my_filter: []
   impostor_filter: []
@@ -112,7 +112,7 @@ FCC161_center:
   LSF: 3.01
   LSF_err: 0.03
   centre: [220, 220]
-  gal_mask: [222,222, 50, 50, 0.1]
+  gal_mask: [0,0, 0, 0, 0.1]
   star_mask: [[1,1,1]]
   my_filter: []
   impostor_filter: []
@@ -182,14 +182,14 @@ FCC177_center:
   Galaxy name: FCC177
   velocity: 1591
   eff_r: 35.9
-  FWHM: 3.76
+  FWHM: 3.75
   FWHM_err: 0.053
-  beta: 1.66
-  beta_err: 0.89
-  LSF: 3.02
+  beta: 1.7
+  beta_err: 0.09
+  LSF: 3.0
   LSF_err: 0.024
   centre: [1,1]
-  gal_mask: [210,196,42,20,1.]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[248,238,10]]
   my_filter: []
   impostor_filter: []
@@ -203,12 +203,12 @@ FCC182_center:
   Galaxy name: FCC182
   velocity: 1705.1
   eff_r: 9.9
-  FWHM: 4.13
-  FWHM_err: 0.096
-  beta: 3.11
-  beta_err: 0.58
-  LSF: 2.99
-  LSF_err: 0.046
+  FWHM: 4.18
+  FWHM_err: 0.11
+  beta: 3.67
+  beta_err: 0.9
+  LSF: 2.96
+  LSF_err: 0.052
   centre: [1,1]
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[1,1,1]]
@@ -224,12 +224,12 @@ FCC184_center:
   Galaxy name: FCC184
   velocity: 1302.6
   eff_r: 35.5
-  FWHM: 5.04
-  FWHM_err: 0.1
-  beta: 2.04
-  beta_err: 0.27
-  LSF: 3.47
-  LSF_err: 0.038
+  FWHM: 4.753
+  FWHM_err: 0.08
+  beta: 1.35
+  beta_err: 0.1
+  LSF: 3.55
+  LSF_err: 0.03
   centre: [223,217]
   gal_mask: [218,220,110,110,0.01]
   star_mask: [[1,1,1]]
@@ -244,14 +244,14 @@ FCC190_center:
   Galaxy name: FCC190
   velocity: 1794
   eff_r: 18.3
-  FWHM: 5.45
-  FWHM_err: 0.087
-  beta: 1.77
-  beta_err: 0.18
-  LSF: 3.25
-  LSF_err: 0.027
+  FWHM: 5.51
+  FWHM_err: 0.09
+  beta: 1.78
+  beta_err: 0.2
+  LSF: 3.33
+  LSF_err: 0.029
   centre: [315, 335]
-  gal_mask: [304,315,66,66,0.1]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: []
   impostor_filter: []
@@ -330,14 +330,14 @@ FCC249_center:
   Galaxy name: FCC249
   velocity: 1579
   eff_r: 9.6
-  FWHM: 4.78
-  FWHM_err: 0.12
-  beta: 1.41
-  beta_err: 0.15
-  LSF: 3.77
+  FWHM: 4.7
+  FWHM_err: 0.13
+  beta: 1.74
+  beta_err: 0.24
+  LSF: 3.3
   LSF_err: 0.05
   centre: [1,1]
-  gal_mask: [228,80,15,15,0.2]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[107,261,7]]
   my_filter: []
   impostor_filter: []
@@ -351,12 +351,12 @@ FCC255_center:
   Galaxy name: FCC255
   velocity: 1328
   eff_r: 13.8
-  FWHM: 3.667
+  FWHM: 3.78
   FWHM_err: 0.05
-  beta: 2.7
-  beta_err: 0.27
-  LSF: 2.73
-  LSF_err: 0.029
+  beta: 2.9
+  beta_err: 0.28
+  LSF: 2.8
+  LSF_err: 0.027
   centre: [1,1]
   gal_mask: [1,1,1,1,0.01]
   star_mask: [[145, 271, 20],[337, 174, 25],[123, 185, 15]]
@@ -371,14 +371,14 @@ FCC276_center:
   Galaxy name: FCC276
   velocity: 1434
   eff_r: 44.7
-  FWHM: 4.45
+  FWHM: 4.35
   FWHM_err: 0.07
-  beta: 2.49
-  beta_err: 0.28
-  LSF: 3.31
-  LSF_err: 0.033
+  beta: 2.33
+  beta_err: 0.23
+  LSF: 3.34
+  LSF_err: 0.032
   centre: [538, 215]
-  gal_mask: [628,193,115,72,0.9]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[1,1,1]]
   my_filter: [20,40,79,85]
   impostor_filter: []
@@ -398,7 +398,7 @@ FCC277_center:
   LSF: 3.089
   LSF_err: 0.037
   centre: [1,1]
-  gal_mask: [282,230,40,40,1]
+  gal_mask: [0,0,0,0,0]
   star_mask: [[160, 285, 15],[259,246,15]]
   my_filter: []
   impostor_filter: []
@@ -432,11 +432,11 @@ FCC310_center:
   Galaxy name: FCC310
   velocity: 1383
   eff_r: 35.6
-  FWHM: 3.83
-  FWHM_err: 0.061
-  beta: 2.94
-  beta_err: 0.33
-  LSF: 3.00
+  FWHM: 3.85
+  FWHM_err: 0.068
+  beta: 2.21
+  beta_err: 0.21
+  LSF: 2.91
   LSF_err: 0.032
   centre: [208,310]
   gal_mask: [1,1,1,1,0.01]

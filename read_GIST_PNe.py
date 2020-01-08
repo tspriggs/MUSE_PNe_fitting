@@ -7,6 +7,8 @@ from astropy.table import Table
 from matplotlib.patches import Rectangle, Ellipse, Circle
 import matplotlib.gridspec as gridspec
 
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning) 
 
 my_parser = argparse.ArgumentParser()
 
@@ -43,6 +45,7 @@ gandalf_best     = fits.open(f"{work_dir}_gandalf-bestfit_SPAXEL.fits")
 gandalf_clean    = fits.open(f"{work_dir}_gandalf-cleaned_SPAXEL.fits")
 gandalf_results  = fits.open(f"{work_dir}_gandalf_SPAXEL.fits")
 AllSpectra       = fits.open(f"{work_dir}_AllSpectra.fits")
+ppxf_results     = fits.open(f"{work_dir}_ppxf.fits")
 lamb = np.array(AllSpectra[2].data, dtype=np.float64)
 wavelength = np.exp(lamb)
 # [OIII] index 12
@@ -51,6 +54,71 @@ wavelength = np.exp(lamb)
 # Ha index 17
 # [SII] I index 19
 # [SII] II index 20
+
+
+###################################################################################################
+############################## VELOCITY WORK ######################################################
+###################################################################################################
+
+# extract PN vel
+PN_vel = np.array([gandalf_results[2].data[i]["V"][12] for i in np.arange(len(gandalf_results[2].data))])
+# PN_vel = PNe_df["V (km/s)"].loc[PNe_df["Filter"]=="Y"]+60
+
+v_star     = np.array(ppxf_results[1].data["V"])
+sigma_star = np.array(ppxf_results[1].data["SIGMA"])
+
+f_ind = PNe_df.loc[PNe_df["Filter"]=="Y"].index.values # index for filtered PN
+
+vel_ratio = (PN_vel - v_star) / sigma_star
+
+
+plt.figure(figsize=(10,8))
+plt.hist(vel_ratio[f_ind], bins=10, edgecolor="k", alpha=0.8, linewidth=1)
+plt.xlabel(r"$\rm \frac{V_{PNe} - V_{*}}{\sigma_*}$", fontsize=30)
+plt.ylabel("PNe count", fontsize=30, labelpad=10)
+plt.tick_params(labelsize = 18)
+plt.xlim(-3.25,3.25)
+
+if plt_save == True:
+    plt.savefig(f"Plots/{galaxy_name}/{galaxy_name}_velocity_bins_plot.pdf", bbox_inches='tight')
+
+
+
+
+# interlopers = vel_ratio[(vel_ratio<-3) | (vel_ratio>3)].index
+# print(interlopers)
+# # for inter in interlopers:
+# #     PNe_df.loc[PNe_df["PNe number"]==inter, "Filter"] = "N"
+
+
+
+# plt.figure(figsize=(10,6))
+# plt.scatter(PN_vel, PN_vel_ppxf[Y_ind])
+# plt.scatter(v_star_orig[:-8], v_star[Y_ind])
+# plt.scatter(sigma_star_orig[:-8], sigma_star[Y_ind])
+# plt.plot(np.arange(-400,300), np.arange(-400,300), c="k", lw=2,label="y=x", ls="--")
+# plt.plot(np.arange(-400,300), np.arange(-400,300)+10, c="r", lw=2, label="y=x+10", ls="--")
+
+# plt.ylabel("GIST ppxf star sigma (km/s)")
+# plt.xlabel("spaxel by spaxel star sigma (km/s)")
+
+# plt.xlim(0,250)
+# plt.ylim(0,250)
+# plt.plot(np.arange(-200,250), np.arange(-200,250), c="k", lw=2, ls="--", label="y=x")
+# plt.plot(np.arange(0,250), np.arange(0,250), c="k", lw=2)
+# plt.legend()
+# plt.savefig("Plots/FCC167_GIST_vs_3D_fit_PN_vel.png")
+# plt.savefig("Plots/FCC167_GIST_vs_3D_fit_star_vel.png")
+# plt.savefig("Plots/FCC167_GIST_vs_3D_fit_star_sigma.png")
+
+
+
+
+
+#####################################################################################################
+######################################### IMPOSTOR SECTION  #########################################
+#####################################################################################################
+
 
 Hb_ampl     = np.array([gandalf_results[2].data[i]["Ampl"][11] for i in np.arange(len(gandalf_results[2].data))])
 OIII_ampl   = np.array([gandalf_results[2].data[i]["Ampl"][12] for i in np.arange(len(gandalf_results[2].data))])
@@ -109,7 +177,7 @@ gandalf_df["[SII]II AON"]     = SII_II_AON
 # put m5007 values into gandalf_df
 gandalf_df["m 5007"] = m_5007
 gandalf_df["Filter"] = PNe_df["Filter"]
-# gandalf_df["Filter"]="Y"
+gandalf_df["Filter"]="Y"
 
 
 gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
@@ -202,7 +270,7 @@ for n, i in enumerate(gandalf_df["[OIII] flux"].loc[HaNII_or_cond].index.values)
     if ann == True:
         plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gandalf_df["m 5007"].iloc[i]+0.03, ratio_cond_or[n]))
 #Limits
-plt.xlim(-5.+dM,-2.+dM)
+plt.xlim(-5.3+dM,-2.+dM)
 plt.ylim(0.25, 20)
 # Set yscale to log and add colorbar + label
 plt.yscale("log")
@@ -307,6 +375,7 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
     f_ax1.plot(wavelength, gandalf_best[1].data[obj_n][0], c="g", lw=1.1, label="best fit", )
     f_ax1.plot(wavelength, gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0], c="r", lw=0.7,label="stellar")
     f_ax1.set_xlim(min(wavelength)-20, max(wavelength)+20)
+    f_ax1.set_ylim(0,)
     f_ax1.set_xlabel(r"Wavelength $(\AA)$", fontsize=f_size)
     f_ax1.set_ylabel("Flux Density", fontsize=f_size)
     f_ax1.tick_params(axis="both", labelsize=f_size )
@@ -362,7 +431,7 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
 
         
 # PNe Plot
-emission_plot_maker(p, obj_t="PNe", sub_OIII=3.2e4, sub_Ha=4e4, )
+emission_plot_maker(26, obj_t="PNe", sub_OIII=3.2e4, sub_Ha=4e4, )
 # SNR plot
 # Plot out brightest SNR object with filter Y
 if len(SII_II_AON[SNR]) != 0:
