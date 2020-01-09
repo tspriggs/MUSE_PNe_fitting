@@ -17,7 +17,7 @@ from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 
 from ppxf_gal_L import ppxf_L_tot
-from PNLF import open_data, reconstructed_image, completeness
+from PNLF import open_data, reconstructed_image, completeness, KS2_test
 from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, robust_sigma
 
 
@@ -25,6 +25,7 @@ from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_
 with open("galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
 
+# Read in arguments from command line
 my_parser = argparse.ArgumentParser()
 
 my_parser.add_argument('--galaxy', action='store', type=str, required=True)
@@ -34,7 +35,7 @@ args = my_parser.parse_args()
 # Define galaxy name
 galaxy_name = args.galaxy   # galaxy name, format of FCC000
 loc = args.loc              # MUSE pointing loc: center, middle, halo
-# Queries user for a galaxy name, in the form of FCC000, and taking the relevant info from the yaml file
+
 
 galaxy_data = galaxy_info[galaxy_name]
 
@@ -49,8 +50,8 @@ hdulist = fits.open(f"{DATA_DIR}{galaxy_name}{loc}_residuals_list.fits")
 hdr = hdulist[0].header
 wavelength = np.exp(hdulist[1].data) # extract header from residual cube
 
-x_data = res_hdr["XAXIS"]
-y_data = res_hdr["YAXIS"]
+x_data = hdr["XAXIS"]
+y_data = hdr["YAXIS"]
 
 # Constants
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
@@ -260,12 +261,6 @@ PNe_df.loc[PNe_df["Chi2"]>=upper_chi, "Filter"] = "N"
 
 ## New filter read in area
 
-# read in 3 different filter lists:
-# my_filter = []
-# impostor_filter = [[],[],[]]
-# interloper_filter = []
-
-
 # list of objects that are chosen to be filtered out (bad fits, objviously not PN, over luminous, etc.)
 my_filter = galaxy_data["my_filter"]
 
@@ -370,7 +365,7 @@ M_star = -4.53
 M_star_err = 0.08
 D_diff_eq = 0.2 * np.log(10) * (10**(0.2*(m + 4.52 - 25)))
 
-Dist_est = 10.**(((m + 4.52) -25.) / 5.)
+Dist_est = 10.**(((m - M_star) -25.) / 5.)
 Dist_err_up = np.sqrt((D_diff_eq**2 * m_err_up**2) + ((-D_diff_eq)**2 * M_star_err**2))
 Dist_err_lo = np.sqrt((D_diff_eq**2 * m_err_lo**2) + ((-D_diff_eq)**2 * M_star_err**2))
 
@@ -508,9 +503,10 @@ total_norm = np.sum(np.abs(PNLF_corr)) * step
 # Scaling factor
 scal = len(PNe_mag) / total_norm
 
-# Constraining to -2.5 in magnitude
+# Constraining to -2.0 in magnitude
 idx = np.where(Abs_M <= np.min(PNe_mag)+2.5)
 
+# Plot the PNLF
 plt.figure(figsize=(14,10))
 
 binwidth = 0.2
@@ -524,7 +520,7 @@ print(KS2_stat)
 ymax = max(hist[0])
 
 plt.plot(app_m, PNLF*scal*binwidth, '-', color='blue', marker="o", label="PNLF")
-plt.plot(app_m, PNLF_corr*scal*binwidth,'-.', color='blue', label="Completeness corrected PNLF")
+plt.plot(app_m, PNLF_corr*scal*binwidth,'-.', color='blue', label="Incompleteness corrected PNLF")
 # plt.plot(Abs_M, completeness_ratio*200*binwidth, "--", color="k", label="completeness")
 plt.xlabel(r'$m_{5007}$', fontsize=30)
 plt.ylabel(r'$N_{PNe}$', fontsize=30)
@@ -537,10 +533,12 @@ plt.ylim(0,ymax+(2*ymax));
 
 plt.tick_params(labelsize = 25)
 
+#plt.axvline(PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].values.min() - 31.63)
 plt.legend(loc=2, fontsize=20)
-# plt.savefig(PLOT_DIR+"_PNLF.pdf", bbox_inches='tight')
-# plt.savefig(PLOT_DIR+"_PNLF.png", bbox_inches='tight')
+plt.savefig(PLOT_DIR+"_PNLF.pdf", bbox_inches='tight')
+plt.savefig(PLOT_DIR+"_PNLF.png", bbox_inches='tight')
 
+# Calculate the number of PNe, via the PNLF
 N_PNe = np.sum(PNLF[idx]*scal) * step
 
 print("Number of PNe from PNLF: ", N_PNe, "+/-", (1/np.sqrt(len(PNe_df.loc[PNe_df["Filter"]=="Y"])))*N_PNe)
@@ -561,6 +559,7 @@ elip_mask = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2
 # Now mask the stars
 star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
 
+# Combine elip_mask and star)_mask_sum to make total_mask
 total_mask = ((np.isnan(orig_hdulist[1].data[1,:,:])==False) & (elip_mask==False) & (star_mask_sum==False))
 indx_mask = np.where(total_mask==True)
 
