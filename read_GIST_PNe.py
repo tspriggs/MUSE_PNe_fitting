@@ -79,16 +79,70 @@ plt.ylabel("PNe count", fontsize=30, labelpad=10)
 plt.tick_params(labelsize = 18)
 plt.xlim(-3.25,3.25)
 
-if plt_save == True:
-    plt.savefig(f"Plots/{galaxy_name}/{galaxy_name}_velocity_bins_plot.pdf", bbox_inches='tight')
+# if plt_save == True:
+    # plt.savefig(f"Plots/{galaxy_name}/{galaxy_name}_velocity_bins_plot.pdf", bbox_inches='tight')
 
 
 
 
-# interlopers = vel_ratio[(vel_ratio<-3) | (vel_ratio>3)].index
-# print(interlopers)
-# # for inter in interlopers:
-# #     PNe_df.loc[PNe_df["PNe number"]==inter, "Filter"] = "N"
+hdulist_ppxf = fits.open(RAW_DIR+f"/{galaxy_name}center_ppxf_SPAXELS.fits")
+v_star, s_star = hdulist_ppxf[1].data.V, hdulist_ppxf[1].data.SIGMA
+
+
+hdulist_table = fits.open(RAW_DIR+f"/{galaxy_name}center_table.fits")
+X_star, Y_star = hdulist_table[1].data.XBIN, hdulist_table[1].data.YBIN
+flux_star = hdulist_table[1].data.FLUX
+
+idx = flux_star.argmax()
+X_star, Y_star = X_star-X_star[idx], Y_star-Y_star[idx]
+
+cond = np.sqrt( (X_star)**2 + (Y_star)**2 ) <= 5.0
+vsys = np.median(v_star[cond])
+v_star = v_star-vsys
+
+LOS_z = (vsys * 1e3) / c
+
+LOS_de_z = np.array(mean_wave_list[:,0] / (1 + LOS_z))
+    
+PNe_df["PNe_LOS_V"] = (c * (LOS_de_z - 5006.77) / 5006.77) / 1000. 
+
+f_ind = PNe_df.loc[PNe_df["Filter"]=="Y"].index
+
+gal_centre_pix = Table.read("exported_data/galaxy_centre_pix.dat", format="ascii")
+
+gal_ind = np.where(gal_centre_pix["Galaxy"]==galaxy_name)
+gal_x_c = gal_centre_pix["x_pix"][gal_ind]
+gal_y_c = gal_centre_pix["y_pix"][gal_ind]
+
+xpne, ypne = (x_PNe[f_ind]-gal_x_c)*0.2, (y_PNe[f_ind]-gal_y_c)*0.2
+
+# Estimating the velocity dispersion of the PNe along the LoS
+def sig_PNe(X_star,Y_star,v_stars,sigma,x_PNe,y_PNe,vel_PNe):
+
+    d_PNe_to_skin = np.zeros(len(x_PNe))
+    Vs_PNe = np.ones(len(x_PNe)) # Velocity of the closest star
+    Ss_PNe = np.ones(len(x_PNe)) # Sigma for each PNe
+    i_skin_PNe = []
+
+    """ To estimate the velocity dispersion for PNe we need to
+    extract the sigma of the closest stars for each PNe """
+
+    for i in range(len(x_PNe)):
+        r_tmp = np.sqrt((X_star-x_PNe[i])**2+(Y_star-y_PNe[i])**2)
+        d_PNe_to_skin[i] = min(r_tmp)
+        i_skin_PNe.append(r_tmp.argmin())
+
+    Vs_PNe  = v_stars[i_skin_PNe]
+    Ss_PNe  = sigma[i_skin_PNe]
+    rad_PNe = np.sqrt(x_PNe**2+y_PNe**2)
+    k = np.where(d_PNe_to_skin > 1.0)
+
+    return rad_PNe, (vel_PNe-Vs_PNe)/Ss_PNe, k, Vs_PNe, Ss_PNe
+
+rad_PNe, vel_ratio, k, Vs_PNe, Ss_PNe  = sig_PNe(X_star, Y_star, v_star, s_star, xpne, ypne, PNe_df["PNe_LOS_V"].loc[PNe_df["Filter"]=="Y"])
+
+
+interlopers = vel_ratio[(vel_ratio<-3) | (vel_ratio>3)].index
 
 
 

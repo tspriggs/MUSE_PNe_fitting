@@ -1,4 +1,6 @@
+import os
 import sys
+import sep
 import yaml
 import lmfit
 import argparse
@@ -11,6 +13,7 @@ from scipy import stats
 from scipy.stats import norm
 from astropy.table import Table
 from astropy.io import ascii, fits
+from photutils import CircularAperture
 from astropy.wcs import WCS, utils, wcs
 from astropy.coordinates import SkyCoord
 from matplotlib.patches import Rectangle, Ellipse, Circle
@@ -25,14 +28,15 @@ my_parser = argparse.ArgumentParser()
 
 my_parser.add_argument('--galaxy', action='store', type=str, required=True)
 my_parser.add_argument('--loc', action="store", type=str, required=True)
+my_parser.add_argument("--s", action="store_true", default=False)
+
 args = my_parser.parse_args()
+
 galaxy_name = args.galaxy
 loc = args.loc
+save_PNe = args.s
 
-if loc == "0":
-    loc = ""
-
-galaxy_data = galaxy_info[galaxy_name+"_"+loc]
+galaxy_data = galaxy_info[f"{galaxy_name}_{loc}"]
 
 DATA_DIR = f"galaxy_data/{galaxy_name}_data/{galaxy_name}{loc}"
 EXPORT_DIR = f"exported_data/{galaxy_name}/{galaxy_name}{loc}"
@@ -48,8 +52,6 @@ if len(hdulist) == 2: # check to see if HDU data has 2 units (data, wavelength)
     np.save(DATA_DIR+"_wavelength", wavelength)
 else:
     wavelength = np.load(DATA_DIR+"_wavelength.npy")
-
-# Will introduce method that takes from header the x and y dimensions
     
 # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
 x_data = res_hdr["XAXIS"]
@@ -140,83 +142,122 @@ spaxel_params.add("Gauss_bkg", value=0.01)
 spaxel_params.add("Gauss_grad", value=0.0001)
 
 # Loop through spectra from list format of data.
-for j,i in tqdm(enumerate(non_zero_index), total=len(non_zero_index)):
-    #progbar(j, len(non_zero_index), 40)
-    fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, hdulist[0].data[i], input_errors[i], i), nan_policy="propagate")
-    gauss_A[i] = fit_results.params["Amp"].value
-    obj_residuals[i] = fit_results.residual
-    g_bkg[i]  = fit_results.params["Gauss_bkg"].value
-    g_grad[i] = fit_results.params["Gauss_grad"].value
+if os.path.isfile(f"/exported_data/{galaxy_name}/{galaxy_name}{loc}_A_rN_cen.npy") != True:
+    for j,i in tqdm(enumerate(non_zero_index), total=len(non_zero_index)):
+        #progbar(j, len(non_zero_index), 40)
+        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, hdulist[0].data[i], input_errors[i], i), nan_policy="propagate")
+        gauss_A[i] = fit_results.params["Amp"].value
+        obj_residuals[i] = fit_results.residual
+        g_bkg[i]  = fit_results.params["Gauss_bkg"].value
+        g_grad[i] = fit_results.params["Gauss_grad"].value
 
-A_rN = np.array([A / rN for A,rN in zip(gauss_A, list_of_rN)])
-Gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
-
-####
-# chi square analysis
-gauss_list, redchi, Chi_sqr = [], [], []
-for i in range(len(hdulist[0].data)):
-    spectra= np.copy(hdulist[0].data[i]) # copy data
-    flux_1D = np.copy(Gauss_F[i]) # copy list of flux
-    A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_data["LSF"]/ 2.35482)))
-
-    def gaussian(x, amplitude, mean, FWHM, bkg, grad, z):
-        stddev = FWHM / 2.35482
-        return ((bkg + grad*x) + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
-                (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.)))
-
-    gauss = gaussian(wavelength, A_n, list_of_mean[i], galaxy_data["LSF"], g_bkg[i], g_grad[i], z)
-
-    temp = np.copy(gauss)
-    idx  = np.where(spectra == 0.0)[0]
-    temp[idx] = 0.0
-    spectra[idx] = 1.0
-    gauss = np.copy(temp)
-    
-    rN   = robust_sigma(spectra - gauss)
-    res  = spectra - gauss
-    Chi2 = np.sum((res**2)/(rN**2))
-    s    = np.shape(spectra)
-    redchi.append(Chi2/ (len(wavelength) - fit_results.nvarys))
-    gauss_list.append(gauss)
-    Chi_sqr.append(Chi2)
-    
-######
+    A_rN = np.array([A / rN for A,rN in zip(gauss_A, list_of_rN)])
+    gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
 
 
+    # Save A/rN, Gauss A, Guass F and rN arrays as npy files. Change to .fits soon maybe
+    np.save(EXPORT_DIR+"_A_rN_cen", A_rN)
+    np.save(EXPORT_DIR+"_gauss_A_cen", gauss_A)
+    np.save(EXPORT_DIR+"_gauss_F_cen", gauss_F)
+    np.save(EXPORT_DIR+"_rN", list_of_rN)
 
-# Save A/rN, Gauss A, Guass F and rN arrays as npy files. Change to .fits soon maybe
-np.save(EXPORT_DIR+"_A_rN_cen", A_rN)
-np.save(EXPORT_DIR+"_gauss_A_cen", gauss_A)
-np.save(EXPORT_DIR+"_gauss_F_cen", Gauss_F)
-np.save(EXPORT_DIR+"_rN", list_of_rN)
-np.save(EXPORT_DIR+"_chi_sqr", Chi_sqr)
-np.save(EXPORT_DIR+"_red_chi", redchi)
+    # save the data and obj res in fits file format to us memmapping.
+    hdu_data_res = fits.PrimaryHDU(data_residuals)
+    hdu_obj_res = fits.PrimaryHDU(obj_residuals)
+    hdu_data_res.writeto(f"{EXPORT_DIR}_resids_data.fits", overwrite=True)
+    hdu_obj_res.writeto(f"{EXPORT_DIR}_resids_obj.fits", overwrite=True)
 
-# save the data and obj res in fits file format to us memmapping.
-hdu_data_res = fits.PrimaryHDU(data_residuals)
-hdu_obj_res = fits.PrimaryHDU(obj_residuals)
-hdu_data_res.writeto(f"{EXPORT_DIR}_resids_data.fits", overwrite=True)
-hdu_obj_res.writeto(f"{EXPORT_DIR}_resids_obj.fits", overwrite=True)
+    print("Cube fitted, data saved.")
 
-print("Cube fitted, data saved.")
+else:
+    print(f"Spaxel fit data for {galaxy_name} {loc} already exist.")
+    # load up gauss_A, gauss_F and A_rN
+    gauss_A = np.load(f"{EXPORT_DIR}{galaxy_name}{loc}{loc}_gauss_A_cen.npy")
+    gauss_F = np.load(f"{EXPORT_DIR}{galaxy_name}{loc}_gauss_F_cen.npy")
+    A_rN    = np.load(f"{EXPORT_DIR}{galaxy_name}{loc}{loc}_A_rN_cen.npy")
+
 
 # Construct A/rN, A_5007 and F_5007 plots, and save in Plots/Galaxy_name/
 # Plot A/rN
 plt.figure(figsize=(20,20))
 plt.imshow(A_rN.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=1, vmax=8)
+plt.title("A/rN")
 plt.colorbar()
 plt.savefig(PLOT_DIR+"_A_rN_map.png")
 
 # Plot A_5007
 plt.figure(figsize=(20,20))
 plt.imshow(gauss_A.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
+plt.title("Amplitude")
 plt.colorbar()
 plt.savefig(PLOT_DIR+"_A_5007_map.png")
 
 # Plot F_5007
 plt.figure(figsize=(20,20))
-plt.imshow(Gauss_F.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
+plt.imshow(gauss_F.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
+plt.title("Flux")
 plt.colorbar()
 plt.savefig(PLOT_DIR+"_F_5007_map.png")
 
 print("Plots saved in Plots/"+galaxy_name)
+
+
+
+############################################################################
+################################# run SEP  #################################
+############################################################################
+
+A_rN_img = A_rN.rehsape(y_data,x_data)
+
+# Where element is equal to element [0,0], set equal to 0.0, essentially making out of bound areas equal to 0.0
+A_rN_img[A_rN_img == A_rN_img[0,0]] = 0.0
+
+plt.figure(figsize=(20,20))
+
+# analyse background noise using sep.background
+bkg = sep.Background(A_rN_img, bw=7, bh=7, fw=3, fh=3)
+
+bkg_image = bkg.rms()
+
+gal_mask_params = galaxy_data["gal_mask"]
+star_mask_params = galaxy_data["star_mask"]
+
+Y, X = np.mgrid[:y_data, :x_data]
+
+# set up the mask parameters, as taken from the yaml file. default is [0,0,0,0,0]
+if loc == "middle" or loc == "halo":
+    xe, ye, length, width, alpha = [0,0,0,0,0]
+else:
+    xe, ye, length, width, alpha = gal_mask_params
+
+elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
+
+# mask out any known and selected stars
+star_mask = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
+
+# Use sep.extract to get the locations of sources
+objects = sep.extract(A_rN_img-bkg, thresh=2.0, clean=True, minarea=6, err=bkg.globalrms, mask=elip_mask_gal+star_mask, deblend_nthresh=4,)
+x_sep = objects["x"]
+y_sep = objects["y"]
+
+positions = (x_sep, y_sep)
+apertures = CircularAperture(positions, r=4)
+plt.figure(figsize=(16,16))
+plt.imshow(A_rN_img-bkg, origin="lower", cmap="CMRmap", vmin=1, vmax=8.)
+apertures.plot(color="green")
+
+# Add on the eliptical mask (if there is one)
+ax = plt.gca()
+elip_gal = Ellipse((xe, ye), width, length, angle=alpha*(180/np.pi), fill=False, color="white")
+ax.add_artist(elip_gal)
+
+# store list of objects, and print number of detected objects
+sep_x_y_list = [[x,y] for x,y in zip(x_sep, y_sep)]
+print(len(x_sep))
+
+x_y_list = np.array([[x,y] for x,y in zip(x_sep, y_sep)])
+x_PNe = np.array([x[0] for x in x_y_list])
+y_PNe = np.array([y[1] for y in x_y_list])
+
+if save_PNe == True:
+    np.save(EXPORT_DIR+galaxy_name+f"{loc}_PNe_x_y_list", sep_x_y_list)

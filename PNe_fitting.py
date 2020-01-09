@@ -20,6 +20,7 @@ from ppxf_gal_L import ppxf_L_tot
 from PNLF import open_data, reconstructed_image, completeness, KS2_test
 from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, robust_sigma
 
+# Let's use a logging package to store stuff, instead of printing.....
 
 # Load in yaml file to query galaxy properties
 with open("galaxy_info.yaml", "r") as yaml_data:
@@ -30,14 +31,14 @@ my_parser = argparse.ArgumentParser()
 
 my_parser.add_argument('--galaxy', action='store', type=str, required=True)
 my_parser.add_argument("--loc",    action="store", type=str, required=True)
+my_parser.add_argument("--fit_psf", action="store_true", default=False)
 args = my_parser.parse_args()
 
 # Define galaxy name
 galaxy_name = args.galaxy   # galaxy name, format of FCC000
 loc = args.loc              # MUSE pointing loc: center, middle, halo
 
-
-galaxy_data = galaxy_info[galaxy_name]
+galaxy_data = galaxy_info[f"{galaxy_name}_{loc}"]
 
 RAW_DIR    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}"
 RAW_DAT    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}{loc}.fits"
@@ -236,7 +237,9 @@ def run_minimiser(parameters):
     de_z_means = np.array(mean_wave_list[:,0] / (1 + z)) # de redshift OIII wavelength position
     
     PNe_df["V (km/s)"] = (c * (de_z_means - 5006.77) / 5006.77) / 1000.    
-        
+    
+    PNe_df["fitted_mean_wave"] = mean_wave_list
+
     PNe_df["[OIII] Flux"] = total_Flux[:,0] #store total OIII 5007 line flux
         
     if "hb" in emission_dict:
@@ -259,7 +262,154 @@ PNe_df.loc[PNe_df["A/rN"]<3.0, "Filter"] = "N"
 upper_chi = chi2.ppf(0.9973, ((n_pixels**2)*len(wavelength))-6) # 3 sigma = 0.9973
 PNe_df.loc[PNe_df["Chi2"]>=upper_chi, "Filter"] = "N" 
 
-## New filter read in area
+#### Fit for PSF via N highest A/rN PNe
+if fit_PSF == True:
+    if len(PNe_df.where(PNe_df["A/rN"]>10))>0:  # look to see if any A/rN is above 10
+        # If so, then use between 2 and 5 of the sources to get PSF
+    # else:
+    #   Just use df.nlargest(5, "A/rN")
+    sel_PNe = PNe_df.loc[PNe_df["Filter"]=="Y"].nlargest(5, "A/rN").index.values
+    print(sel_PNe)
+
+    selected_PNe = PNe_spectra[sel_PNe]
+    selected_PNe_err = obj_error_cube[sel_PNe]
+
+    # Set up PSF params
+    PSF_params = Parameters()
+
+    def model_params(p, n, amp, mean):
+        PSF_params.add("moffat_amp_{:03d}".format(n), value=amp, min=0.01)
+        PSF_params.add("x_{:03d}".format(n), value=(n_pixels/2.), min=(n_pixels/2.) -4, max=(n_pixels/2.) +4)
+        PSF_params.add("y_{:03d}".format(n), value=(n_pixels/2.), min=(n_pixels/2.) -4, max=(n_pixels/2.) +4)
+        PSF_params.add("wave_{:03d}".format(n), value=mean, min=mean-20., max=mean+20.)
+        PSF_params.add("gauss_bkg_{:03d}".format(n),  value=0.001, vary=True)
+        PSF_params.add("gauss_grad_{:03d}".format(n), value=0.001, vary=True)
+
+
+    for i in np.arange(0,len(sel_PNe)):
+            model_params(p=PSF_params, n=i, amp=200.0, mean=5006.77*(1+z))    
+
+    PSF_params.add('FWHM', value=4.0, min=0.01, vary=True)
+    PSF_params.add("beta", value=2.5, min=0.01, vary=True) 
+    PSF_params.add("LSF",  value=2.5, min=0.01, vary=True)
+
+    # Run minimiser to get PSF values
+    PSF_results = minimize(PSF_residuals_3D, PSF_params, args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err, z), nan_policy="propagate")
+
+    # Print out results from PSF fit
+    print("FWHM: ", round(PSF_results.params["FWHM"].value, 4), "+/-", round(PSF_results.params["FWHM"].stderr, 4), "(", (PSF_results.params["FWHM"].stderr / PSF_results.params["FWHM"].value)*100, "%)")
+    print("Beta: ", round(PSF_results.params["beta"].value, 4), "+/-", round(PSF_results.params["beta"].stderr, 4), "(", (PSF_results.params["beta"].stderr / PSF_results.params["beta"].value)*100, "%)")
+    print("LSF: " , round(PSF_results.params["LSF"].value , 4), "+/-", round(PSF_results.params["LSF"].stderr , 4), "(", (PSF_results.params["LSF"].stderr / PSF_results.params["LSF"].value)*100, "%)")
+
+
+    #### Re-fit PNe with fitted PSF values - if fit_PSF == True
+
+    #### Filter again via chi square values
+
+    PNe_df.loc[PNe_df["Chi2"]>=upper_chi, "Filter"] = "N"
+
+#### run impostor check, if not already done
+
+# Prepare files for the impostor checks
+####### MUSE .fits file ####################
+raw_hdulist = fits.open("/local/tspriggs/Fornax_data_cubes/"+galaxy_name+"center.fits")
+
+raw_hdr = raw_hdulist[1].header
+raw_s = raw_hdulist[1].data.shape # (lambda, y, x)
+full_wavelength = raw_hdr['CRVAL3']+(np.arange(raw_s[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
+
+cube_list = np.copy(raw_hdulist[1].data).reshape(raw_s[0], raw_s[1]*raw_s[2]) # (lambda, list of len y*x)
+cube_list = np.swapaxes(cube_list, 1,0) # (list of len x*y, lambda)
+
+
+if len(raw_hdulist) == 3:
+    stat_list = np.copy(raw_hdulist[2].data).reshape(raw_s[0], raw_s[1]*raw_s[2])
+    stat_list = np.swapaxes(stat_list, 1,0)
+elif len(raw_hdulist) == 2:
+    stat_list = np.ones_like(cube_list)
+
+# close the raw_hdulist file, which can be quite large
+raw_hdulist.close()
+
+raw_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, cube_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
+# stat_minicubes = np.ones_like(raw_minicubes)
+stat_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, stat_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
+
+sum_raw  = np.nansum(raw_minicubes,1)
+sum_stat = np.nansum(stat_minicubes, 1)
+
+hdu_raw_minicubes = fits.PrimaryHDU(sum_raw,raw_hdr)
+hdu_stat_minicubes = fits.ImageHDU(sum_stat)
+hdu_long_wavelength = fits.ImageHDU(full_wavelength)
+
+raw_hdu_to_write = fits.HDUList([hdu_raw_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
+
+raw_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_MUSE_PNe.fits", overwrite=True)
+print(f"{galaxy_name}_MUSE_PNe.fits file saved.")
+
+
+##### Residual .fits file ################
+residual_hdu = fits.PrimaryHDU(PNe_spectra)
+wavelenth_residual = fits.ImageHDU(wavelength)
+resid_hdu_to_write = fits.HDUList([residual_hdu, wavelenth_residual])
+resid_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_residuals_PNe.fits", overwrite=True)
+print(f"{galaxy_name}_residuals_PNe.fits file saved.")
+
+
+####### 3D model .fits file ##################
+models_hdu = fits.PrimaryHDU(model_spectra_list)
+wavelenth_models = fits.ImageHDU(wavelength)
+model_hdu_to_write = fits.HDUList([models_hdu, wavelenth_models])
+model_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_3D_models_PNe.fits", overwrite=True)
+print(f"{galaxy_name}_residuals_PNe.fits file saved.")
+
+
+
+############# WEIGHTED MUSE data PNe ##############
+def PSF_weight(MUSE_p, model_p, r_wls, spaxels=81):
+       
+    coeff = np.polyfit(r_wls, np.clip(model_p[0, :], -50, 50), 1) # get continuum on first spaxel, assume the same across the minicube
+    poly = np.poly1d(coeff)
+    tmp = np.copy(model_p)
+    for k in np.arange(0,spaxels):
+         tmp[k,:] = poly(r_wls)
+            
+    res_minicube_model_no_continuum = model_p - tmp # remove continuum
+    
+    # PSF weighted minicube
+    sum_model_no_continuum = np.nansum(res_minicube_model_no_continuum, 0)
+    weights = np.nansum(res_minicube_model_no_continuum, 1)
+    nweights = weights / np.nansum(weights) # spaxel weights
+    weighted_spec = np.dot(nweights, MUSE_p) # dot product of the nweights and spectra
+
+    return weighted_spec
+
+
+weighted_PNe = np.ones((len(x_PNe), n_pixels**2, len(full_wavelength)))  #N_PNe, spaxels, wavelength length
+
+for p in np.arange(0, len(x_PNe)):
+    weighted_PNe[p] = PSF_weight(raw_minicubes[p], model_spectra_list[p], wavelength, n_pixels**2)
+
+sum_weighted_PNe = np.nansum(weighted_PNe, 1)
+
+hdu_weighted_minicubes = fits.PrimaryHDU(sum_weighted_PNe, raw_hdr)
+hdu_weighted_stat = fits.ImageHDU(np.nansum(stat_minicubes,1))
+
+weight_hdu_to_write = fits.HDUList([hdu_weighted_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
+
+if write_file == True:
+    weight_hdu_to_write.writeto(f"../../gist_PNe/inputData/{galaxy_name}MUSEPNeweighted.fits", overwrite=True)
+    print(f"{galaxy_name}_MUSE_PNe_weighted.fits file saved.")
+elif write_file == False:
+    print(f"{galaxy_name}_MUSE_PNe_weighted.fits file already exists and hasn't been overwritten.")
+
+# maybe run a bash/shell script, as we would need to change environment etc.
+
+#### save impostor and interloper object ID's
+
+# run the read_GIST_PNe.py file and store the output ID's
+
+#### Filter with results from impostor check
 
 # list of objects that are chosen to be filtered out (bad fits, objviously not PN, over luminous, etc.)
 my_filter = galaxy_data["my_filter"]
@@ -278,45 +428,7 @@ PNe_df.loc[PNe_df["PNe number"].isin(HII_filter), "Filter"] = "N"
 PNe_df.loc[PNe_df["PNe number"].isin(unknown_imp_filter), "Filter"] = "N" 
 PNe_df.loc[PNe_df["PNe number"].isin(interloper_filter), "Filter"] = "N"
 
-##
-
-## Current exclusion list - re-write to use yaml file
-# ## FCC167
-# if (galaxy_name == "FCC167") & (loc=="center"):
-#     PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N" # Over luminous PNe 
-#     PNe_df.loc[PNe_df["PNe number"]==10, "Filter"] = "N"  # Double reading from source
-# ## FCC219
-# elif (galaxy_name == "FCC219") & (loc=="center"):
-#      PNe_df.loc[PNe_df["PNe number"]==0, "Filter"] = "N"
-# elif galaxy_name == "FCC193":
-#     PNe_df.loc[PNe_df["PNe number"]==143, "Filter"] = "N" 
-#     PNe_df.loc[PNe_df["PNe number"]==141, "Filter"] = "N" 
-#     PNe_df.loc[PNe_df["PNe number"]==84, "Filter"] = "N"
-#     PNe_df.loc[PNe_df["PNe number"]==77, "Filter"] = "Y" 
-#     PNe_df.loc[PNe_df["PNe number"]==94, "Filter"] = "Y" 
-# #elif galaxy_name == "FCC147":
-#     #PNe_df.loc[PNe_df["PNe number"]==41, "Filter"] = "N"
-# # elif galaxy_name == "FCC249":
-# #     PNe_df.loc[PNe_df["PNe number"]==2, "Filter"] = "N"
-# elif galaxy_name == "FCC276":
-#     PNe_df.loc[PNe_df["PNe number"]==20, "Filter"] = "N" # Overly bright object, sets D=15Mpc, could be overlap/super-position of two.
-#     PNe_df.loc[PNe_df["PNe number"]==40, "Filter"] = "Y"
-#     PNe_df.loc[PNe_df["PNe number"]==79, "Filter"] = "Y"
-#     PNe_df.loc[PNe_df["PNe number"]==85, "Filter"] = "Y"
-# # elif galaxy_name == "FCC184":
-# #     PNe_df.loc[PNe_df["PNe number"]==15, "Filter"] = "N"
-# #     PNe_df.loc[PNe_df["PNe number"]==35, "Filter"] = "N"
-# elif galaxy_name == "FCC301":
-#     PNe_df.loc[PNe_df["PNe number"]==14, "Filter"] = "N"
-#     PNe_df.loc[PNe_df["PNe number"]==16, "Filter"] = "N"
-# elif galaxy_name == "FCC255":
-#     PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N"
-
-
-## End of exclusion list
-    
-    
-    
+#### calc errors and determine Distance estimate from brightest m_5007 PNe
 ##### Error estimation #####
 def Moffat_err(Moff_A, FWHM, beta, x_0, y_0):
     alpha = FWHM / (2. * umath.sqrt(2.**(1./beta) - 1.))
@@ -380,6 +492,8 @@ print(f"dM = {np.round(dM, 3)} (+ {np.round(dM_err_up,3)}) (- {np.round(dM_err_l
 
 PNe_df["M 5007"] = PNe_df["m 5007"] - dM
 
+#### save PNe_df and tables for documentation
+
 # save the pandas data-frame for use in the impostor diagnostics.
 PNe_df.to_csv(f"exported_data/{galaxy_name}/{galaxy_name}_PNe_df.csv")
 
@@ -396,6 +510,171 @@ PNe_table = Table([list(PNe_df.loc[PNe_df["Filter"]=="Y"].index), PNe_df["Ra (J2
 ascii.write(PNe_table, f"exported_data/{galaxy_name}/{galaxy_name}_fit_results.txt", format="tab", overwrite=True) 
 # Save latex table of data.
 ascii.write(PNe_table, f"exported_data/{galaxy_name}/{galaxy_name}_fit_results_latex.txt", format="latex", overwrite=True) 
+
+#### PNLF
+
+# #####################################################
+# ####################### PNLF ########################
+# #####################################################
+
+
+galaxy_image, wave = reconstructed_image(galaxy_name, loc)
+galaxy_image = galaxy_image.reshape([y_data, x_data])
+
+PNe_mag = PNe_df["M 5007"].loc[PNe_df["Filter"]=="Y"].values
+app_mag = PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].values
+
+# Total PNLF
+PNLF, PNLF_corr, completeness_ratio, Abs_M, app_m = completeness(galaxy_name, loc, PNe_mag, PNe_multi_params, Dist_est, galaxy_image, peak=3.0,
+                                      gal_mask_params=gal_mask_params, star_mask_params=star_mask_params, c1=0.307, z=z ) # Estimating the completeness for the central pointing
+
+step = abs(Abs_M[1]-Abs_M[0])
+# Getting the normalisation - sum of correctied PNLF, times bin size
+total_norm = np.sum(np.abs(PNLF_corr)) * step
+
+# Scaling factor
+scal = len(PNe_mag) / total_norm
+
+# Constraining to -2.0 in magnitude
+idx = np.where(Abs_M <= np.min(PNe_mag)+2.5)
+
+# Plot the PNLF
+plt.figure(figsize=(14,10))
+
+binwidth = 0.2
+
+# hist = plt.hist(PNe_mag, bins=np.arange(min(PNe_mag), max(PNe_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue')
+hist = plt.hist(app_mag, bins=np.arange(min(app_mag), max(app_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue')
+
+KS2_stat = KS2_test(dist_1=PNLF_corr[1:18:2]*scal*binwidth, dist_2=hist[0], conf_lim=0.1)
+print(KS2_stat)
+
+ymax = max(hist[0])
+
+plt.plot(app_m, PNLF*scal*binwidth, '-', color='blue', marker="o", label="PNLF")
+plt.plot(app_m, PNLF_corr*scal*binwidth,'-.', color='blue', label="Incompleteness corrected PNLF")
+# plt.plot(Abs_M, completeness_ratio*200*binwidth, "--", color="k", label="completeness")
+plt.xlabel(r'$m_{5007}$', fontsize=30)
+plt.ylabel(r'$N_{PNe}$', fontsize=30)
+#plt.yticks(np.arange(0,ymax+4, 5))
+plt.plot(0,0, alpha=0.0, label=f"KS2 test = {round(KS2_stat[0],3)}")
+plt.plot(0,0, alpha=0.0, label=f"pvalue   = {round(KS2_stat[1],3)}")
+plt.xlim(-5.0+dM,-1.5+dM); 
+plt.ylim(0,ymax+(2*ymax));
+# plt.xlim(26.0,30.0); plt.ylim(0,45);
+
+plt.tick_params(labelsize = 25)
+
+#plt.axvline(PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].values.min() - 31.63)
+plt.legend(loc=2, fontsize=20)
+plt.savefig(PLOT_DIR+"_PNLF.pdf", bbox_inches='tight')
+plt.savefig(PLOT_DIR+"_PNLF.png", bbox_inches='tight')
+
+# Calculate the number of PNe, via the PNLF
+N_PNe = np.sum(PNLF[idx]*scal) * step
+
+print("Number of PNe from PNLF: ", N_PNe, "+/-", (1/np.sqrt(len(PNe_df.loc[PNe_df["Filter"]=="Y"])))*N_PNe)
+
+
+#### L_bol
+
+##### Integrated, bolometric Luminosity of galaxy FOV spectra #####
+raw_data_cube = RAW_DAT # read in raw data cube
+
+xe, ye, length, width, alpha = gal_mask_params
+
+orig_hdulist = fits.open(raw_data_cube)
+raw_data_cube = np.copy(orig_hdulist[1].data)
+h1 = orig_hdulist[1].header
+s = np.shape(orig_hdulist[1].data)
+Y, X = np.mgrid[:s[1], :s[2]]
+elip_mask = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
+
+# Now mask the stars
+star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
+
+# Combine elip_mask and star)_mask_sum to make total_mask
+total_mask = ((np.isnan(orig_hdulist[1].data[1,:,:])==False) & (elip_mask==False) & (star_mask_sum==False))
+indx_mask = np.where(total_mask==True)
+
+good_spectra = np.zeros((s[0], len(indx_mask[0])))
+
+for i, (y, x)  in enumerate(zip(tqdm(indx_mask[0]), indx_mask[1])):
+    good_spectra[:,i] = raw_data_cube[:,y,x]
+
+print("Collapsing cube now....")    
+    
+gal_lin = np.nansum(good_spectra, 1)
+        
+print("Cube has been collapsed...")
+
+L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z, vel=gal_vel, dist_mod=dM, dM_err=[dM_err_up, dM_err_lo])
+
+#### alpha_2.5
+
+#### save values to gal_df csv file
+print("Number of PNe after A/rN cut: ", len(PNe_df["Filter"].loc[PNe_df["Filter"]=="Y"]))
+
+print("Number of PNe after A/rN and Reduced chi-square cuts: ", len(PNe_df["Filter"].loc[PNe_df["Filter"]=="Y"]))
+
+
+print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table.txt")
+print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table_latex.txt")
+
+print(galaxy_name)
+n_p = len(PNe_df.loc[PNe_df["Filter"]=="Y"])
+print(f"N PNe used:      {n_p}")
+print(f"PNLF N:          {N_PNe}")
+print(f"L_bol of:        {L_bol[0]}")
+print(f"L_bol error:     + {L_bol[1][0] - L_bol[0]}, - {L_bol[0] - L_bol[1][1]}")
+print(f"Rmag of :        {L_bol[7]}")
+print(f"Vmag of :        {L_bol[8]}")
+print(f"Distance of:     {Dist_est} +/- {Dist_err_up}")
+print(f"Distance Mod of: {dM} +/- {dM_err_up}")
+
+## New filter read in area
+
+
+##
+
+## Current exclusion list - re-write to use yaml file
+# ## FCC167
+# if (galaxy_name == "FCC167") & (loc=="center"):
+#     PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N" # Over luminous PNe 
+#     PNe_df.loc[PNe_df["PNe number"]==10, "Filter"] = "N"  # Double reading from source
+# ## FCC219
+# elif (galaxy_name == "FCC219") & (loc=="center"):
+#      PNe_df.loc[PNe_df["PNe number"]==0, "Filter"] = "N"
+# elif galaxy_name == "FCC193":
+#     PNe_df.loc[PNe_df["PNe number"]==143, "Filter"] = "N" 
+#     PNe_df.loc[PNe_df["PNe number"]==141, "Filter"] = "N" 
+#     PNe_df.loc[PNe_df["PNe number"]==84, "Filter"] = "N"
+#     PNe_df.loc[PNe_df["PNe number"]==77, "Filter"] = "Y" 
+#     PNe_df.loc[PNe_df["PNe number"]==94, "Filter"] = "Y" 
+# #elif galaxy_name == "FCC147":
+#     #PNe_df.loc[PNe_df["PNe number"]==41, "Filter"] = "N"
+# # elif galaxy_name == "FCC249":
+# #     PNe_df.loc[PNe_df["PNe number"]==2, "Filter"] = "N"
+# elif galaxy_name == "FCC276":
+#     PNe_df.loc[PNe_df["PNe number"]==20, "Filter"] = "N" # Overly bright object, sets D=15Mpc, could be overlap/super-position of two.
+#     PNe_df.loc[PNe_df["PNe number"]==40, "Filter"] = "Y"
+#     PNe_df.loc[PNe_df["PNe number"]==79, "Filter"] = "Y"
+#     PNe_df.loc[PNe_df["PNe number"]==85, "Filter"] = "Y"
+# # elif galaxy_name == "FCC184":
+# #     PNe_df.loc[PNe_df["PNe number"]==15, "Filter"] = "N"
+# #     PNe_df.loc[PNe_df["PNe number"]==35, "Filter"] = "N"
+# elif galaxy_name == "FCC301":
+#     PNe_df.loc[PNe_df["PNe number"]==14, "Filter"] = "N"
+#     PNe_df.loc[PNe_df["PNe number"]==16, "Filter"] = "N"
+# elif galaxy_name == "FCC255":
+#     PNe_df.loc[PNe_df["PNe number"]==32, "Filter"] = "N"
+
+
+## End of exclusion list
+    
+    
+    
+##### MOVE plotting of stuff to separate python script
 
 ###### Plot the FOV with PNe circled
 A_rN_plot = np.load(EXPORT_DIR+galaxy_name+"_A_rN_cen.npy")
@@ -481,121 +760,12 @@ for i, item in enumerate(x_y_list):
 plt.savefig(PLOT_DIR+"_A_rN_circled.png", bbox_inches='tight')
 plt.savefig(PLOT_DIR+"_A_rN_circled.pdf", bbox_inches='tight')
 
-# #####################################################
-# ####################### PNLF ########################
-# #####################################################
-
-
-galaxy_image, wave = reconstructed_image(galaxy_name, loc)
-galaxy_image = galaxy_image.reshape([y_data, x_data])
-
-PNe_mag = PNe_df["M 5007"].loc[PNe_df["Filter"]=="Y"].values
-app_mag = PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].values
-
-# Total PNLF
-PNLF, PNLF_corr, completeness_ratio, Abs_M, app_m = completeness(galaxy_name, loc, PNe_mag, PNe_multi_params, Dist_est, galaxy_image, peak=3.0,
-                                      gal_mask_params=gal_mask_params, star_mask_params=star_mask_params, c1=0.307, z=z ) # Estimating the completeness for the central pointing
-
-step = abs(Abs_M[1]-Abs_M[0])
-# Getting the normalisation - sum of correctied PNLF, times bin size
-total_norm = np.sum(np.abs(PNLF_corr)) * step
-
-# Scaling factor
-scal = len(PNe_mag) / total_norm
-
-# Constraining to -2.0 in magnitude
-idx = np.where(Abs_M <= np.min(PNe_mag)+2.5)
-
-# Plot the PNLF
-plt.figure(figsize=(14,10))
-
-binwidth = 0.2
-
-# hist = plt.hist(PNe_mag, bins=np.arange(min(PNe_mag), max(PNe_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue')
-hist = plt.hist(app_mag, bins=np.arange(min(app_mag), max(app_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue')
-
-KS2_stat = KS2_test(dist_1=PNLF_corr[1:18:2]*scal*binwidth, dist_2=hist[0], conf_lim=0.1)
-print(KS2_stat)
-
-ymax = max(hist[0])
-
-plt.plot(app_m, PNLF*scal*binwidth, '-', color='blue', marker="o", label="PNLF")
-plt.plot(app_m, PNLF_corr*scal*binwidth,'-.', color='blue', label="Incompleteness corrected PNLF")
-# plt.plot(Abs_M, completeness_ratio*200*binwidth, "--", color="k", label="completeness")
-plt.xlabel(r'$m_{5007}$', fontsize=30)
-plt.ylabel(r'$N_{PNe}$', fontsize=30)
-#plt.yticks(np.arange(0,ymax+4, 5))
-plt.plot(0,0, alpha=0.0, label=f"KS2 test = {round(KS2_stat[0],3)}")
-plt.plot(0,0, alpha=0.0, label=f"pvalue   = {round(KS2_stat[1],3)}")
-plt.xlim(-5.0+dM,-1.5+dM); 
-plt.ylim(0,ymax+(2*ymax));
-# plt.xlim(26.0,30.0); plt.ylim(0,45);
-
-plt.tick_params(labelsize = 25)
-
-#plt.axvline(PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].values.min() - 31.63)
-plt.legend(loc=2, fontsize=20)
-plt.savefig(PLOT_DIR+"_PNLF.pdf", bbox_inches='tight')
-plt.savefig(PLOT_DIR+"_PNLF.png", bbox_inches='tight')
-
-# Calculate the number of PNe, via the PNLF
-N_PNe = np.sum(PNLF[idx]*scal) * step
-
-print("Number of PNe from PNLF: ", N_PNe, "+/-", (1/np.sqrt(len(PNe_df.loc[PNe_df["Filter"]=="Y"])))*N_PNe)
-
-
-##### Integrated, bolometric Luminosity of galaxy FOV spectra #####
-raw_data_cube = RAW_DAT # read in raw data cube
-
-xe, ye, length, width, alpha = gal_mask_params
-
-orig_hdulist = fits.open(raw_data_cube)
-raw_data_cube = np.copy(orig_hdulist[1].data)
-h1 = orig_hdulist[1].header
-s = np.shape(orig_hdulist[1].data)
-Y, X = np.mgrid[:s[1], :s[2]]
-elip_mask = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
-
-# Now mask the stars
-star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
-
-# Combine elip_mask and star)_mask_sum to make total_mask
-total_mask = ((np.isnan(orig_hdulist[1].data[1,:,:])==False) & (elip_mask==False) & (star_mask_sum==False))
-indx_mask = np.where(total_mask==True)
-
-good_spectra = np.zeros((s[0], len(indx_mask[0])))
-
-for i, (y, x)  in enumerate(zip(tqdm(indx_mask[0]), indx_mask[1])):
-    good_spectra[:,i] = raw_data_cube[:,y,x]
-
-print("Collapsing cube now....")    
-    
-gal_lin = np.nansum(good_spectra, 1)
-        
-print("Cube has been collapsed...")
-
-L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z, vel=gal_vel, dist_mod=dM, dM_err=[dM_err_up, dM_err_lo])
-
-
 plt.show()
 
-print("Number of PNe after A/rN cut: ", len(PNe_df["Filter"].loc[PNe_df["Filter"]=="Y"]))
-
-print("Number of PNe after A/rN and Reduced chi-square cuts: ", len(PNe_df["Filter"].loc[PNe_df["Filter"]=="Y"]))
 
 
-print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table.txt")
-print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table_latex.txt")
 
-print(galaxy_name)
-n_p = len(PNe_df.loc[PNe_df["Filter"]=="Y"])
-print(f"N PNe used:      {n_p}")
-print(f"PNLF N:          {N_PNe}")
-print(f"L_bol of:        {L_bol[0]}")
-print(f"L_bol error:     + {L_bol[1][0] - L_bol[0]}, - {L_bol[0] - L_bol[1][1]}")
-print(f"Rmag of :        {L_bol[7]}")
-print(f"Vmag of :        {L_bol[8]}")
-print(f"Distance of:     {Dist_est} +/- {Dist_err_up}")
-print(f"Distance Mod of: {dM} +/- {dM_err_up}")
 
-# print("This is the end of PNe analysis script. Goodbye")
+
+
+######### This is the end of PNe analysis script
