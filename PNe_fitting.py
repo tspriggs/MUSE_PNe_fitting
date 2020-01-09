@@ -32,8 +32,8 @@ my_parser.add_argument("--loc",    action="store", type=str, required=True)
 args = my_parser.parse_args()
 
 # Define galaxy name
-galaxy_name = args.galaxy #input("Please type which Galaxy you want to analyse, use FCC000 format: ")
-
+galaxy_name = args.galaxy   # galaxy name, format of FCC000
+loc = args.loc              # MUSE pointing loc: center, middle, halo
 # Queries user for a galaxy name, in the form of FCC000, and taking the relevant info from the yaml file
 
 galaxy_data = galaxy_info[galaxy_name]
@@ -223,7 +223,7 @@ def run_minimiser(parameters):
         rN   = robust_sigma(PNe_n - list_of_gauss)
         res  = PNe_n - list_of_gauss
         Chi2 = np.sum((res**2)/(rN**2))
-        s    = np.shape(PNe_n)
+        # s    = np.shape(PNe_n)
         redchi.append(Chi2/ ((len(wavelength) * n_pixels**2) - multi_fit_results.nvarys))
         gauss_list.append(list_of_gauss)
         Chi_sqr.append(Chi2)
@@ -277,11 +277,11 @@ interloper_filter  = galaxy_data["interloper_filter"]
 
 ## Apply filter
 
-[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in my_filter]
-[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in SNR_filter]
-[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in HII_filter]
-[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in unknown_imp_filter]
-[PNe_df.loc[PNe_df["PNe number"] == n, "Filter"] = "N" for n in interloper_filter]
+PNe_df.loc[PNe_df["PNe number"].isin(my_filter), "Filter"] = "N"
+PNe_df.loc[PNe_df["PNe number"].isin(SNR_filter), "Filter"] = "N" 
+PNe_df.loc[PNe_df["PNe number"].isin(HII_filter), "Filter"] = "N"
+PNe_df.loc[PNe_df["PNe number"].isin(unknown_imp_filter), "Filter"] = "N" 
+PNe_df.loc[PNe_df["PNe number"].isin(interloper_filter), "Filter"] = "N"
 
 ##
 
