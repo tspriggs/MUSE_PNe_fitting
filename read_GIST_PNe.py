@@ -47,7 +47,7 @@ gandalf_results  = fits.open(f"{work_dir}_gandalf_SPAXEL.fits")
 AllSpectra       = fits.open(f"{work_dir}_AllSpectra.fits")
 ppxf_results     = fits.open(f"{work_dir}_ppxf.fits")
 lamb = np.array(AllSpectra[2].data, dtype=np.float64)
-wavelength = np.exp(lamb)
+wave = np.exp(lamb)
 # [OIII] index 12
 # Hb index 11
 # [NII] index 18
@@ -61,88 +61,88 @@ wavelength = np.exp(lamb)
 ###################################################################################################
 
 # extract PN vel
-PN_vel = np.array([gandalf_results[2].data[i]["V"][12] for i in np.arange(len(gandalf_results[2].data))])
-# PN_vel = PNe_df["V (km/s)"].loc[PNe_df["Filter"]=="Y"]+60
+# PN_vel = np.array([gandalf_results[2].data[i]["V"][12] for i in np.arange(len(gandalf_results[2].data))])
+# # PN_vel = PNe_df["V (km/s)"].loc[PNe_df["Filter"]=="Y"]+60
 
-v_star     = np.array(ppxf_results[1].data["V"])
-sigma_star = np.array(ppxf_results[1].data["SIGMA"])
+# v_star     = np.array(ppxf_results[1].data["V"])
+# sigma_star = np.array(ppxf_results[1].data["SIGMA"])
 
-f_ind = PNe_df.loc[PNe_df["Filter"]=="Y"].index.values # index for filtered PN
+# f_ind = PNe_df.loc[PNe_df["Filter"]=="Y"].index.values # index for filtered PN
 
-vel_ratio = (PN_vel - v_star) / sigma_star
-
-
-plt.figure(figsize=(10,8))
-plt.hist(vel_ratio[f_ind], bins=10, edgecolor="k", alpha=0.8, linewidth=1)
-plt.xlabel(r"$\rm \frac{V_{PNe} - V_{*}}{\sigma_*}$", fontsize=30)
-plt.ylabel("PNe count", fontsize=30, labelpad=10)
-plt.tick_params(labelsize = 18)
-plt.xlim(-3.25,3.25)
-
-# if plt_save == True:
-    # plt.savefig(f"Plots/{galaxy_name}/{galaxy_name}_velocity_bins_plot.pdf", bbox_inches='tight')
+# vel_ratio = (PN_vel - v_star) / sigma_star
 
 
+# plt.figure(figsize=(10,8))
+# plt.hist(vel_ratio[f_ind], bins=10, edgecolor="k", alpha=0.8, linewidth=1)
+# plt.xlabel(r"$\rm \frac{V_{PNe} - V_{*}}{\sigma_*}$", fontsize=30)
+# plt.ylabel("PNe count", fontsize=30, labelpad=10)
+# plt.tick_params(labelsize = 18)
+# plt.xlim(-3.25,3.25)
+
+# # if plt_save == True:
+#     # plt.savefig(f"Plots/{galaxy_name}/{galaxy_name}_velocity_bins_plot.pdf", bbox_inches='tight')
 
 
-hdulist_ppxf = fits.open(RAW_DIR+f"/{galaxy_name}center_ppxf_SPAXELS.fits")
-v_star, s_star = hdulist_ppxf[1].data.V, hdulist_ppxf[1].data.SIGMA
 
 
-hdulist_table = fits.open(RAW_DIR+f"/{galaxy_name}center_table.fits")
-X_star, Y_star = hdulist_table[1].data.XBIN, hdulist_table[1].data.YBIN
-flux_star = hdulist_table[1].data.FLUX
+# hdulist_ppxf = fits.open(RAW_DIR+f"/{galaxy_name}center_ppxf_SPAXELS.fits")
+# v_star, s_star = hdulist_ppxf[1].data.V, hdulist_ppxf[1].data.SIGMA
 
-idx = flux_star.argmax()
-X_star, Y_star = X_star-X_star[idx], Y_star-Y_star[idx]
 
-cond = np.sqrt( (X_star)**2 + (Y_star)**2 ) <= 5.0
-vsys = np.median(v_star[cond])
-v_star = v_star-vsys
+# hdulist_table = fits.open(RAW_DIR+f"/{galaxy_name}center_table.fits")
+# X_star, Y_star = hdulist_table[1].data.XBIN, hdulist_table[1].data.YBIN
+# flux_star = hdulist_table[1].data.FLUX
 
-LOS_z = (vsys * 1e3) / c
+# idx = flux_star.argmax()
+# X_star, Y_star = X_star-X_star[idx], Y_star-Y_star[idx]
 
-LOS_de_z = np.array(mean_wave_list[:,0] / (1 + LOS_z))
+# cond = np.sqrt( (X_star)**2 + (Y_star)**2 ) <= 5.0
+# vsys = np.median(v_star[cond])
+# v_star = v_star-vsys
+
+# LOS_z = (vsys * 1e3) / c
+
+# LOS_de_z = np.array(mean_wave_list[:,0] / (1 + LOS_z))
     
-PNe_df["PNe_LOS_V"] = (c * (LOS_de_z - 5006.77) / 5006.77) / 1000. 
+# PNe_df["PNe_LOS_V"] = (c * (LOS_de_z - 5006.77) / 5006.77) / 1000. 
 
-f_ind = PNe_df.loc[PNe_df["Filter"]=="Y"].index
+# f_ind = PNe_df.loc[PNe_df["Filter"]=="Y"].index
 
-gal_centre_pix = Table.read("exported_data/galaxy_centre_pix.dat", format="ascii")
+# gal_centre_pix = Table.read("exported_data/galaxy_centre_pix.dat", format="ascii")
 
-gal_ind = np.where(gal_centre_pix["Galaxy"]==galaxy_name)
-gal_x_c = gal_centre_pix["x_pix"][gal_ind]
-gal_y_c = gal_centre_pix["y_pix"][gal_ind]
+# gal_ind = np.where(gal_centre_pix["Galaxy"]==galaxy_name)
+# gal_x_c = gal_centre_pix["x_pix"][gal_ind]
+# gal_y_c = gal_centre_pix["y_pix"][gal_ind]
 
-xpne, ypne = (x_PNe[f_ind]-gal_x_c)*0.2, (y_PNe[f_ind]-gal_y_c)*0.2
+# xpne, ypne = (x_PNe[f_ind]-gal_x_c)*0.2, (y_PNe[f_ind]-gal_y_c)*0.2
 
-# Estimating the velocity dispersion of the PNe along the LoS
-def sig_PNe(X_star,Y_star,v_stars,sigma,x_PNe,y_PNe,vel_PNe):
+# # Estimating the velocity dispersion of the PNe along the LoS
+# def sig_PNe(X_star,Y_star,v_stars,sigma,x_PNe,y_PNe,vel_PNe):
 
-    d_PNe_to_skin = np.zeros(len(x_PNe))
-    Vs_PNe = np.ones(len(x_PNe)) # Velocity of the closest star
-    Ss_PNe = np.ones(len(x_PNe)) # Sigma for each PNe
-    i_skin_PNe = []
+#     d_PNe_to_skin = np.zeros(len(x_PNe))
+#     Vs_PNe = np.ones(len(x_PNe)) # Velocity of the closest star
+#     Ss_PNe = np.ones(len(x_PNe)) # Sigma for each PNe
+#     i_skin_PNe = []
 
-    """ To estimate the velocity dispersion for PNe we need to
-    extract the sigma of the closest stars for each PNe """
+#     """ To estimate the velocity dispersion for PNe we need to
+#     extract the sigma of the closest stars for each PNe """
 
-    for i in range(len(x_PNe)):
-        r_tmp = np.sqrt((X_star-x_PNe[i])**2+(Y_star-y_PNe[i])**2)
-        d_PNe_to_skin[i] = min(r_tmp)
-        i_skin_PNe.append(r_tmp.argmin())
+#     for i in range(len(x_PNe)):
+#         r_tmp = np.sqrt((X_star-x_PNe[i])**2+(Y_star-y_PNe[i])**2)
+#         d_PNe_to_skin[i] = min(r_tmp)
+#         i_skin_PNe.append(r_tmp.argmin())
 
-    Vs_PNe  = v_stars[i_skin_PNe]
-    Ss_PNe  = sigma[i_skin_PNe]
-    rad_PNe = np.sqrt(x_PNe**2+y_PNe**2)
-    k = np.where(d_PNe_to_skin > 1.0)
+#     Vs_PNe  = v_stars[i_skin_PNe]
+#     Ss_PNe  = sigma[i_skin_PNe]
+#     rad_PNe = np.sqrt(x_PNe**2+y_PNe**2)
+#     k = np.where(d_PNe_to_skin > 1.0)
 
-    return rad_PNe, (vel_PNe-Vs_PNe)/Ss_PNe, k, Vs_PNe, Ss_PNe
+#     return rad_PNe, (vel_PNe-Vs_PNe)/Ss_PNe, k, Vs_PNe, Ss_PNe
 
-rad_PNe, vel_ratio, k, Vs_PNe, Ss_PNe  = sig_PNe(X_star, Y_star, v_star, s_star, xpne, ypne, PNe_df["PNe_LOS_V"].loc[PNe_df["Filter"]=="Y"])
+# rad_PNe, vel_ratio, k, Vs_PNe, Ss_PNe  = sig_PNe(X_star, Y_star, v_star, s_star, xpne, ypne, PNe_df["PNe_LOS_V"].loc[PNe_df["Filter"]=="Y"])
 
 
-interlopers = vel_ratio[(vel_ratio<-3) | (vel_ratio>3)].index
+# interlopers = vel_ratio[(vel_ratio<-3) | (vel_ratio>3)].index
 
 
 
@@ -234,9 +234,9 @@ gandalf_df["Filter"] = PNe_df["Filter"]
 gandalf_df["Filter"]="Y"
 
 
-gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
-dM = gal_df["dM PNLF"].loc[gal_df["Galaxy"]==galaxy_name].values
-
+# gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
+# dM = gal_df["dM PNLF"].loc[gal_df["Galaxy"]==galaxy_name].values
+dM = 31.229
 # set up conditions
 
 # First plot conditions
@@ -418,17 +418,17 @@ p = int(PNe_df.loc[PNe_df["Filter"]=="Y"].nsmallest(1, "m 5007").index.values)
 
 
 def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fig=False):
-    ind_OIII = [np.argmin(abs(wavelength-4850)), np.argmin(abs(wavelength-5100))]
-    ind_Ha   = [np.argmin(abs(wavelength-6500)), np.argmin(abs(wavelength-6750))]
+    ind_OIII = [np.argmin(abs(wave-4850)), np.argmin(abs(wave-5100))]
+    ind_Ha   = [np.argmin(abs(wave-6500)), np.argmin(abs(wave-6750))]
     
     fig = plt.figure(figsize=(16,10),constrained_layout=True)
     gs = fig.add_gridspec(3, 2)
     
     f_ax1 = fig.add_subplot(gs[0, :]) # data, stellar and best-fit plots
-    f_ax1.plot(wavelength, AllSpectra[1].data[obj_n][0], c="k", lw=1, alpha=0.8, label="data")
-    f_ax1.plot(wavelength, gandalf_best[1].data[obj_n][0], c="g", lw=1.1, label="best fit", )
-    f_ax1.plot(wavelength, gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0], c="r", lw=0.7,label="stellar")
-    f_ax1.set_xlim(min(wavelength)-20, max(wavelength)+20)
+    f_ax1.plot(wave, AllSpectra[1].data[obj_n][0], c="k", lw=1, alpha=0.8, label="data")
+    f_ax1.plot(wave, gandalf_best[1].data[obj_n][0], c="g", lw=1.1, label="best fit", )
+    f_ax1.plot(wave, gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0], c="r", lw=0.7,label="stellar")
+    f_ax1.set_xlim(min(wave)-20, max(wave)+20)
     f_ax1.set_ylim(0,)
     f_ax1.set_xlabel(r"Wavelength $(\AA)$", fontsize=f_size)
     f_ax1.set_ylabel("Flux Density", fontsize=f_size)
@@ -436,11 +436,11 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
     f_ax1.legend(loc="lower right", fontsize=12)
     
     f_ax2 = fig.add_subplot(gs[1, :]) # emissiona nd residual plot
-    f_ax2.plot(wavelength, gandalf_emission[1].data[obj_n][0], lw=1.5, c="blue", label="emission") # emission
-    f_ax2.scatter(wavelength, AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0], c="k", s=1, label="residuals")  # residuals
+    f_ax2.plot(wave, gandalf_emission[1].data[obj_n][0], lw=1.5, c="blue", label="emission") # emission
+    f_ax2.scatter(wave, AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0], c="k", s=1, label="residuals")  # residuals
     f_ax2.axhline(np.std(AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0]), c="k", ls="--", alpha=0.7, label="residual noise") # residual noise line
     f_ax2.set_ylim(-1250, np.max(gandalf_emission[1].data[obj_n][0])*1.25)
-    f_ax2.set_xlim(min(wavelength)-20, max(wavelength)+20)
+    f_ax2.set_xlim(min(wave)-20, max(wave)+20)
     f_ax2.set_xlabel(r"Wavelength $(\AA)$", fontsize=f_size)
     f_ax2.set_ylabel("Flux Density", fontsize=f_size)
     f_ax2.tick_params(axis="both", labelsize=f_size)
@@ -448,26 +448,26 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
     
     
     f_ax3 = fig.add_subplot(gs[-1, :-1]) # [OIII] region plot
-    f_ax3.plot(wavelength, (AllSpectra[1].data[obj_n][0]) - sub_OIII, c="k", lw=1, alpha=0.8, label="data")
-    f_ax3.plot(wavelength, (gandalf_best[1].data[obj_n][0]) - sub_OIII, c="g", label="best fit", zorder=1)
-    f_ax3.plot(wavelength, (gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0]) - sub_OIII, c="r", label="stellar", lw=0.7, zorder=2)
-    f_ax3.plot(wavelength, gandalf_emission[1].data[obj_n][0], c="blue", lw=1.5)
-    f_ax3.scatter(wavelength, AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0], c="k", s=2)
+    f_ax3.plot(wave, (AllSpectra[1].data[obj_n][0]) - sub_OIII, c="k", lw=1, alpha=0.8, label="data")
+    f_ax3.plot(wave, (gandalf_best[1].data[obj_n][0]) - sub_OIII, c="g", label="best fit", zorder=1)
+    f_ax3.plot(wave, (gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0]) - sub_OIII, c="r", label="stellar", lw=0.7, zorder=2)
+    f_ax3.plot(wave, gandalf_emission[1].data[obj_n][0], c="blue", lw=1.5)
+    f_ax3.scatter(wave, AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0], c="k", s=2)
     f_ax3.axhline(np.std(AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0]), c="k", ls="--", alpha=0.7)
     f_ax3.set_xlim(4850,5100)
     f_ax3.set_ylim(-1000,np.max(AllSpectra[1].data[obj_n][0][ind_OIII[0]:ind_OIII[1]])-sub_OIII+1e3)
     f_ax3.set_xlabel(r"Wavelength $(\AA)$", fontsize=f_size)
     f_ax3.set_ylabel("Flux Density", fontsize=f_size)
     f_ax3.tick_params(axis="both", labelsize=f_size )
-    f_ax3.annotate("[OIII]", (wavelength[ind_OIII[0]+np.argmax(gandalf_emission[1].data[obj_n][0][ind_OIII[0]:ind_OIII[1]])]+2, np.max(gandalf_emission[1].data[obj_n][0][ind_OIII[0]:ind_OIII[1]])-100), fontsize=12)
+    f_ax3.annotate("[OIII]", (wave[ind_OIII[0]+np.argmax(gandalf_emission[1].data[obj_n][0][ind_OIII[0]:ind_OIII[1]])]+2, np.max(gandalf_emission[1].data[obj_n][0][ind_OIII[0]:ind_OIII[1]])-100), fontsize=12)
     
     
     f_ax4 = fig.add_subplot(gs[-1, -1]) # [NII], Ha, and [SII] region plot
-    f_ax4.plot(wavelength, (AllSpectra[1].data[obj_n][0]) - sub_Ha, c="k", lw=1, alpha=0.8, label="data")
-    f_ax4.plot(wavelength, (gandalf_best[1].data[obj_n][0]) - sub_Ha, c="g", label="best fit", zorder=1)
-    f_ax4.plot(wavelength, (gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0]) - sub_Ha, c="r", label="stellar", lw=0.7, zorder=2)
-    f_ax4.plot(wavelength, gandalf_emission[1].data[obj_n][0], c="blue", lw=1.5)
-    f_ax4.scatter(wavelength, AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0], c="k", s=2)
+    f_ax4.plot(wave, (AllSpectra[1].data[obj_n][0]) - sub_Ha, c="k", lw=1, alpha=0.8, label="data")
+    f_ax4.plot(wave, (gandalf_best[1].data[obj_n][0]) - sub_Ha, c="g", label="best fit", zorder=1)
+    f_ax4.plot(wave, (gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0]) - sub_Ha, c="r", label="stellar", lw=0.7, zorder=2)
+    f_ax4.plot(wave, gandalf_emission[1].data[obj_n][0], c="blue", lw=1.5)
+    f_ax4.scatter(wave, AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0], c="k", s=2)
     f_ax4.axhline(np.std(AllSpectra[1].data[obj_n][0] - gandalf_best[1].data[obj_n][0]), c="k", ls="--", alpha=0.7)
     f_ax4.set_xlim(6500, 6750)
     f_ax4.set_ylim(-1000, np.max(AllSpectra[1].data[obj_n][0][ind_Ha[0]:ind_Ha[1]])-sub_Ha+1e3)
@@ -485,12 +485,14 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
 
         
 # PNe Plot
-emission_plot_maker(26, obj_t="PNe", sub_OIII=3.2e4, sub_Ha=4e4, )
+emission_plot_maker(p, obj_t="PNe", sub_OIII=3.2e4, sub_Ha=4e4, )
 # SNR plot
 # Plot out brightest SNR object with filter Y
 if len(SII_II_AON[SNR]) != 0:
     n = SNR[np.argmax(SII_II_AON[SNR])]
     emission_plot_maker(n, obj_t="SNR", sub_OIII=1.2e4, sub_Ha=1.5e4, )
+
+plt.show()    
 
 if show_plot == False:
     plt.close("all")

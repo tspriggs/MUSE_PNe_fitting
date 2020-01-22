@@ -207,7 +207,7 @@ print("Plots saved in Plots/"+galaxy_name)
 ################################# run SEP  #################################
 ############################################################################
 
-A_rN_img = A_rN.rehsape(y_data,x_data)
+A_rN_img = A_rN.reshape(y_data,x_data)
 
 # Where element is equal to element [0,0], set equal to 0.0, essentially making out of bound areas equal to 0.0
 A_rN_img[A_rN_img == A_rN_img[0,0]] = 0.0

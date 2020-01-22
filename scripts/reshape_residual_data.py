@@ -83,55 +83,56 @@ else:
 
 WORK_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
 RAW_DIR  = "/local/tspriggs/Fornax_data_cubes/"
-DATA_DIR = f"/local/tspriggs/Fornax_data_cubes/{galaxy}/"
+# DATA_DIR = f"/local/tspriggs/Fornax_data_cubes/{galaxy}/"
+DATA_DIR = f"/local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/{galaxy}{loc}_{loc}/"
 
 
-file_names = [glob.glob("*_AllSpectra.fits*"),
-              glob.glob(f"USED_PARAMS_{loc}.fits*"),
-              glob.glob("*_gandalf-emission_SPAXEL.fits*"),
-              glob.glob("*_gandalf-SPAXEL.fits*"),
-              glob.glob("*_gandalf-bestfit_SPAXEL.fits*")]
+# file_names = [glob.glob("*_AllSpectra.fits*"),
+#               glob.glob(f"USED_PARAMS_{loc}.fits*"),
+#               glob.glob("*_gandalf-emission_SPAXEL.fits*"),
+#               glob.glob("*_gandalf-SPAXEL.fits*"),
+#               glob.glob("*_gandalf-bestfit_SPAXEL.fits*")]
 
 # Check for and download the FCC000centre.fits file
-if os.path.isfile(f"/local/tspriggs/Fornax_data_cubes/{galaxy}{loc}.fits") != True:
-#     if (galaxy == "FCC167") | (galaxy == "FCC219") | (galaxy == "FCC153") | (galaxy == "FCC170") | (galaxy == "FCC177"): # or
-# #         os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/MILES_stars_Guerou/{galaxy}/{galaxy}center.fits {RAW_DIR}")
-#         os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/car-data/muse/MILES_stars_Guerou/{galaxy}/{galaxy}center.fits {RAW_DIR}")
-#     else:
-    os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}{loc}.fits {RAW_DIR}")
-else:
-    print(f"{galaxy}{loc}.fits already exits")
-
-# list of files needed
-files_needed = [f"{galaxy}{loc}_AllSpectra.fits{file_extra}", 
-                f"USED_PARAMS.fits{file_extra}", 
-                f"{galaxy}{loc}_gandalf-residuals_SPAXEL.fits{file_extra}", 
-                f"{galaxy}{loc}_gandalf-emission_SPAXEL.fits{file_extra}", 
-                f"{galaxy}{loc}_gandalf_SPAXEL.fits{file_extra}",
-                f"{galaxy}{loc}_gandalf-bestfit_SPAXEL.fits{file_extra}"]
+# if os.path.isfile(f"/local/tspriggs/Fornax_data_cubes/{galaxy}{loc}.fits") != True:
+# #     if (galaxy == "FCC167") | (galaxy == "FCC219") | (galaxy == "FCC153") | (galaxy == "FCC170") | (galaxy == "FCC177"): # or
+# # #         os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/MILES_stars_Guerou/{galaxy}/{galaxy}center.fits {RAW_DIR}")
+# #         os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/car-data/muse/MILES_stars_Guerou/{galaxy}/{galaxy}center.fits {RAW_DIR}")
+# #     else:
+#     os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}{loc}.fits {RAW_DIR}")
+# else:
+#     print(f"{galaxy}{loc}.fits already exits")
+# 
+# # list of files needed
+# files_needed = [f"{galaxy}{loc}_AllSpectra.fits{file_extra}", 
+#                 f"USED_PARAMS.fits{file_extra}", 
+#                 f"{galaxy}{loc}_gandalf-residuals_SPAXEL.fits{file_extra}", 
+#                 f"{galaxy}{loc}_gandalf-emission_SPAXEL.fits{file_extra}", 
+#                 f"{galaxy}{loc}_gandalf_SPAXEL.fits{file_extra}",
+#                 f"{galaxy}{loc}_gandalf-bestfit_SPAXEL.fits{file_extra}"]
 #                 f"{galaxy}{cen}_ppxf_SPAXELS.fits{file_extra}",
 #                 f"{galaxy}{cen}_table.fits{file_extra}"]
 
 
 
 # check to see if folder of galaxy already exits
-if os.path.isdir(f"{RAW_DIR}{galaxy}/") == True:
-    print(f"{galaxy} folder already exists.")
-else:
-    os.system(f"mkdir {RAW_DIR}{galaxy}")
+# if os.path.isdir(f"{RAW_DIR}{galaxy}/") == True:
+#     print(f"{galaxy} folder already exists.")
+# else:
+#     os.system(f"mkdir {RAW_DIR}{galaxy}")
 
-# for file in list "files_needed", check for and download files needed.
-for file in files_needed:
-    if os.path.isfile(f"{DATA_DIR}/{file}") == True:
-        print(f"{file} already exists.")
-    else:
-        if (galaxy == "FCC167") | (galaxy == "FCC219") | (galaxy == "FCC153") | (galaxy == "FCC170") | (galaxy == "FCC177"):
-            os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/MILES_stars_Guerou/{galaxy}/{galaxy}{loc}_{loc}/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
-        else:
-#             os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}center_center/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
-            os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
+# # for file in list "files_needed", check for and download files needed.
+# for file in files_needed:
+#     if os.path.isfile(f"{DATA_DIR}/{file}") == True:
+#         print(f"{file} already exists.")
+#     else:
+#         if (galaxy == "FCC167") | (galaxy == "FCC219") | (galaxy == "FCC153") | (galaxy == "FCC170") | (galaxy == "FCC177"):
+#             os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/MILES_stars_Guerou/{galaxy}/{galaxy}{loc}_{loc}/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
+#         else:
+# #             os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{galaxy}/{galaxy}center_center/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
+#             os.system(f"scp tspriggs@uhhpc.herts.ac.uk:/data/ralf/muse/{file} /local/tspriggs/Fornax_data_cubes/{galaxy}/")
 
-os.system(f"mv /local/tspriggs/Fornax_data_cubes/{galaxy}/USED_PARAMS.fits /local/tspriggs/Fornax_data_cubes/{galaxy}/USED_PARAMS_{loc}.fits")
+# os.system(f"mv /local/tspriggs/Fornax_data_cubes/{galaxy}/USED_PARAMS.fits /local/tspriggs/Fornax_data_cubes/{galaxy}/USED_PARAMS_{loc}.fits")
 ## extract Residual data
 # hdu_Allspec = fits.open(DATA_DIR+f"{galaxy}{cen}_AllSpectra.fits{file_extra}")
 # spectra = hdu_Allspec[1].data.SPEC.T
@@ -163,8 +164,11 @@ os.system(f"mv /local/tspriggs/Fornax_data_cubes/{galaxy}/USED_PARAMS.fits /loca
 ####
 
 
-hdu = fits.open(RAW_DIR+f"{galaxy}{loc}.fits")
-huduu = fits.open(DATA_DIR+f"{galaxy}{loc}_AllSpectra.fits{file_extra}")
+# hdu = fits.open(RAW_DIR+f"{galaxy}{loc}.fits")
+hdu = fits.open(RAW_DIR+f"{galaxy}center.fits")
+
+# huduu = fits.open(DATA_DIR+f"{galaxy}{loc}_AllSpectra.fits{file_extra}")
+huduu = fits.open(DATA_DIR+f"{galaxy}_AllSpectra.fits{file_extra}")
 
 data  = hdu[1].data
 #stat  = hdu[2].data
@@ -181,7 +185,8 @@ ss[0]  = len(hdrr['LOGLAM'])
 # Getting the wavelength info
 wave = hdr['CRVAL3']+(np.arange(s[0])-hdr['CRPIX3'])*hdr['CD3_3']
 
-params = fits.open(DATA_DIR+f'USED_PARAMS_{loc}.fits{file_extra}')[0].header
+# params = fits.open(DATA_DIR+f'USED_PARAMS_{loc}.fits{file_extra}')[0].header
+params = fits.open(DATA_DIR+f'USED_PARAMS.fits')[0].header
 vsys   = float(params['REDSHIFT'])
 
 # Applying some wavelength cuts
@@ -196,14 +201,17 @@ signal = np.nanmedian(spec,axis=0)
 #noise  = np.abs(np.nanmedian(np.sqrt(espec),axis=0))
 #snr    = signal / noise
 
-hdu1 = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf-residuals_SPAXEL.fits{file_extra}')
-hdu2 = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf-emission_SPAXEL.fits{file_extra}')
+# hdu1 = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf-residuals_SPAXEL.fits{file_extra}')
+hdu1 = fits.open(DATA_DIR+f'{galaxy}_gandalf-residuals_SPAXEL.fits{file_extra}')
+# hdu2 = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf-emission_SPAXEL.fits{file_extra}')
+hdu2 = fits.open(DATA_DIR+f'{galaxy}_gandalf-emission_SPAXEL.fits{file_extra}')
 data1, data2    = hdu1[1].data, (hdu2[1].data)
 # data2    = (hdu2[1].data)
 resid, emission = data1['RESIDUALS'], data2['EMISSION'].T
 # emission = data2['EMISSION'].T
 
-hdu  = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf_SPAXEL.fits{file_extra}')
+# hdu  = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf_SPAXEL.fits{file_extra}')
+hdu  = fits.open(DATA_DIR+f'{galaxy}_gandalf_SPAXEL.fits{file_extra}')
 data = hdu[2].data
 
 AoN = data['AoN'][:,0]

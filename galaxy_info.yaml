@@ -132,17 +132,17 @@ FCC167_center:
   Galaxy name: FCC167
   velocity: 1878
   eff_r: 56.4
-  FWHM: 3.9
-  FWHM_err: 0.09
-  beta: 2.44
-  beta_err: 0.33
-  LSF: 3.32
+  FWHM: 3.67
+  FWHM_err: 0.083
+  beta: 2.22
+  beta_err: 0.25
+  LSF: 3.15
   LSF_err: 0.05
   centre: [1,1]
   gal_mask: [237,195,130,35,0.16]
   star_mask: [[1,1,1]]
-  my_filter: [22]
-  impostor_filter: [[13,21,27],[68],[]]
+  my_filter: [24]
+  impostor_filter: [[8,14,23,30],[72],[]]
   interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
@@ -178,8 +178,20 @@ FCC167_middle:
 FCC170_center:
   Distance: 18.7
   Galaxy name: FCC170
-  eff_r: 15.9
+  velocity: 1743
+  FWHM: 4.00
+  FWHM_err: 0.1
+  beta: 1.76
+  beta_err: 0.2
+  LSF: 2.85
+  LSF_err: 0.04
+  centre: [1,1]
   gal_mask: [0,0,0,0,0]
+  star_mask: [[0,0,0]]
+  my_filter: []
+  impostor_filter: [[19],[26,7,4],[25]]
+  interloper_filter: []
+  eff_r: 15.9
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
@@ -307,7 +319,7 @@ FCC219_center:
   gal_mask_bkg: [195,73,150,85,0.0]
   star_mask: [[299,153,7]]
   my_filter: [0]
-  impostor_filter: [[40], [16,41,42], [5,7]]
+  impostor_filter: [[38], [], [4,14,39,40]]
   interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
@@ -465,3 +477,32 @@ FCC310_center:
   emissions:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
+
+
+#- lum_bol_g
+#(8244833807.294188,
+#- [lum_bol_g_upper, lum_bol_g_lower] errors
+# [10969375564.409647, 6870398151.548822],
+#- lum_bol_r 
+# 7576247683.996245,
+#- [lum_bol_r_upper, lum_bol_r_lower] errors
+# [10079852202.869057, 6313267107.670952],
+#- lum_bol_v
+# 8822952846.685028,
+#- [lum_bol_v_upper, lum_bol_v_lower] errors
+# [11738536594.484438, 7352143214.268228],
+#- mag_g
+# 12.19195877296864,
+#- mag_r
+# 11.257129365796942,
+#- mag_v
+# 11.70063088774955)
+#
+
+#FCC170
+#N PNe used:      34
+#PNLF N:          136.42742712461566
+#Distance of:     17.61469784175069 +/- 2.501251353841364
+#Distance Mod of: 31.22937598899538 +/- 0.308344676299704

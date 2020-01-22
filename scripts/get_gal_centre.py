@@ -31,7 +31,7 @@ for i, gal in enumerate(gal_df["Galaxy"]):
     with open("../galaxy_info.yaml", "r") as yaml_data:
         galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
     
-    galaxy_data = galaxy_info[gal]
+    galaxy_data = galaxy_info[gal+"_center"]
     gal_cen = galaxy_data["centre"] 
     if gal_cen == [1,1]:
         RA_DEC[i] = [hdr["CRVAL1"], hdr["CRVAL2"]]
