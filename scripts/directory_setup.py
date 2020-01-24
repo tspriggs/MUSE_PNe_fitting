@@ -3,21 +3,21 @@ import yaml
 
 # Open yaml file to get galaxy names from individual entries
 
-with open("galaxy_info.yaml", "r") as yaml_data:
+with open("../galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
     
 galaxy_names = [gal for gal in galaxy_info]
 
 # data path
-data_path = [f"galaxy_data/{gal}_data/" for gal in galaxy_names]
+data_path = [f"../galaxy_data/{gal}_data/" for gal in galaxy_names]
 
 # Plots path
 
-plots_path = [f"Plots/{gal}/full_spec_fits" for gal in galaxy_names]
+plots_path = [f"Plots/{gal}/" for gal in galaxy_names]
 
 # exported data
 
-export_path = [f"exported_data/{gal}" for gal in galaxy_names]
+export_path = [f"../exported_data/{gal}" for gal in galaxy_names]
 
 # loop through galaxies and create directories, if they are not there, make them, if they are, continue
 

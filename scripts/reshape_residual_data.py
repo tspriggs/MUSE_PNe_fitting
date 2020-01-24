@@ -84,7 +84,8 @@ else:
 WORK_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
 RAW_DIR  = "/local/tspriggs/Fornax_data_cubes/"
 # DATA_DIR = f"/local/tspriggs/Fornax_data_cubes/{galaxy}/"
-DATA_DIR = f"/local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/{galaxy}{loc}_{loc}/"
+# DATA_DIR = f"/local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/{galaxy}{loc}_{loc}/"
+DATA_DIR = f"/local/tspriggs/muse/{galaxy}/{galaxy}{loc}_{loc}/"
 
 
 # file_names = [glob.glob("*_AllSpectra.fits*"),
@@ -186,7 +187,7 @@ ss[0]  = len(hdrr['LOGLAM'])
 wave = hdr['CRVAL3']+(np.arange(s[0])-hdr['CRPIX3'])*hdr['CD3_3']
 
 # params = fits.open(DATA_DIR+f'USED_PARAMS_{loc}.fits{file_extra}')[0].header
-params = fits.open(DATA_DIR+f'USED_PARAMS.fits')[0].header
+params = fits.open(DATA_DIR+f'USED_PARAMS.fits{file_extra}')[0].header
 vsys   = float(params['REDSHIFT'])
 
 # Applying some wavelength cuts

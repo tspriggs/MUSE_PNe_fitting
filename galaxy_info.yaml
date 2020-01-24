@@ -196,6 +196,27 @@ FCC170_center:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
+FCC176_center:
+  Galaxy name: FCC176
+  velocity: 1428
+  eff_r: 35.9
+  FWHM: 4.0
+  FWHM_err: 0.1
+  beta: 2.5
+  beta_err: 0.1
+  LSF: 2.8
+  LSF_err: 0.01
+  centre: [1,1]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[0,0,0]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+    
+    
 FCC177_center:
   Distance: 19.6
   Galaxy name: FCC177

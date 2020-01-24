@@ -66,7 +66,7 @@ c = 299792458.0 # speed of light
 
 gal_vel = galaxy_data["velocity"] 
 z = gal_vel*1e3 / c 
-D = galaxy_data["Distance"] # Distance in Mpc - from Simbad / NED - read in from yaml file
+# D = galaxy_data["Distance"] # Distance in Mpc - from Simbad / NED - read in from yaml file
 gal_mask = galaxy_data["gal_mask"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
@@ -142,7 +142,7 @@ spaxel_params.add("Gauss_bkg", value=0.01)
 spaxel_params.add("Gauss_grad", value=0.0001)
 
 # Loop through spectra from list format of data.
-if os.path.isfile(f"/exported_data/{galaxy_name}/{galaxy_name}{loc}_A_rN_cen.npy") != True:
+if os.path.isfile(f"exported_data/{galaxy_name}/{galaxy_name}{loc}_A_rN_cen.npy") != True:
     for j,i in tqdm(enumerate(non_zero_index), total=len(non_zero_index)):
         #progbar(j, len(non_zero_index), 40)
         fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, hdulist[0].data[i], input_errors[i], i), nan_policy="propagate")
@@ -172,9 +172,9 @@ if os.path.isfile(f"/exported_data/{galaxy_name}/{galaxy_name}{loc}_A_rN_cen.npy
 else:
     print(f"Spaxel fit data for {galaxy_name} {loc} already exist.")
     # load up gauss_A, gauss_F and A_rN
-    gauss_A = np.load(f"{EXPORT_DIR}{galaxy_name}{loc}{loc}_gauss_A_cen.npy")
-    gauss_F = np.load(f"{EXPORT_DIR}{galaxy_name}{loc}_gauss_F_cen.npy")
-    A_rN    = np.load(f"{EXPORT_DIR}{galaxy_name}{loc}{loc}_A_rN_cen.npy")
+    gauss_A = np.load(f"{EXPORT_DIR}_gauss_A_cen.npy")
+    gauss_F = np.load(f"{EXPORT_DIR}_gauss_F_cen.npy")
+    A_rN    = np.load(f"{EXPORT_DIR}_A_rN_cen.npy")
 
 
 # Construct A/rN, A_5007 and F_5007 plots, and save in Plots/Galaxy_name/
@@ -260,4 +260,4 @@ x_PNe = np.array([x[0] for x in x_y_list])
 y_PNe = np.array([y[1] for y in x_y_list])
 
 if save_PNe == True:
-    np.save(EXPORT_DIR+galaxy_name+f"{loc}_PNe_x_y_list", sep_x_y_list)
+    np.save(EXPORT_DIR+"_PNe_x_y_list", sep_x_y_list)

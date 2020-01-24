@@ -27,16 +27,17 @@ def open_data(choose_galaxy, loc):
 
 def reconstructed_image(choose_galaxy, loc):
     CUBE_DIR = "/local/tspriggs/Fornax_data_cubes/"
-    hdu  = fits.open(CUBE_DIR+choose_galaxy+loc+'.fits')
-    data = hdu[1].data
-    hdr  = hdu[1].header
+    with fits.open(CUBE_DIR+choose_galaxy+loc+'.fits') as hdu:
+        data = hdu[1].data
+        hdr  = hdu[1].header
+    
     s    = np.shape(data)
     wave = hdr['CRVAL3']+(np.arange(s[0])-hdr['CRPIX3'])*hdr['CD3_3']
 
     cond = (wave >= 4900.0) & (wave <= 5100.0)
     data = np.sum(data[cond,:,:],axis=0)
 
-    return data, wave
+    return data, wave, hdr
 
 
 def KS2_test(dist_1, dist_2, conf_lim):
