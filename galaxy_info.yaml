@@ -146,7 +146,7 @@ FCC167_center:
   interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
-    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+    OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
   backup:
     hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
   wavelength: FCC167_data/FCC167_wavelength.npy
@@ -308,11 +308,11 @@ FCC193_center:
   Galaxy name: FCC193
   velocity: 976
   eff_r: 28.2
-  FWHM: 3.63
-  FWHM_err: 0.04
-  beta: 2.73
-  beta_err: 0.2
-  LSF: 3.01
+  FWHM: 3.61
+  FWHM_err: 0.03
+  beta: 2.5
+  beta_err: 0.1
+  LSF: 3.04
   LSF_err: 0.02
   centre: [170, 418]
   gal_mask: [0,0,0,0,0]
@@ -470,7 +470,7 @@ FCC301_center:
   LSF_err: 0.045
   centre: [1,1]
   gal_mask: [1, 1, 1, 1, 1]
-  star_mask: [[1, 1, 1]]
+  star_mask: [[217, 305, 15],[250, 310, 15],[292, 226, 15]]
   my_filter: []
   impostor_filter: [[],[],[]]
   interloper_filter: []

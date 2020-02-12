@@ -7,6 +7,8 @@ import pyphot
 import matplotlib.pylab as plt
 from   ppxf.ppxf import ppxf
 import ppxf.ppxf_util as util
+import ppxf.miles_util as lib
+from os import path
 
 # def ppxf_L_tot(file, gal_mask_params, star_mask_params, redshift, vel, dist_mod):#, mask=False):
 def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod, dM_err=[0.1,0.1] ,calc_L_bol=True):#, mask=False):
@@ -131,7 +133,10 @@ def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod, dM_err=[0.1,0.1] ,calc
         vazdekis = glob.glob('emiles/Ekb1.30*') # PUT HERE THE DIRECTORY TO EMILES_STARS
         FWHM_tem = 2.51  # Vazdekis+10 spectra have a constant resolution FWHM of 2.51A.
         velscale_ratio = 2  # adopts 2x higher spectral sampling for templates than for galaxy
-    
+        miles_path = path.expanduser("emiles/Ekb1.30Z*.fits")
+        miles = lib.miles(miles_path, velscale, FWHM_tem)
+        stars_templates = miles.templates.reshape(miles.templates.shape[0], -1)
+        reg_dim = miles.templates.shape[1:]
         # Extract the wavelength range and logarithmically rebin one spectrum
         # to a velocity scale 2x smaller than the SAURON galaxy spectrum, to determine
         # the size needed for the array which will contain the template spectra.
@@ -208,6 +213,13 @@ def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod, dM_err=[0.1,0.1] ,calc
     
         weights = pp.weights
         normalized_weights = weights / np.sum( weights )
+        
+        # Use miles_utils to get metallicity
+        weights = pp.weights
+        weights = weights.reshape(reg_dim)/weights.sum()  # Normalized
+        miles.mean_age_metal(weights)
+        
+        
         optimal_template   = np.zeros( templates.shape[0] )
         for j in range(0, templates.shape[1]):
             optimal_template = optimal_template + templates[:,j]*normalized_weights[j]

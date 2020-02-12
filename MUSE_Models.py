@@ -13,6 +13,7 @@ def PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict):
     wave_list = [params["wave_{}".format(em)] for em in emission_dict]
     G_bkg = params["Gauss_bkg"]
     G_grad = params["Gauss_grad"]
+    G_curve = params["Gauss_curve"]
 
     # Moffat model
     def Moffat(Amp, FWHM, beta, x, y):
@@ -30,7 +31,7 @@ def PNe_3D_fitter(params, l, x_2D, y_2D, data, emission_dict):
     A_xy = np.array([F / (np.sqrt(2*np.pi) * G_std) for F in F_xy])
 
     def Gauss(Amp_1D, wave):
-        return np.array([(G_bkg + (G_grad * l)) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])
+        return np.array([(G_bkg + (G_grad * l) + G_curve*l**2) + A * np.exp(- 0.5 * (l - wave)** 2 / G_std**2.) for A in Amp_1D])
 
     model_spectra = np.sum(np.array([Gauss(A, w) for A,w in zip(A_xy, wave_list)]),0) # sum up each emission cube to construct integrated model.
     
@@ -46,7 +47,8 @@ def PNe_residuals_3D(params, l, x_2D, y_2D, data, error, PNe_number, emission_di
     #list_to_append_data.append(signal_cut)
     #model[signal_cut==False] = np.zeros_like(len(l))
     
-    return (data[zero_mask] - model[zero_mask]) / error[zero_mask]
+    return (data[zero_mask]- model[zero_mask]) / error[zero_mask]
+#     return (np.sum(data[zero_mask], 0) - np.sum(model[zero_mask], 0)) / np.sum(error[zero_mask], 0)
 
 def PSF_residuals_3D(PSF_params, l, x_2D, y_2D, data, err, z):
     FWHM = PSF_params['FWHM']
