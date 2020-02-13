@@ -499,6 +499,26 @@ FCC310_center:
     OIII_1: [200, null, null, null]
     OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
+FCCtest_center:
+  Distance: 20.0
+  Galaxy name: test
+  velocity: 1743
+  eff_r: 30
+  FWHM: 4.0
+  FWHM_err: 0.1
+  beta: 2.5
+  beta_err: 0.1
+  LSF: 3.0
+  LSF_err: 0.01
+  centre: [0,0]
+  gal_mask: [1,1,1,1,0.01]
+  star_mask: [[1, 1, 1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
 
 

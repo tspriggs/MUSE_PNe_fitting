@@ -11,20 +11,6 @@ from MUSE_Models import PNe_spectrum_extractor, robust_sigma
 import pdb as pdb
 
 
-def open_data(choose_galaxy, loc):
-    # Load in the residual data, in list form
-    DATA_DIR = "galaxy_data/"+choose_galaxy+"_data/"
-
-    hdulist = fits.open(DATA_DIR+choose_galaxy+loc+"_residuals_list.fits") # Path to data
-    res_hdr = hdulist[0].header # extract header from residual cube
-    
-    x_data = res_hdr["XAXIS"]
-    y_data = res_hdr["YAXIS"]
-    
-    wavelength = np.exp(hdulist[1].data)
-
-    return x_data, y_data, hdulist, wavelength
-
 def reconstructed_image(choose_galaxy, loc):
     CUBE_DIR = "/local/tspriggs/Fornax_data_cubes/"
     with fits.open(CUBE_DIR+choose_galaxy+loc+'.fits') as hdu:

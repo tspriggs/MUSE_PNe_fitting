@@ -18,14 +18,12 @@ from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 
 from ppxf_gal_L import ppxf_L_tot
-from PNLF import open_data, reconstructed_image, completeness, KS2_test
-from MUSE_Models import PNe_residuals_3D, PNe_spectrum_extractor, PSF_residuals_3D, robust_sigma
+from PNLF import reconstructed_image, completeness, KS2_test
+from functions.MUSE_Models import PNe_residuals_3D, PSF_residuals_3D,
+from functions.PNe_functions import open_data, PNe_spectrum_extractor, robust_sigma, uncertainty_cube_construct, calc_chi2, prep_impostor_files
 
 # Let's use a logging package to store stuff, instead of printing.....
 
-# Load in yaml file to query galaxy properties
-with open("galaxy_info.yaml", "r") as yaml_data:
-    galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
 
 # Read in arguments from command line
 my_parser = argparse.ArgumentParser()
@@ -42,7 +40,6 @@ loc = args.loc              # MUSE pointing loc: center, middle, halo
 fit_PSF = args.fit_psf
 calc_Lbol = args.Lbol
 
-galaxy_data = galaxy_info[f"{galaxy_name}_{loc}"]
 
 RAW_DIR    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}"
 RAW_DAT    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}{loc}.fits"
@@ -51,12 +48,7 @@ EXPORT_DIR = f"exported_data/{galaxy_name}/"
 PLOT_DIR   = f"Plots/{galaxy_name}/{galaxy_name}"
 
 # Load in the residual data, in list form
-hdulist = fits.open(f"{DATA_DIR}{galaxy_name}{loc}_residuals_list.fits")
-hdr = hdulist[0].header
-wavelength = np.exp(hdulist[1].data) # extract header from residual cube
-
-x_data = hdr["XAXIS"]
-y_data = hdr["YAXIS"]
+res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc)
 
 # Constants
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
@@ -84,40 +76,32 @@ x_y_list = np.load(EXPORT_DIR+galaxy_name+f"{loc}_PNe_x_y_list.npy")
 x_PNe = np.array([x[0] for x in x_y_list]) # separate out from the list the list of x coordinates, as well as y coordinates.
 y_PNe = np.array([y[1] for y in x_y_list])
 
+n_PNe = len(x_PNe)
+
 # Retrieve the respective spectra for each PNe source, from the list of spectra data file, using a function to find the associated index locations of the spectra for a PNe.
-PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, hdulist[0].data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
+PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, res_data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
 
 # create Pandas dataframe for storage of values from the 3D fitter.
 PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "V (km/s)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "redchi", "Filter"))
-PNe_df["PNe number"] = np.arange(0,len(x_PNe))
+PNe_df["PNe number"] = np.arange(0,n_PNe)
 PNe_df["Filter"] = "Y"
 
 with fits.open(RAW_DIR+"center.fits") as hdu_wcs:
     hdr_wcs = hdu_wcs[1].header
     wcs_obj = WCS(hdr_wcs, naxis=2)
 
-for i in np.arange(0, len(x_PNe)):
+for i in np.arange(0, n_PNe):
     Ra_Dec = utils.pixel_to_skycoord(x_PNe[i],y_PNe[i], wcs_obj).to_string("hmsdms", precision=2).split()
     PNe_df.loc[i,"Ra (J2000)"] = Ra_Dec[0]
     PNe_df.loc[i,"Dec (J2000)"] = Ra_Dec[1]
 
 # Read in Objective Residual Cube .fits file.
-def uncertainty_cube_construct(data, x_P, y_P, n_pix):
-    data[data == np.inf] = 0.01
-    extract_data = np.array([PNe_spectrum_extractor(x, y, n_pix, data, x_data, wave=wavelength) for x,y in zip(x_P, y_P)])
-    array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
-    for p in np.arange(0, len(x_P)):
-        list_of_std = np.abs([robust_sigma(dat) for dat in extract_data[p]])
-        array_to_fill[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
-        
-    return array_to_fill
-
 
 with fits.open(EXPORT_DIR+galaxy_name+f"{loc}_resids_obj.fits") as obj_residual_cube:
-    obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels)
+    obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
 
 with fits.open(EXPORT_DIR+galaxy_name+f"{loc}_resids_data.fits") as data_residual_cube:
-    error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels)
+    error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
 
 
 ##################################################
@@ -150,34 +134,35 @@ def gen_params(wave=5007, FWHM=4.0, FWHM_err=0.1, beta=2.5, beta_err=0.3, LSF=2.
     PNe_multi_params.add("Gauss_grad", value=0.0001, vary=True)#1, min=-2, max=2)
     
 # storage setup
-total_Flux = np.zeros((len(x_PNe), len(emission_dict)))
-A_2D_list = np.zeros((len(x_PNe), len(emission_dict)))
-F_xy_list = np.zeros((len(x_PNe), len(emission_dict), len(PNe_spectra[0])))
-moff_A = np.zeros((len(x_PNe),len(emission_dict)))
-model_spectra_list = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))
-mean_wave_list = np.zeros((len(x_PNe),len(emission_dict)))
-residuals_list = np.zeros(len(x_PNe))
-list_of_fit_residuals = np.zeros((len(x_PNe), n_pixels*n_pixels, len(wavelength)))
-chi_2_r = np.zeros((len(x_PNe)))
+total_Flux = np.zeros((n_PNe, len(emission_dict)))
+A_2D_list = np.zeros((n_PNe, len(emission_dict)))
+F_xy_list = np.zeros((n_PNe, len(emission_dict), len(PNe_spectra[0])))
+moff_A = np.zeros((n_PNe,len(emission_dict)))
+model_spectra_list = np.zeros((n_PNe, n_pixels*n_pixels, len(wavelength)))
+mean_wave_list = np.zeros((n_PNe,len(emission_dict)))
+residuals_list = np.zeros(n_PNe)
+list_of_fit_residuals = np.zeros((n_PNe, n_pixels*n_pixels, len(wavelength)))
+chi_2_r = np.zeros((n_PNe))
+list_of_x = np.zeros(n_PNe)
+list_of_y = np.zeros(n_PNe)
+Gauss_bkg = np.zeros(n_PNe)
+Gauss_grad = np.zeros(n_PNe)
 
 # error lists
-moff_A_err = np.zeros((len(x_PNe), len(emission_dict)))
-x_0_err = np.zeros((len(x_PNe), len(emission_dict)))
-y_0_err = np.zeros((len(x_PNe), len(emission_dict)))
-mean_wave_err = np.zeros((len(x_PNe), len(emission_dict)))
-Gauss_bkg_err = np.zeros((len(x_PNe), len(emission_dict)))
-Gauss_grad_err = np.zeros((len(x_PNe), len(emission_dict)))
+moff_A_err = np.zeros((n_PNe, len(emission_dict)))
+x_0_err = np.zeros((n_PNe, len(emission_dict)))
+y_0_err = np.zeros((n_PNe, len(emission_dict)))
+mean_wave_err = np.zeros((n_PNe, len(emission_dict)))
+Gauss_bkg_err = np.zeros((n_PNe, len(emission_dict)))
+Gauss_grad_err = np.zeros((n_PNe, len(emission_dict)))
 
-list_of_x = np.zeros(len(x_PNe))
-list_of_y = np.zeros(len(x_PNe))
-Gauss_bkg = np.zeros(len(x_PNe))
-Gauss_grad = np.zeros(len(x_PNe))
+
 
 
 # Define a function that contains all the steps needed for fitting, including the storage of important values, calculations and pandas assignment.
 def run_minimiser(parameters):
-    for PNe_num in tqdm(np.arange(0, len(x_PNe))):
-        #progbar(int(PNe_num)+1, len(x_PNe), 40)
+    for PNe_num in tqdm(np.arange(0, n_PNe)):
+        #progbar(int(PNe_num)+1, n_PNe, 40)
         useful_stuff = []        
         PNe_minimizer       = lmfit.Minimizer(PNe_residuals_3D, PNe_multi_params, fcn_args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
         multi_fit_results   = PNe_minimizer.minimize()
@@ -206,31 +191,33 @@ def run_minimiser(parameters):
     PNe_df["A/rN"] = A_2D_list[:,0] / list_of_rN # Using OIII amplitude
     
     # chi square analysis
-    gauss_list, redchi, Chi_sqr = [], [], []
-    for p in range(len(x_PNe)):
-        PNe_n = np.copy(PNe_spectra[p])
-        flux_1D = np.copy(F_xy_list[p][0])
-        A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_data["LSF"]// 2.35482)))
+    fit_nvary = multi_fit_results.nvarys
+    Chi_sqr, redchi = calc_chi2(n_PNe, n_pixels, fit_nvary, PNe_spectra, wavelength, F_xy_list, mean_wave_list, galaxy_data, Gauss_bkg, Gauss_grad)
+#     gauss_list, redchi, Chi_sqr = [], [], []
+#     for p in range(n_PNe):
+#         PNe_n = np.copy(PNe_spectra[p])
+#         flux_1D = np.copy(F_xy_list[p][0])
+#         A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_data["LSF"]// 2.35482)))
     
-        def gaussian(x, amplitude, mean, FWHM, bkg, grad):
-            stddev = FWHM/ 2.35482
-            return ((bkg + grad*x) + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
-                    (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.)))
+#         def gaussian(x, amplitude, mean, FWHM, bkg, grad):
+#             stddev = FWHM/ 2.35482
+#             return ((bkg + grad*x) + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
+#                     (np.abs(amplitude)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.)))
     
-        list_of_gauss = [gaussian(wavelength, A, mean_wave_list[p][0], galaxy_data["LSF"], Gauss_bkg[p], Gauss_grad[p]) for A in A_n]
-        for kk in range(len(PNe_n)):
-            temp = np.copy(list_of_gauss[kk])
-            idx  = np.where(PNe_n[kk] == 0.0)[0]
-            temp[idx] = 0.0
-            PNe_n[kk,idx] = 1.0
-            list_of_gauss[kk] = np.copy(temp)
-        rN   = robust_sigma(PNe_n - list_of_gauss)
-        res  = PNe_n - list_of_gauss
-        Chi2 = np.sum((res**2)/(rN**2))
-        # s    = np.shape(PNe_n)
-        redchi.append(Chi2/ ((len(wavelength) * n_pixels**2) - multi_fit_results.nvarys))
-        gauss_list.append(list_of_gauss)
-        Chi_sqr.append(Chi2)
+#         list_of_gauss = [gaussian(wavelength, A, mean_wave_list[p][0], galaxy_data["LSF"], Gauss_bkg[p], Gauss_grad[p]) for A in A_n]
+#         for kk in range(len(PNe_n)):
+#             temp = np.copy(list_of_gauss[kk])
+#             idx  = np.where(PNe_n[kk] == 0.0)[0]
+#             temp[idx] = 0.0
+#             PNe_n[kk,idx] = 1.0
+#             list_of_gauss[kk] = np.copy(temp)
+#         rN   = robust_sigma(PNe_n - list_of_gauss)
+#         res  = PNe_n - list_of_gauss
+#         Chi2 = np.sum((res**2)/(rN**2))
+#         # s    = np.shape(PNe_n)
+#         redchi.append(Chi2/ ((len(wavelength) * n_pixels**2) - multi_fit_results.nvarys))
+#         gauss_list.append(list_of_gauss)
+#         Chi_sqr.append(Chi2)
     
     PNe_df['Chi2']   = Chi_sqr
     PNe_df["redchi"] = redchi
@@ -261,7 +248,7 @@ run_minimiser(PNe_multi_params)
 PNe_df["Filter"] = "Y"
 PNe_df.loc[PNe_df["A/rN"]<3.0, "Filter"] = "N"
 # reduced Chi sqr cut
-upper_chi = chi2.ppf(0.9973, ((n_pixels**2)*len(wavelength))-6) # 3 sigma = 0.9973
+upper_chi = chi2.ppf(0.9973, ((n_pixels*n_pixels)*len(wavelength))-fit_nvary) # 3 sigma = 0.9973
 PNe_df.loc[PNe_df["Chi2"]>=upper_chi, "Filter"] = "N" 
 
 #### Fit for PSF via N highest A/rN PNe
@@ -314,93 +301,92 @@ if fit_PSF == True:
 
 # Prepare files for the impostor checks
 ####### MUSE .fits file ####################
-raw_hdulist = fits.open("/local/tspriggs/Fornax_data_cubes/"+galaxy_name+"center.fits")
 
-raw_hdr = raw_hdulist[1].header
-raw_s = raw_hdulist[1].data.shape # (lambda, y, x)
-full_wavelength = raw_hdr['CRVAL3']+(np.arange(raw_s[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
+prep_impostor_files(galaxy_name)
 
-cube_list = np.copy(raw_hdulist[1].data).reshape(raw_s[0], raw_s[1]*raw_s[2]) # (lambda, list of len y*x)
-cube_list = np.swapaxes(cube_list, 1,0) # (list of len x*y, lambda)
-
-
-if len(raw_hdulist) == 3:
-    stat_list = np.copy(raw_hdulist[2].data).reshape(raw_s[0], raw_s[1]*raw_s[2])
-    stat_list = np.swapaxes(stat_list, 1,0)
-elif len(raw_hdulist) == 2:
-    stat_list = np.ones_like(cube_list)
-
-# close the raw_hdulist file, which can be quite large
-raw_hdulist.close()
-
-raw_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, cube_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
-# stat_minicubes = np.ones_like(raw_minicubes)
-stat_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, stat_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
-
-sum_raw  = np.nansum(raw_minicubes,1)
-sum_stat = np.nansum(stat_minicubes, 1)
-
-hdu_raw_minicubes = fits.PrimaryHDU(sum_raw,raw_hdr)
-hdu_stat_minicubes = fits.ImageHDU(sum_stat)
-hdu_long_wavelength = fits.ImageHDU(full_wavelength)
-
-raw_hdu_to_write = fits.HDUList([hdu_raw_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
-
-raw_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_MUSE_PNe.fits", overwrite=True)
-print(f"{galaxy_name}_MUSE_PNe.fits file saved.")
-
-
-##### Residual .fits file ################
-residual_hdu = fits.PrimaryHDU(PNe_spectra)
-wavelenth_residual = fits.ImageHDU(wavelength)
-resid_hdu_to_write = fits.HDUList([residual_hdu, wavelenth_residual])
-resid_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_residuals_PNe.fits", overwrite=True)
-print(f"{galaxy_name}_residuals_PNe.fits file saved.")
-
-
-####### 3D model .fits file ##################
-models_hdu = fits.PrimaryHDU(model_spectra_list)
-wavelenth_models = fits.ImageHDU(wavelength)
-model_hdu_to_write = fits.HDUList([models_hdu, wavelenth_models])
-model_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_3D_models_PNe.fits", overwrite=True)
-print(f"{galaxy_name}_residuals_PNe.fits file saved.")
-
-
-
-############# WEIGHTED MUSE data PNe ##############
-def PSF_weight(MUSE_p, model_p, r_wls, spaxels=81):
-       
-    coeff = np.polyfit(r_wls, np.clip(model_p[0, :], -50, 50), 1) # get continuum on first spaxel, assume the same across the minicube
-    poly = np.poly1d(coeff)
-    tmp = np.copy(model_p)
-    for k in np.arange(0,spaxels):
-         tmp[k,:] = poly(r_wls)
-            
-    res_minicube_model_no_continuum = model_p - tmp # remove continuum
+# def prep_impostor_files(galaxy_name):
+#     ############# WEIGHTED MUSE data PNe ##############
+#     def PSF_weight(MUSE_p, model_p, r_wls, spaxels=81):
+           
+#         coeff = np.polyfit(r_wls, np.clip(model_p[0, :], -50, 50), 1) # get continuum on first spaxel, assume the same across the minicube
+#         poly = np.poly1d(coeff)
+#         tmp = np.copy(model_p)
+#         for k in np.arange(0,spaxels):
+#              tmp[k,:] = poly(r_wls)
+                
+#         res_minicube_model_no_continuum = model_p - tmp # remove continuum
+        
+#         # PSF weighted minicube
+#         sum_model_no_continuum = np.nansum(res_minicube_model_no_continuum, 0)
+#         weights = np.nansum(res_minicube_model_no_continuum, 1)
+#         nweights = weights / np.nansum(weights) # spaxel weights
+#         weighted_spec = np.dot(nweights, MUSE_p) # dot product of the nweights and spectra
     
-    # PSF weighted minicube
-    sum_model_no_continuum = np.nansum(res_minicube_model_no_continuum, 0)
-    weights = np.nansum(res_minicube_model_no_continuum, 1)
-    nweights = weights / np.nansum(weights) # spaxel weights
-    weighted_spec = np.dot(nweights, MUSE_p) # dot product of the nweights and spectra
-
-    return weighted_spec
-
-
-weighted_PNe = np.ones((len(x_PNe), n_pixels**2, len(full_wavelength)))  #N_PNe, spaxels, wavelength length
-
-for p in np.arange(0, len(x_PNe)):
-    weighted_PNe[p] = PSF_weight(raw_minicubes[p], model_spectra_list[p], wavelength, n_pixels**2)
-
-sum_weighted_PNe = np.nansum(weighted_PNe, 1)
-
-hdu_weighted_minicubes = fits.PrimaryHDU(sum_weighted_PNe, raw_hdr)
-hdu_weighted_stat = fits.ImageHDU(np.nansum(stat_minicubes,1))
-
-weight_hdu_to_write = fits.HDUList([hdu_weighted_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
-
-weight_hdu_to_write.writeto(f"../../gist_PNe/inputData/{galaxy_name}MUSEPNeweighted.fits", overwrite=True)
-print(f"{galaxy_name}_MUSE_PNe_weighted.fits file saved.")
+#         return weighted_spec
+    
+#     with = fits.open("/local/tspriggs/Fornax_data_cubes/"+galaxy_name+"center.fits") as raw_hdulist:
+#         raw_data = raw_hdulist[1].data
+#         raw_hdr = raw_hdulist[1].header
+#         raw_s = raw_hdulist[1].data.shape # (lambda, y, x)
+#         full_wavelength = raw_hdr['CRVAL3']+(np.arange(raw_s[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
+        
+#         if len(raw_hdulist) == 3:
+#             stat_list = np.copy(raw_hdulist[2].data).reshape(raw_s[0], raw_s[1]*raw_s[2])
+#             stat_list = np.swapaxes(stat_list, 1,0)
+#         elif len(raw_hdulist) == 2:
+#             stat_list = np.ones_like(cube_list)
+            
+    
+#     cube_list = np.copy(raw_data).reshape(raw_s[0], raw_s[1]*raw_s[2]) # (lambda, list of len y*x)
+#     cube_list = np.swapaxes(cube_list, 1,0) # (list of len x*y, lambda)
+    
+    
+#     raw_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, cube_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
+#     # stat_minicubes = np.ones_like(raw_minicubes)
+#     stat_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, stat_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
+    
+#     sum_raw  = np.nansum(raw_minicubes,1)
+#     sum_stat = np.nansum(stat_minicubes, 1)
+    
+#     hdu_raw_minicubes = fits.PrimaryHDU(sum_raw,raw_hdr)
+#     hdu_stat_minicubes = fits.ImageHDU(sum_stat)
+#     hdu_long_wavelength = fits.ImageHDU(full_wavelength)
+    
+#     raw_hdu_to_write = fits.HDUList([hdu_raw_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
+    
+#     raw_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_MUSE_PNe.fits", overwrite=True)
+#     print(f"{galaxy_name}_MUSE_PNe.fits file saved.")
+    
+    
+#     ##### Residual .fits file ################
+#     residual_hdu = fits.PrimaryHDU(PNe_spectra)
+#     wavelenth_residual = fits.ImageHDU(wavelength)
+#     resid_hdu_to_write = fits.HDUList([residual_hdu, wavelenth_residual])
+#     resid_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_residuals_PNe.fits", overwrite=True)
+#     print(f"{galaxy_name}_residuals_PNe.fits file saved.")
+    
+    
+#     ####### 3D model .fits file ##################
+#     models_hdu = fits.PrimaryHDU(model_spectra_list)
+#     wavelenth_models = fits.ImageHDU(wavelength)
+#     model_hdu_to_write = fits.HDUList([models_hdu, wavelenth_models])
+#     model_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_3D_models_PNe.fits", overwrite=True)
+#     print(f"{galaxy_name}_residuals_PNe.fits file saved.")
+    
+#     weighted_PNe = np.ones((n_PNe, n_pixels**2, len(full_wavelength)))  #N_PNe, spaxels, wavelength length
+    
+#     for p in np.arange(0, n_PNe):
+#         weighted_PNe[p] = PSF_weight(raw_minicubes[p], model_spectra_list[p], wavelength, n_pixels**2)
+    
+#     sum_weighted_PNe = np.nansum(weighted_PNe, 1)
+    
+#     hdu_weighted_minicubes = fits.PrimaryHDU(sum_weighted_PNe, raw_hdr)
+#     hdu_weighted_stat = fits.ImageHDU(np.nansum(stat_minicubes,1))
+    
+#     weight_hdu_to_write = fits.HDUList([hdu_weighted_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
+    
+#     weight_hdu_to_write.writeto(f"../../gist_PNe/inputData/{galaxy_name}MUSEPNeweighted.fits", overwrite=True)
+#     print(f"{galaxy_name}_MUSE_PNe_weighted.fits file saved.")
 
 # maybe run a bash/shell script, as we would need to change environment etc.
 
@@ -436,10 +422,10 @@ def Moffat_err(Moff_A, FWHM, beta, x_0, y_0):
     
     return np.sum(F_OIII_xy_dist*1e-20)
 
-flux_plus_minus = np.ones((len(x_PNe),2))
-mag_plus_minus  = np.ones((len(x_PNe),2))
+flux_plus_minus = np.ones((n_PNe,2))
+mag_plus_minus  = np.ones((n_PNe,2))
                          
-for i,p in enumerate(tqdm(range(len(x_PNe)))):
+for i,p in enumerate(tqdm(range(n_PNe))):
     Moff_A_dist = N(moff_A[p][0], moff_A_err[p][0])
     FWHM_dist   = N(galaxy_data["FWHM"], galaxy_data["FWHM_err"])
     beta_dist   = N(galaxy_data["beta"], galaxy_data["beta_err"])
