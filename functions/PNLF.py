@@ -7,21 +7,20 @@ from astropy.table import Table
 from astropy.io import ascii, fits
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
-from MUSE_Models import PNe_spectrum_extractor, robust_sigma
+from MUSE_Models import PNe_spectrum_extractor, robust_sigma, Moffat
 import pdb as pdb
 
+from functions.file_handling import paths
 
-def reconstructed_image(choose_galaxy, loc):
-    CUBE_DIR = "/local/tspriggs/Fornax_data_cubes/"
-    with fits.open(CUBE_DIR+choose_galaxy+loc+'.fits') as hdu:
-        data = hdu[1].data
-        hdr  = hdu[1].header
+def reconstructed_image(galaxy_name, loc):
+    DIR_dict = paths(galaxy_name, loc)
     
-    s    = np.shape(data)
-    wave = hdr['CRVAL3']+(np.arange(s[0])-hdr['CRPIX3'])*hdr['CD3_3']
-
-    cond = (wave >= 4900.0) & (wave <= 5100.0)
-    data = np.sum(data[cond,:,:],axis=0)
+    with fits.open(DIR_dict["RAW_DATA"]) as hdu:
+        hdr  = hdu[1].header
+        s    = np.shape(hdu[1].data)
+        wave = hdr['CRVAL3']+(np.arange(s[0])-hdr['CRPIX3'])*hdr['CD3_3']   
+        cond = (wave >= 4900.0) & (wave <= 5100.0)
+        data = np.sum(hdu[1].data[cond,:,:], axis=0)
 
     return data, wave, hdr
 
@@ -75,30 +74,19 @@ def KS2_test(dist_1, dist_2, conf_lim):
 
 
 
-def completeness(galaxy, loc, mag, params, Dist, image, peak, gal_mask_params, z, star_mask_params, c1=0.307):
-    
-    # Define functions for Moffat model and Gaussian models
-    def moffat(amplitude, x_0, y_0, FWHM, beta):
-        alpha = FWHM / (2. * np.sqrt(2.**(1./beta) - 1.))
-        rr_gg = ((x_fit - x_0)**2 + (y_fit - y_0)**2) / alpha**2
-        
-        return amplitude * (2 * ((beta -1)/(alpha**2))) * (1 + rr_gg)**(-beta)
-
-    #def gaussian(x, amplitude, mean, stddev, bkg, grad, z):
-    #    return (bkg + grad*x + np.abs(amplitude) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
-    #                 (np.abs(amplitude)/3.) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.)))
-    
+def completeness(galaxy, loc, DIR_dict, mag, params, Dist, image, peak, gal_mask_params, z, star_mask_params, c1=0.307):
+       
     #load up data
-    x_data, y_data, hdulist, wavelength = open_data(galaxy, loc)
+    res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy, loc, DIR_dict)
 
-    rN = np.array([robust_sigma(hdulist[0].data[i]) for i in range(len(hdulist[0].data))])
+    rN = np.array([robust_sigma(res_data[i]) for i in range(len(hdulist[0].data))])
     Noise_map  = rN.reshape(y_data, x_data)
 
     # mask out regions
-    xe, ye, length, width, alpha = gal_mask_params
+    xe, ye, length, width, alpha = gal_mask_params #galaxy_data["gal_mask"]
     Y, X = np.mgrid[:y_data, :x_data]
     elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
-    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
+    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool) # galaxy_data["star_mask"]
     mask_indx = np.array(np.where((elip_mask_gal+star_mask_sum)==True))
     # End of masking
     
@@ -127,11 +115,11 @@ def completeness(galaxy, loc, mag, params, Dist, image, peak, gal_mask_params, z
     init_FWHM = params['M_FWHM']
     init_beta = params['beta']
 
-    sum_init     = np.sum(moffat(1, n_pixels/2, n_pixels/2, init_FWHM, init_beta))
+    sum_init     = np.sum(Moffat(1, init_FWHM, init_beta, n_pixels/2, n_pixels/2, x_fit, y_fit))
     input_moff_A = flux / sum_init
 
     # Make moffat models = F_5007 (x,y)
-    Moffat_models = np.array([moffat(moff_A, n_pixels/2., n_pixels/2., init_FWHM, init_beta) for moff_A in input_moff_A])
+    Moffat_models = np.array([Moffat(moff_A, init_FWHM, init_beta, n_pixels/2., n_pixels/2., x_fit, y_fit) for moff_A in input_moff_A])
 
     # turn moffat model into list of Gaussian amplitudes (A_5007 (x,y))
     Amp_x_y = ((Moffat_models) / (np.sqrt(2*np.pi) * (params["LSF"]/2.35482)))
@@ -140,7 +128,6 @@ def completeness(galaxy, loc, mag, params, Dist, image, peak, gal_mask_params, z
 
     completeness_ratio = np.zeros(len(app_m)).astype(np.float128)
     
-    zeros = []
     for i,amp in enumerate(max_1D_A):
         completeness_ratio[i] = (np.nansum(image[((amp / Noise_map) > peak)]) / np.nansum(image)).astype(np.float128)
 

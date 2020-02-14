@@ -19,11 +19,12 @@ from astropy.wcs import WCS, utils, wcs
 from astropy.coordinates import SkyCoord
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
-from functions.MUSE_Models import spaxel_by_spaxel
-from functions.PNe_functions import open_data, PNe_spectrum_extractor, robust_sigma
 
-with open("galaxy_info.yaml", "r") as yaml_data:
-    galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
+# Load in local functions
+from functions.MUSE_Models import spaxel_by_spaxel
+from functions.PNe_functions import PNe_spectrum_extractor, robust_sigma
+from functions.file_handling import paths, open_data
+
 
 # Queries sys arguments for galaxy name
 my_parser = argparse.ArgumentParser()
@@ -40,13 +41,9 @@ loc = args.loc
 fit_spaxel = args.fit
 save_sep = args.sep
 
+DIR_dict = paths(galaxy_name, loc)
 
-DATA_DIR = f"galaxy_data/{galaxy_name}_data/{galaxy_name}{loc}"
-EXPORT_DIR = f"exported_data/{galaxy_name}/{galaxy_name}{loc}"
-PLOT_DIR = f"Plots/{galaxy_name}/{galaxy_name}{loc}"
-
-
-res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc)
+res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
 non_zero_index = np.squeeze(np.where(res_data[:,0] != 0.))
@@ -54,14 +51,6 @@ non_zero_index = np.squeeze(np.where(res_data[:,0] != 0.))
 list_of_std = np.abs([robust_sigma(dat) for dat in res_data])
 input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
        
-
-    # Check to see if the wavelength is in the fits fileby checking length of fits file.
-    #if len(hdulist) == 2: # check to see if HDU data has 2 units (data, wavelength)
-    #    wavelength = np.exp(hdulist[1].data)
-    #    np.save(DATA_DIR+"_wavelength", wavelength)
-    #else:
-    #    wavelength = np.load(DATA_DIR+"_wavelength.npy")
-
 # Constants
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
@@ -74,41 +63,6 @@ gal_mask = galaxy_data["gal_mask"]
 coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
 x_fit = np.array([item[0] for item in coordinates])
 y_fit = np.array([item[1] for item in coordinates])
-
-# Defines spaxel by spaxel fitting model
-# def spaxel_by_spaxel(params, x, data, error, spec_num):
-#     """
-#     Using a Gaussian double peaked model, fit the [OIII] lines at 4959 and 5007 Angstrom, found within Stellar continuum subtracted spectra, from MUSE.
-#     Inputs:
-#         Params - Using the LMfit python package, contruct the parameters needed and read them in:
-#                 Amplitude of [OIII] at 5007 A.
-#                 mean wavelength position of [OIII] 5007 A peak.
-#                 FWHM of Gaussian profiles.
-#                 Gaussian backrgound level of residuals.
-#                 Gaussian gradient of background residuals.
-#         x - Wavelength array
-#         data - read in sprectrum by spectrum of data via list form.
-#         error - associated errors for each spectrum.
-#         spec_num - from enumerate, just the index number of spectrum, for storing value sin np array.
-
-#     Returns -  (Data - model) / error   for chi square minimiser.
-#     """
-#     Amp = params["Amp"]
-#     wave = params["wave"]
-#     FWHM = params["FWHM"]
-#     Gauss_bkg = params["Gauss_bkg"]
-#     Gauss_grad = params["Gauss_grad"]
-
-#     Gauss_std = FWHM / 2.35482 # FWHM to Standard Deviation calculation.
-
-#     model = ((Gauss_bkg + Gauss_grad * x) + Amp * np.exp(- 0.5 * (x - wave)** 2 / Gauss_std**2.) +
-#              (Amp/2.85) * np.exp(- 0.5 * (x - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.))
-
-#     # Saves both the Residual noise level of the fit, alongside the 'data residual' (data-model) array from the fit.
-#     list_of_rN[spec_num] = robust_sigma(data - model)
-#     data_residuals[spec_num] = data - model
-
-#     return (data - model) / error
 
 
 ################################################################################
@@ -158,27 +112,26 @@ if fit_spaxel == True:
     A_rN = np.array([A / rN for A,rN in zip(gauss_A, list_of_rN)])
     gauss_F = np.array(gauss_A) * np.sqrt(2*np.pi) * 1.19
 
-
     # Save A/rN, Gauss A, Guass F and rN arrays as npy files. Change to .fits soon maybe
-    np.save(EXPORT_DIR+"_A_rN_cen", A_rN)
-    np.save(EXPORT_DIR+"_gauss_A_cen", gauss_A)
-    np.save(EXPORT_DIR+"_gauss_F_cen", gauss_F)
-    np.save(EXPORT_DIR+"_rN", list_of_rN)
+#     np.save(f"{DIR_dict["EXPORT_DIR"]}_A_rN", A_rN)
+    np.save(DIR_dict["EXPORT_DIR"]+"_gauss_A", gauss_A)
+    np.save(DIR_dict["EXPORT_DIR"]+"_gauss_F", gauss_F)
+    np.save(DIR_dict["EXPORT_DIR"]+"_rN", list_of_rN)
 
     # save the data and obj res in fits file format to us memmapping.
     hdu_data_res = fits.PrimaryHDU(data_residuals)
     hdu_obj_res = fits.PrimaryHDU(obj_residuals)
-    hdu_data_res.writeto(f"{EXPORT_DIR}_resids_data.fits", overwrite=True)
-    hdu_obj_res.writeto(f"{EXPORT_DIR}_resids_obj.fits", overwrite=True)
+    hdu_data_res.writeto(DIR_dict["EXPORT_DIR"]+"_resids_data.fits", overwrite=True)
+    hdu_obj_res.writeto(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits", overwrite=True)
 
     print("Cube fitted, data saved.")
 
 else:
     print(f"Did not fit spaxel by spaxel for {galaxy_name} {loc}.")
     # load up gauss_A, gauss_F and A_rN
-    gauss_A = np.load(f"{EXPORT_DIR}_gauss_A_cen.npy")
-    gauss_F = np.load(f"{EXPORT_DIR}_gauss_F_cen.npy")
-    A_rN    = np.load(f"{EXPORT_DIR}_A_rN_cen.npy")
+    gauss_A = np.load(DIR_dict["EXPORT_DIR"]+"_gauss_A.npy")
+    gauss_F = np.load(DIR_dict["EXPORT_DIR"]+"_gauss_F.npy")
+    A_rN    = np.load(DIR_dict["EXPORT_DIR"]+"_A_rN.npy")
 
 
 # Construct A/rN, A_5007 and F_5007 plots, and save in Plots/Galaxy_name/
@@ -187,23 +140,23 @@ plt.figure(figsize=(20,20))
 plt.imshow(A_rN.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=1, vmax=8)
 plt.title("A/rN")
 plt.colorbar()
-plt.savefig(PLOT_DIR+"_A_rN_map.png")
+plt.savefig(DIR_dict["PLOT_DIR"]+"_A_rN_map.png")
 
 # Plot A_5007
 plt.figure(figsize=(20,20))
 plt.imshow(gauss_A.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
 plt.title("Amplitude")
 plt.colorbar()
-plt.savefig(PLOT_DIR+"_A_5007_map.png")
+plt.savefig(DIR_dict["PLOT_DIR"]+"_A_5007_map.png")
 
 # Plot F_5007
 plt.figure(figsize=(20,20))
 plt.imshow(gauss_F.reshape(y_data, x_data), origin="lower", cmap="CMRmap", vmin=10, vmax=100)
 plt.title("Flux")
 plt.colorbar()
-plt.savefig(PLOT_DIR+"_F_5007_map.png")
+plt.savefig(DIR_dict["PLOT_DIR"]+"_F_5007_map.png")
 
-print("Plots saved in Plots/"+galaxy_name)
+print(f"Plots saved in Plots/{galaxy_name}")
 
 
 
@@ -264,5 +217,5 @@ y_PNe = np.array([y[1] for y in x_y_list])
 print(f"Number of detected [OIII] sources: {len(x_y_list)}")
 
 if save_sep == True:
-    np.save(EXPORT_DIR+"_PNe_x_y_list", x_y_list)
+    np.save(DIR_dict["EXPORT_DIR"]+"_PNe_x_y_list", x_y_list)
     

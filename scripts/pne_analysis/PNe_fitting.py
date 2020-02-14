@@ -17,10 +17,11 @@ from astropy.coordinates import SkyCoord
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 
-from ppxf_gal_L import ppxf_L_tot
-from PNLF import reconstructed_image, completeness, KS2_test
+from functions.ppxf_gal_L import ppxf_L_tot
+from functions.PNLF import reconstructed_image, completeness, KS2_test
 from functions.MUSE_Models import PNe_residuals_3D, PSF_residuals_3D,
-from functions.PNe_functions import open_data, PNe_spectrum_extractor, robust_sigma, uncertainty_cube_construct, calc_chi2, prep_impostor_files
+from functions.PNe_functions import PNe_spectrum_extractor, robust_sigma, uncertainty_cube_construct, calc_chi2
+from functions.file_handling import paths, open_data, prep_impostor_files
 
 # Let's use a logging package to store stuff, instead of printing.....
 
@@ -40,15 +41,10 @@ loc = args.loc              # MUSE pointing loc: center, middle, halo
 fit_PSF = args.fit_psf
 calc_Lbol = args.Lbol
 
-
-RAW_DIR    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}"
-RAW_DAT    = f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}{loc}.fits"
-DATA_DIR   = f"galaxy_data/{galaxy_name}_data/"
-EXPORT_DIR = f"exported_data/{galaxy_name}/"
-PLOT_DIR   = f"Plots/{galaxy_name}/{galaxy_name}"
+DIR_dict = paths(galaxy_name, loc)
 
 # Load in the residual data, in list form
-res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc)
+res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
 
 # Constants
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
@@ -72,7 +68,7 @@ y_fit = np.array([item[1] for item in coordinates])
 # load from saved files
 
 # Read in list of x and y coordinates of detected sources for 3D fitting.
-x_y_list = np.load(EXPORT_DIR+galaxy_name+f"{loc}_PNe_x_y_list.npy")
+x_y_list = np.load(DIR_dict["EXPORT_DIR"]+"_PNe_x_y_list.npy")
 x_PNe = np.array([x[0] for x in x_y_list]) # separate out from the list the list of x coordinates, as well as y coordinates.
 y_PNe = np.array([y[1] for y in x_y_list])
 
@@ -86,7 +82,7 @@ PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "V (km
 PNe_df["PNe number"] = np.arange(0,n_PNe)
 PNe_df["Filter"] = "Y"
 
-with fits.open(RAW_DIR+"center.fits") as hdu_wcs:
+with fits.open(DIR_dict["RAW_DATA"]) as hdu_wcs:
     hdr_wcs = hdu_wcs[1].header
     wcs_obj = WCS(hdr_wcs, naxis=2)
 
@@ -97,10 +93,10 @@ for i in np.arange(0, n_PNe):
 
 # Read in Objective Residual Cube .fits file.
 
-with fits.open(EXPORT_DIR+galaxy_name+f"{loc}_resids_obj.fits") as obj_residual_cube:
+with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits") as obj_residual_cube:
     obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
 
-with fits.open(EXPORT_DIR+galaxy_name+f"{loc}_resids_data.fits") as data_residual_cube:
+with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_data.fits") as data_residual_cube:
     error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
 
 
@@ -480,7 +476,7 @@ PNe_df["M 5007"] = PNe_df["m 5007"] - dM
 #### save PNe_df and tables for documentation
 
 # save the pandas data-frame for use in the impostor diagnostics.
-PNe_df.to_csv(f"exported_data/{galaxy_name}/{galaxy_name}_PNe_df.csv")
+PNe_df.to_csv(DIR_dict["EXPORT_DIR"]+"_PNe_df.csv")
 
 ### Construct Table of filtered PNe, ready for paper
 # Construct a Astropy table to save certain values for each galaxy.
@@ -492,9 +488,9 @@ PNe_table = Table([list(PNe_df.loc[PNe_df["Filter"]=="Y"].index), PNe_df["Ra (J2
 
 
 # Save table in tab separated format.
-ascii.write(PNe_table, f"exported_data/{galaxy_name}/{galaxy_name}_fit_results.txt", format="tab", overwrite=True) 
+ascii.write(PNe_table, DIR_dict["EXPORT_DIR"]"_fit_results.txt", format="tab", overwrite=True) 
 # Save latex table of data.
-ascii.write(PNe_table, f"exported_data/{galaxy_name}/{galaxy_name}_fit_results_latex.txt", format="latex", overwrite=True) 
+ascii.write(PNe_table, DIR_dict["EXPORT_DIR"]"_fit_results_latex.txt", format="latex", overwrite=True) 
 
 #### PNLF
 
@@ -552,8 +548,8 @@ plt.tick_params(labelsize = 25)
 
 #plt.axvline(PNe_df["m 5007"].loc[PNe_df["Filter"]=="Y"].values.min() - 31.63)
 plt.legend(loc=2, fontsize=20)
-plt.savefig(PLOT_DIR+"_PNLF.pdf", bbox_inches='tight')
-plt.savefig(PLOT_DIR+"_PNLF.png", bbox_inches='tight')
+plt.savefig(DIR_dict["PLOT_DIR"]+"_PNLF.pdf", bbox_inches='tight')
+plt.savefig(DIR_dict["PLOT_DIR"]+"_PNLF.png", bbox_inches='tight')
 
 # Calculate the number of PNe, via the PNLF
 N_PNe = np.sum(PNLF[idx]*scal) * step
@@ -565,7 +561,7 @@ print("Number of PNe from PNLF: ", N_PNe, "+/-", (1/np.sqrt(len(PNe_df.loc[PNe_d
 
 ##### Integrated, bolometric Luminosity of galaxy FOV spectra #####
 if calc_Lbol == True:
-    raw_data_cube = RAW_DAT # read in raw data cube
+    raw_data_cube = DIR_dict["RAW_DATA"] # read in raw data cube
     
     xe, ye, length, width, alpha = gal_mask_params
     

@@ -35,53 +35,7 @@ def ppxf_L_tot(int_spec, header, redshift, vel, dist_mod, dM_err=[0.1,0.1] ,calc
     
     # Read a galaxy spectrum and define the wavelength range
     
-#     with fits.open(file) as orig_hdulist:
-#         orig_hdulist = fits.open(file)
-#         h1 = orig_hdulist[1].header
-#         s = np.shape(orig_hdulist[1].data)
-#         xe, ye, length, width, alpha = gal_mask_params
-#         Y, X = np.mgrid[:s[1], :s[2]]
-#         elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
-#         
-#         gal_mask = (np.isnan(orig_hdulist[1].data[10,:,:])==False) & (elip_mask_gal==False)
-#         
-#         #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
-#         # Now mask the stars
-#         star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
-#         
-#         #total_mask = gal_mask & ~star_mask_sum # Galaxy region we want to sum, is marked with True here
-#         
-#         mask_indx = np.array(np.where((gal_mask & ~star_mask_sum)==True)) # make an index list of the coordinates
-#         indexed_data = np.array(orig_hdulist[1].data[:,mask_indx[0],mask_indx[1]])
-#         gal_lin = np.nansum(indexed_data,1)
-        
-#     orig_hdulist = fits.open(file)
-
-#     s = np.shape(orig_hdulist[1].data)
-#     # setup mask
-# #     if mask == True:
-#     xe, ye, length, width, alpha = gal_mask_params
-#     Y, X = np.mgrid[:s[1], :s[2]]
-#     elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
     
-#     gal_mask = (np.isnan(orig_hdulist[1].data[10,:,:])==False) & (elip_mask_gal==False)
-    
-#     #collapsed_spectra = np.nansum(orig_hdulist[1].data[:, gal_mask],1)
-#     # Now mask the stars
-#     star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
-    
-#     #total_mask = gal_mask & ~star_mask_sum # Galaxy region we want to sum, is marked with True here
-    
-#     mask_indx = np.array(np.where((gal_mask & ~star_mask_sum)==True)) # make an index list of the coordinates
-#     indexed_data = np.array(orig_hdulist[1].data[:,mask_indx[0],mask_indx[1]])
-#     collapsed_spectra = np.nansum(indexed_data,1)
-#     collapsed_spectra = np.nansum(np.array(orig_hdulist[1].data[:,mask_indx[0],mask_indx[1]]),1)
-#     else:
-#         collapsed_spectra = np.nansum(orig_hdulist[1].data.reshape(s[0], s[1]*s[2])[1:,:],1)
-    
-#     h1 = orig_hdulist[1].header
-#     gal_lin = collapsed_spectra
-#     print("Cube has been collapsed.")
     lamRange1 = header['CRVAL3'] + np.array([0., header['CD3_3']*(header['NAXIS3'] - 1)]) #IMPORTANTE: EL RANGO DE LAMBDAS ESTA EN ESCALA LOGARITMICA
     #Transformamos los pixeles en lambdas:
     #lam=np.linspace(lamRange1[0],lamRange[1],len(gal_lin[0,:]))
@@ -269,12 +223,6 @@ def library(lamb, spectra, filt, band='g', get_sun='N'):
 
     # Internal default library of passbands filters
     lib = pyphot.get_library()
-    #print("Library contains: ", len(lib), " filters")
-    # Find all filter names that relates to IRAC
-    # and print some info
-    #f = lib.find('irac')
-    #for name in f:
-    #    lib[name].info(show_zeropoints=True)
 
     # Defining the filter band library
     f = lib[filt+'_'+band]
@@ -315,13 +263,11 @@ def transmission(lamb, spectra, band):
     of the g-band for the SLOAN filters with the provided
     spectra. """
 
-#     file = np.loadtxt("OMEGACAM_g_band_SDSS.txt") # PUT HERE THE PATH TO YOUR FILTER
     if (band =="r") | (band == "g"):
         file = np.loadtxt(f"Paranal_OmegaCAM.{band}_SDSS.dat") # PUT HERE THE PATH TO YOUR FILTER
     else:
         file = np.loadtxt(f"Paranal_OmegaCAM.{band}.dat")
     # Getting the response function for different wavelenghts
-#     l_gband, response_gband = file[:,0]*10.0, file[:,1]
     l_band, response_band = file[:,0], file[:,1]
     
 

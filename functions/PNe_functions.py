@@ -2,44 +2,6 @@ from astropy.io import fits
 import yaml
 import numpy as np
 
-
-def open_data(galaxy_name, loc):
-    """
-    Load up both the yaml and residual data associated with input galaxy and location
-    Parameters:
-        - galaxy - string - name of galaxy - FCC000
-        - loc    - string - location       - center, middle or halo
-    
-    Returns:
-        - residual_data
-        - wavelength
-        - residual_shape
-        - galaxy_data
-        - x_data
-        - y_data
-    """
-    # Load in the residual data, in list form
-    DATA_DIR = f"galaxy_data/{galaxy_name}_data/{galaxy_name}{loc}"
-    
-    with open("galaxy_info.yaml", "r") as yaml_data:
-        galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
-        
-    galaxy_data = galaxy_info[f"{galaxy_name}_{loc}"]
-
-    with fits.open(DATA_DIR+"_residuals_list.fits") as hdulist:# Path to data
-        residual_data = np.copy(hdulist[0].data)
-        residual_hdr = hdulist[0].header # extract header from residual cube
-        wavelength = np.exp(hdulist[1].data)
-    
-    residual_shape = np.shape(residual_data)
-    # Use the length of the data to return the size of the y and x dimensions of the spatial extent.
-    x_data = residual_hdr["XAXIS"]
-    y_data = residual_hdr["YAXIS"]
-    
-    return residual_data, wavelength, residual_shape, x_data, y_data, galaxy_data
-
-
-
 def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     """
     """
@@ -139,6 +101,55 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
     return Chi_sqr, redchi
 
 
+def KS2_test(dist_1, dist_2, conf_lim):
+    
+    """
+    Input: 
+          - dist_1 = distribution 1 for test
+          - dist_2 = distribution 2 for test
+          - conf_lim = confidence limit for consideration (0.05 equates to 5%)
+          
+    Return:
+          - KS2_test = contains the KS D value, along with P value
+          
+    Purpose:
+          - Take in two distributions and run the KS 2 sample test, with a set confidence limit. 
+          - Print statements will inform you of the outcome. 
+          - Return the KS test statistics.
+    """
+    
+    c_a = np.sqrt(-0.5*np.log(conf_lim))
+    print(f"c(a) = {round(c_a, 4)}")
+    
+    condition = c_a * np.sqrt((len(dist_1) + len(dist_2))/(len(dist_1) * len(dist_2)))
+    
+    KS2_test = stats.ks_2samp(dist_1, dist_2 )
+    
+#     print(KS2_test)
+    print("\n")
+    print("KS2 p-value test")
+    if KS2_test[1] < conf_lim:
+        print(f"    KS2 sample p-value less than {conf_lim}.")
+        print("    Reject the Null hypothesis: The two samples are not drawn from the same distribution.")
+    elif KS2_test[1]> conf_lim:
+        print(f"    KS2 sample p-value greater than {conf_lim}.")
+        print("    We cannot reject the Null hypothesis.")
+    
+    print("\n")
+    print("KS2 D statistic test")
+    if KS2_test[0] > condition:
+        print(f"    D ({round(KS2_test[0],3)}) is greater than {round(condition,3)}")
+        print(f"    The Null hypothesis is rejected. The two samples do not match within a confidence of {conf_lim}.")
+    elif KS2_test[0] < condition:
+        print(f"    D ({round(KS2_test[0],3)}) is less than {round(condition,3)}")
+        print(f"    The Null hypothesis is NOT rejected. The two samples match within a confidence of {conf_lim}.")
+        
+    print("\n")
+    
+    return KS2_test
+
+
+
 def prep_impostor_files(galaxy_name):
     """
     Prepare files for impostor checks, no return, only saved files.
@@ -166,7 +177,7 @@ def prep_impostor_files(galaxy_name):
     
         return weighted_spec
     
-    with = fits.open("/local/tspriggs/Fornax_data_cubes/"+galaxy_name+"center.fits") as raw_hdulist:
+    with fits.open("/local/tspriggs/Fornax_data_cubes/"+galaxy_name+"center.fits") as raw_hdulist:
         raw_data = raw_hdulist[1].data
         raw_hdr = raw_hdulist[1].header
         raw_s = raw_hdulist[1].data.shape # (lambda, y, x)
