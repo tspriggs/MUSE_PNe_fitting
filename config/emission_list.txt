@@ -1,0 +1,6 @@
+    OIII_1: [100, null, null]
+    OIII_2: [5, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
+    ha: [5, null, 'wave_OIII_1 + 1556.375 * (1+{})']
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
+    nII_1: [5, null, 'wave_OIII_1 + 1541.621 * (1+{})']
+    nII_2: [5, null, 'wave_OIII_1 + 1577.031 * (1+{})']

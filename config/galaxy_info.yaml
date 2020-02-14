@@ -1,0 +1,549 @@
+FCC083_center:
+  Distance: 19.2
+  Galaxy name: FCC083
+  velocity: 1532
+  eff_r: 35.7
+  FWHM: 4.18
+  FWHM_err: 0.06
+  beta: 2.35
+  beta_err: 0.2
+  LSF: 3.12
+  LSF_err: 0.03
+  centre: [182, 183]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[32,35],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+  
+FCC119_center:
+  Distance: 20.3
+  Galaxy name: FCC119
+  velocity: 1409.7
+  eff_r: 17.4
+  FWHM: 3.61
+  FWHM_err: 0.10
+  beta: 1.35
+  beta_err: 0.11
+  LSF: 3.21
+  LSF_err: 0.05
+  centre: [1,1]
+  gal_mask: [210,125,25,25,0.01]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+  
+FCC143_center:
+  Distance: 19.3
+  Galaxy name: FCC143
+  velocity: 1379
+  eff_r: 11.0
+  FWHM: 4.03
+  FWHM_err: 0.13
+  beta: 2.02
+  beta_err: 0.33
+  LSF: 3.26
+  LSF_err: 0.06
+  centre: [1,1]
+  gal_mask: [210,212,15,15,-0.1]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+  
+FCC147_center:
+  Distance: 20
+  Galaxy name: FCC147
+  velocity: 1350
+  eff_r: 24.8
+  FWHM: 5.2
+  FWHM_err: 0.1
+  beta: 2.58
+  beta_err: 0.45
+  LSF: 3.48
+  LSF_err: 0.04
+  centre: [391, 160]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+FCC153_center:
+  Distance: 20
+  Galaxy name: FCC153
+  velocity: 1642
+  eff_r: 19.8
+  FWHM: 3.62
+  FWHM_err: 0.08
+  beta: 1.9
+  beta_err: 0.17
+  LSF: 2.9
+  LSF_err: 0.04
+  centre: [1,1]
+  gal_mask: [0,0, 0, 0, 0]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[16],[18,20],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
+FCC161_center:
+  Distance: 20
+  Galaxy name: FCC161
+  velocity: 1369
+  eff_r: 28.6
+  FWHM: 3.56
+  FWHM_err: 0.04
+  beta: 3.37
+  beta_err: 0.3
+  LSF: 3.01
+  LSF_err: 0.03
+  centre: [220, 220]
+  gal_mask: [0,0, 0, 0, 0.1]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[31],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+  wavelength: FCC161_data/wavelength.npy
+
+FCC167_center:
+  Distance: 21.2
+  Galaxy name: FCC167
+  velocity: 1878
+  eff_r: 56.4
+  FWHM: 3.67
+  FWHM_err: 0.083
+  beta: 2.22
+  beta_err: 0.25
+  LSF: 3.15
+  LSF_err: 0.05
+  centre: [1,1]
+  gal_mask: [237,195,130,35,0.16]
+  star_mask: [[1,1,1]]
+  my_filter: [24]
+  impostor_filter: [[8,14,23,30],[72],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
+  backup:
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
+  wavelength: FCC167_data/FCC167_wavelength.npy
+
+FCC167_middle:
+  Distance: 21.2
+  Galaxy name: FCC167
+  velocity: 1878
+  eff_r: 56.4
+  FWHM: 5.85
+  FWHM_err: 0.18
+  beta: 1.36
+  beta_err: 0.23
+  LSF: 3.34
+  LSF_err: 0.05
+  centre: [1,1]
+  gal_mask: [1,1,1,1,1]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+  backup:
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']
+  wavelength: FCC167_data/FCC167middle_wavelength.npy
+  
+FCC170_center:
+  Distance: 18.7
+  Galaxy name: FCC170
+  velocity: 1743
+  FWHM: 4.00
+  FWHM_err: 0.1
+  beta: 1.76
+  beta_err: 0.2
+  LSF: 2.85
+  LSF_err: 0.04
+  centre: [1,1]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[0,0,0]]
+  my_filter: []
+  impostor_filter: [[19],[26,7,4],[25]]
+  interloper_filter: []
+  eff_r: 15.9
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+FCC176_center:
+  Galaxy name: FCC176
+  velocity: 1428
+  eff_r: 35.9
+  FWHM: 4.0
+  FWHM_err: 0.1
+  beta: 2.5
+  beta_err: 0.1
+  LSF: 2.8
+  LSF_err: 0.01
+  centre: [1,1]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[0,0,0]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+    
+    
+FCC177_center:
+  Distance: 19.6
+  Galaxy name: FCC177
+  velocity: 1591
+  eff_r: 35.9
+  FWHM: 3.75
+  FWHM_err: 0.053
+  beta: 1.7
+  beta_err: 0.09
+  LSF: 3.0
+  LSF_err: 0.024
+  centre: [1,1]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[248,238,10]]
+  my_filter: []
+  impostor_filter: [[],[8,30,31],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
+FCC182_center:
+  Distance: 19.6
+  Galaxy name: FCC182
+  velocity: 1705.1
+  eff_r: 9.9
+  FWHM: 4.18
+  FWHM_err: 0.11
+  beta: 3.67
+  beta_err: 0.9
+  LSF: 2.96
+  LSF_err: 0.052
+  centre: [1,1]
+  gal_mask: [1,1,1,1,0.01]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[4],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
+FCC184_center:
+  Distance: 20
+  Galaxy name: FCC184
+  velocity: 1302.6
+  eff_r: 35.5
+  FWHM: 4.753
+  FWHM_err: 0.08
+  beta: 1.35
+  beta_err: 0.1
+  LSF: 3.55
+  LSF_err: 0.03
+  centre: [223,217]
+  gal_mask: [218,220,110,110,0.01]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+FCC190_center:
+  Distance: 20.3
+  Galaxy name: FCC190
+  velocity: 1794
+  eff_r: 18.3
+  FWHM: 5.51
+  FWHM_err: 0.09
+  beta: 1.78
+  beta_err: 0.2
+  LSF: 3.33
+  LSF_err: 0.029
+  centre: [315, 335]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[24],[20],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+FCC193_center:
+  Distance: 21.2
+  Galaxy name: FCC193
+  velocity: 976
+  eff_r: 28.2
+  FWHM: 3.61
+  FWHM_err: 0.03
+  beta: 2.5
+  beta_err: 0.1
+  LSF: 3.04
+  LSF_err: 0.02
+  centre: [170, 418]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[1,1,1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: [13,78,89,123]
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+  
+FCC219_center:
+  Distance: 20.2
+  Galaxy name: FCC219
+  velocity: 1933
+  eff_r: 161.0
+  FWHM: 4.09
+  FWHM_err: 0.07
+  beta: 3.52
+  beta_err: 0.55
+  LSF: 3.07
+  LSF_err: 0.03
+  centre: [220, 220]
+  gal_mask: [195,50,40,40,0.0]
+  gal_mask_bkg: [195,73,150,85,0.0]
+  star_mask: [[299,153,7]]
+  my_filter: [0]
+  impostor_filter: [[38], [], [4,14,39,40]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+  backup:  
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+
+FCC219_halo:
+  Distance: 20.2
+  Galaxy name: FCC219
+  velocity: 1933
+  eff_r: 161.0
+  FWHM: 4.63
+  FWHM_err: 0.070
+  beta: 2.68
+  beta_err: 0.29
+  LSF: 3.05
+  LSF_err: 0.03
+  centre: [220, 220]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[0,0,0]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})']
+  backup:  
+    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})', null]
+
+FCC249_center:
+  Distance: 22.9
+  Galaxy name: FCC249
+  velocity: 1579
+  eff_r: 9.6
+  FWHM: 4.7
+  FWHM_err: 0.13
+  beta: 1.74
+  beta_err: 0.24
+  LSF: 3.3
+  LSF_err: 0.05
+  centre: [1,1]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[107,261,7]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
+FCC255_center:
+  Distance: 19.7
+  Galaxy name: FCC255
+  velocity: 1328
+  eff_r: 13.8
+  FWHM: 3.78
+  FWHM_err: 0.05
+  beta: 2.9
+  beta_err: 0.28
+  LSF: 2.8
+  LSF_err: 0.027
+  centre: [1,1]
+  gal_mask: [1,1,1,1,0.01]
+  star_mask: [[145, 271, 20],[337, 174, 25],[123, 185, 15]]
+  my_filter: [32]
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+  
+FCC276_center:
+  Distance: 19.6
+  Galaxy name: FCC276
+  velocity: 1434
+  eff_r: 44.7
+  FWHM: 4.35
+  FWHM_err: 0.07
+  beta: 2.33
+  beta_err: 0.23
+  LSF: 3.34
+  LSF_err: 0.032
+  centre: [538, 215]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[1,1,1]]
+  my_filter: [20,40,79,85]
+  impostor_filter: [[],[12,28,38],[]]
+  interloper_filter: [67]
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+FCC277_center:
+  Distance: 20.5
+  Galaxy name: FCC277
+  velocity: 1657
+  eff_r: 12.8
+  FWHM: 4.17
+  FWHM_err: 0.08
+  beta: 2.24
+  beta_err: 0.25
+  LSF: 3.089
+  LSF_err: 0.037
+  centre: [1,1]
+  gal_mask: [0,0,0,0,0]
+  star_mask: [[160, 285, 15],[259,246,15]]
+  my_filter: []
+  impostor_filter: [[],[15,19],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
+FCC301_center:
+  Distance: 19.7
+  Galaxy name: FCC301
+  velocity: 1043
+  eff_r: 11.7
+  FWHM: 4.17
+  FWHM_err: 0.1
+  beta: 1.97
+  beta_err: 0.25
+  LSF: 3.07
+  LSF_err: 0.045
+  centre: [1,1]
+  gal_mask: [1, 1, 1, 1, 1]
+  star_mask: [[217, 305, 15],[250, 310, 15],[292, 226, 15]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+  
+FCC310_center:
+  Distance: 19.9
+  Galaxy name: FCC310
+  velocity: 1383
+  eff_r: 35.6
+  FWHM: 3.85
+  FWHM_err: 0.068
+  beta: 2.21
+  beta_err: 0.21
+  LSF: 2.91
+  LSF_err: 0.032
+  centre: [208,310]
+  gal_mask: [1,1,1,1,0.01]
+  star_mask: [[1, 1, 1]]
+  my_filter: [54]
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+FCCtest_center:
+  Distance: 20.0
+  Galaxy name: test
+  velocity: 1743
+  eff_r: 30
+  FWHM: 4.0
+  FWHM_err: 0.1
+  beta: 2.5
+  beta_err: 0.1
+  LSF: 3.0
+  LSF_err: 0.01
+  centre: [0,0]
+  gal_mask: [1,1,1,1,0.01]
+  star_mask: [[1, 1, 1]]
+  my_filter: []
+  impostor_filter: [[],[],[]]
+  interloper_filter: []
+  emissions:
+    OIII_1: [200, null, null, null]
+    OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
+
+
+
+#- lum_bol_g
+#(8244833807.294188,
+#- [lum_bol_g_upper, lum_bol_g_lower] errors
+# [10969375564.409647, 6870398151.548822],
+#- lum_bol_r 
+# 7576247683.996245,
+#- [lum_bol_r_upper, lum_bol_r_lower] errors
+# [10079852202.869057, 6313267107.670952],
+#- lum_bol_v
+# 8822952846.685028,
+#- [lum_bol_v_upper, lum_bol_v_lower] errors
+# [11738536594.484438, 7352143214.268228],
+#- mag_g
+# 12.19195877296864,
+#- mag_r
+# 11.257129365796942,
+#- mag_v
+# 11.70063088774955)
+#
+
+#FCC170
+#N PNe used:      34
+#PNLF N:          136.42742712461566
+#Distance of:     17.61469784175069 +/- 2.501251353841364
+#Distance Mod of: 31.22937598899538 +/- 0.308344676299704
