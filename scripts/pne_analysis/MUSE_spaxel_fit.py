@@ -43,7 +43,7 @@ save_sep = args.sep
 
 DIR_dict = paths(galaxy_name, loc)
 
-res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
+res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
 non_zero_index = np.squeeze(np.where(res_data[:,0] != 0.))
@@ -55,9 +55,8 @@ input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
 
-gal_vel = galaxy_data["velocity"] 
-z = gal_vel*1e3 / c 
-gal_mask = galaxy_data["gal_mask"]
+z = galaxy_info["velocity"] * 1e3 / c
+gal_mask = galaxy_info["gal_mask"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
 coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
@@ -93,7 +92,7 @@ list_of_mean = np.zeros(res_shape[0])
 spaxel_params = Parameters()
 spaxel_params.add("Amp",value=150., min=0.001)
 spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-25, max=(500677*(1+z))+25) #Starting position calculated from redshift value of galaxy.
-spaxel_params.add("FWHM", value=galaxy_data["LSF"], vary=False) # Line Spread Function
+spaxel_params.add("FWHM", value=galaxy_info["LSF"], vary=False) # Line Spread Function
 spaxel_params.add("Gauss_bkg", value=0.01)
 spaxel_params.add("Gauss_grad", value=0.0001)
 
@@ -176,26 +175,26 @@ bkg = sep.Background(A_rN_img, bw=7, bh=7, fw=3, fh=3)
 
 bkg_image = bkg.rms()
 
-gal_mask_params = galaxy_data["gal_mask"]
-star_mask_params = galaxy_data["star_mask"]
-
 Y, X = np.mgrid[:y_data, :x_data]
 
 # set up the mask parameters, as taken from the yaml file. default is [0,0,0,0,0]
 if loc == "middle" or loc == "halo":
     xe, ye, length, width, alpha = [0,0,0,0,0]
 else:
-    xe, ye, length, width, alpha = gal_mask_params
+    xe, ye, length, width, alpha = galaxy_info["gal_mask"]
 
 elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1    
 
 # mask out any known and selected stars
-star_mask = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool)
+star_mask = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,
+                    yc, rc in galaxy_info["star_mask"]], 0).astype(bool)
 
 # Use sep.extract to get the locations of sources
 objects = sep.extract(A_rN_img-bkg, thresh=2.0, clean=True, minarea=6, err=bkg.globalrms, mask=elip_mask_gal+star_mask, deblend_nthresh=4,)
-x_sep = objects["x"]
-y_sep = objects["y"]
+peak_filter = np.where(objects["peak"] < 30)
+
+x_sep = objects["x"][peak_filter]
+y_sep = objects["y"][peak_filter]
 
 positions = (x_sep, y_sep)
 apertures = CircularAperture(positions, r=4)

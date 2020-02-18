@@ -3,11 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
-from astropy.table import Table
 from astropy.io import ascii, fits
 from matplotlib.patches import Rectangle, Ellipse, Circle
-from lmfit import minimize, Minimizer, report_fit, Model, Parameters
-from MUSE_Models import PNe_spectrum_extractor, robust_sigma, Moffat
+from functions.MUSE_Models import , Moffat
+from functions.PNe_functions import robust_sigma, PNe_spectrum_extractor
 import pdb as pdb
 
 from functions.file_handling import paths

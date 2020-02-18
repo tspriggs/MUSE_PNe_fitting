@@ -2,6 +2,8 @@ from astropy.io import fits
 import numpy as np
 import yaml
 
+from functions.PNe_functions import PNe_spectrum_extractor
+
 
 def paths(galaxy_name, loc):
     """
@@ -44,17 +46,17 @@ def open_data(galaxy_name, loc, DIR_dict):
         - residual_data
         - wavelength
         - residual_shape
-        - galaxy_data
+        - galaxy_info
         - x_data
         - y_data
     """
     # Load in the residual data, in list form
     
-    # Open the yaml config file for galaxy_data
+    # Open the yaml config file for galaxy_info
     with open(DIR_dict["YAML"], "r") as yaml_data:
-        galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
+        yaml_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
         
-    galaxy_data = galaxy_info[f"{galaxy_name}_{loc}"]
+    galaxy_info = yaml_info[f"{galaxy_name}_{loc}"]
 
     # Open the residual list fits file for the selected galaxy and location
     with fits.open(DIR_dict["DATA_DIR"]+"_residuals_list.fits") as hdulist:# Path to data
@@ -68,7 +70,7 @@ def open_data(galaxy_name, loc, DIR_dict):
     x_data = residual_hdr["XAXIS"]
     y_data = residual_hdr["YAXIS"]
     
-    return residual_data, wavelength, residual_shape, x_data, y_data, galaxy_data
+    return residual_data, wavelength, residual_shape, x_data, y_data, galaxy_info
 
 
 def reconstructed_image(galaxy_name, loc):
@@ -84,13 +86,13 @@ def reconstructed_image(galaxy_name, loc):
     return data, wave, hdr
 
 
-# TODO
-def prep_impostor_files(galaxy_name):
+def prep_impostor_files(galaxy_name, DIR_dict, galaxy_info, PNe_spectra, model_spectra_list, short_wave, n_PNe, n_pixels=9):
     """
     Prepare files for impostor checks, no return, only saved files.
     
     Parameters:
         - galaxy_name - string
+        - galaxy_info - dict of configs, used for PSF params (M_FWHM, beta, etc.)
     """
     
     ############# WEIGHTED MUSE data PNe ##############
@@ -112,28 +114,27 @@ def prep_impostor_files(galaxy_name):
     
         return weighted_spec
     
-    with fits.open("/local/tspriggs/Fornax_data_cubes/"+galaxy_name+"center.fits") as raw_hdulist:
+    with fits.open(DIR_dict["RAW_DATA"]) as raw_hdulist:
         raw_data = raw_hdulist[1].data
         raw_hdr = raw_hdulist[1].header
-        raw_s = raw_hdulist[1].data.shape # (lambda, y, x)
+        raw_shape = raw_hdulist[1].data.shape # (lambda, y, x)
         full_wavelength = raw_hdr['CRVAL3']+(np.arange(raw_s[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
-        
+
+        cube_list = np.copy(raw_data).reshape(raw_shape[0], raw_shape[1]*raw_shape[2]) # (lambda, list of len y*x)
+        cube_list = np.swapaxes(cube_list, 1,0) # (list of len x*y, lambda)
+
         if len(raw_hdulist) == 3:
-            stat_list = np.copy(raw_hdulist[2].data).reshape(raw_s[0], raw_s[1]*raw_s[2])
+            stat_list = np.copy(raw_hdulist[2].data).reshape(raw_shape[0], raw_shape[1]*raw_shape[2])
             stat_list = np.swapaxes(stat_list, 1,0)
         elif len(raw_hdulist) == 2:
             stat_list = np.ones_like(cube_list)
-            
+
     
-    cube_list = np.copy(raw_data).reshape(raw_s[0], raw_s[1]*raw_s[2]) # (lambda, list of len y*x)
-    cube_list = np.swapaxes(cube_list, 1,0) # (list of len x*y, lambda)
-    
-    
-    raw_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, cube_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
+    raw_minicubes = np.array([PNe_spectrum_extractor(x, y, n_pixels, cube_list, raw_shape[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
     # stat_minicubes = np.ones_like(raw_minicubes)
-    stat_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, stat_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
+    stat_minicubes = np.array([PNe_spectrum_extractor(x, y, n_pixels, stat_list, raw_shape[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
     
-    sum_raw  = np.nansum(raw_minicubes,1)
+    sum_raw  = np.nansum(raw_minicubes, 1)
     sum_stat = np.nansum(stat_minicubes, 1)
     
     hdu_raw_minicubes = fits.PrimaryHDU(sum_raw,raw_hdr)
@@ -142,29 +143,29 @@ def prep_impostor_files(galaxy_name):
     
     raw_hdu_to_write = fits.HDUList([hdu_raw_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
     
-    raw_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_MUSE_PNe.fits", overwrite=True)
+    raw_hdu_to_write.writeto(DIR_dict["EXPORT_DIR"]+"_MUSE_PNe.fits", overwrite=True)
     print(f"{galaxy_name}_MUSE_PNe.fits file saved.")
     
     
     ##### Residual .fits file ################
     residual_hdu = fits.PrimaryHDU(PNe_spectra)
-    wavelenth_residual = fits.ImageHDU(wavelength)
+    wavelenth_residual = fits.ImageHDU(short_wave)
     resid_hdu_to_write = fits.HDUList([residual_hdu, wavelenth_residual])
-    resid_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_residuals_PNe.fits", overwrite=True)
+    resid_hdu_to_write.writeto(DIR_dict["EXPORT_DIR"]+"_residuals_PNe.fits", overwrite=True)
     print(f"{galaxy_name}_residuals_PNe.fits file saved.")
     
     
     ####### 3D model .fits file ##################
     models_hdu = fits.PrimaryHDU(model_spectra_list)
-    wavelenth_models = fits.ImageHDU(wavelength)
+    wavelenth_models = fits.ImageHDU(short_wave)
     model_hdu_to_write = fits.HDUList([models_hdu, wavelenth_models])
-    model_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_3D_models_PNe.fits", overwrite=True)
+    model_hdu_to_write.writeto(DIR_dict["EXPORT_DIR"]+"_3D_models_PNe.fits", overwrite=True)
     print(f"{galaxy_name}_residuals_PNe.fits file saved.")
     
     weighted_PNe = np.ones((n_PNe, n_pixels**2, len(full_wavelength)))  #N_PNe, spaxels, wavelength length
     
     for p in np.arange(0, n_PNe):
-        weighted_PNe[p] = PSF_weight(raw_minicubes[p], model_spectra_list[p], wavelength, n_pixels**2)
+        weighted_PNe[p] = PSF_weight(raw_minicubes[p], model_spectra_list[p], short_wave, n_pixels**2)
     
     sum_weighted_PNe = np.nansum(weighted_PNe, 1)
     
@@ -174,4 +175,4 @@ def prep_impostor_files(galaxy_name):
     weight_hdu_to_write = fits.HDUList([hdu_weighted_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
     
     weight_hdu_to_write.writeto(f"../../gist_PNe/inputData/{galaxy_name}MUSEPNeweighted.fits", overwrite=True)
-    print(f"{galaxy_name}_MUSE_PNe_weighted.fits file saved.")
+    print(f"{galaxy_name}_MUSE_PNe_weighted.fits file saved. Ready for GIST to run.")

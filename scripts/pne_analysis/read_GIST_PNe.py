@@ -7,6 +7,8 @@ from astropy.table import Table
 from matplotlib.patches import Rectangle, Ellipse, Circle
 import matplotlib.gridspec as gridspec
 
+from functions.file_handling import paths
+
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning) 
 
@@ -31,21 +33,23 @@ plt_save = args.save
 
 # Define Working directory
 if weighted == True:
-    work_dir = f"../../gist_PNe/results/{galaxy_name}MUSEPNeweighted_contamination/{galaxy_name}MUSEPNeweighted"
+    gist_dir = f"../../gist_PNe/results/{galaxy_name}MUSEPNeweighted_contamination/{galaxy_name}MUSEPNeweighted"
 else:
-    work_dir = f"../../gist_PNe/results/{galaxy_name}MUSEPNe_contamination/{galaxy_name}MUSEPNe"
-    
+    gist_dir = f"../../gist_PNe/results/{galaxy_name}MUSEPNe_contamination/{galaxy_name}MUSEPNe"
+
+DIR_dict = paths(galaxy_name, "center")
+
 # read in PNe data
-PNe_df = pd.read_csv(f"exported_data/{galaxy_name}/{galaxy_name}_PNe_df.csv")
+PNe_df = pd.read_csv(DIR_dict["EXPORT_DIR"]+"_PNe_df.csv")
 m_5007 = PNe_df["m 5007"]
 
 # Open and name the following result files
-gandalf_emission = fits.open(f"{work_dir}_gandalf-emission_SPAXEL.fits")
-gandalf_best     = fits.open(f"{work_dir}_gandalf-bestfit_SPAXEL.fits")
-gandalf_clean    = fits.open(f"{work_dir}_gandalf-cleaned_SPAXEL.fits")
-gandalf_results  = fits.open(f"{work_dir}_gandalf_SPAXEL.fits")
-AllSpectra       = fits.open(f"{work_dir}_AllSpectra.fits")
-ppxf_results     = fits.open(f"{work_dir}_ppxf.fits")
+gandalf_emission = fits.open(f"{gist_dir}_gandalf-emission_SPAXEL.fits")
+gandalf_best     = fits.open(f"{gist_dir}_gandalf-bestfit_SPAXEL.fits")
+gandalf_clean    = fits.open(f"{gist_dir}_gandalf-cleaned_SPAXEL.fits")
+gandalf_results  = fits.open(f"{gist_dir}_gandalf_SPAXEL.fits")
+AllSpectra       = fits.open(f"{gist_dir}_AllSpectra.fits")
+ppxf_results     = fits.open(f"{gist_dir}_ppxf.fits")
 lamb = np.array(AllSpectra[2].data, dtype=np.float64)
 wave = np.exp(lamb)
 # [OIII] index 12
@@ -173,7 +177,7 @@ wave = np.exp(lamb)
 ######################################### IMPOSTOR SECTION  #########################################
 #####################################################################################################
 
-
+# AMPLITUDES
 Hb_ampl     = np.array([gandalf_results[2].data[i]["Ampl"][11] for i in np.arange(len(gandalf_results[2].data))])
 OIII_ampl   = np.array([gandalf_results[2].data[i]["Ampl"][12] for i in np.arange(len(gandalf_results[2].data))])
 Ha_ampl     = np.array([gandalf_results[2].data[i]["Ampl"][17] for i in np.arange(len(gandalf_results[2].data))])
@@ -181,12 +185,13 @@ NII_ampl    = np.array([gandalf_results[2].data[i]["Ampl"][18] for i in np.arang
 SII_I_ampl  = np.array([gandalf_results[2].data[i]["Ampl"][19] for i in np.arange(len(gandalf_results[2].data))])
 SII_II_ampl = np.array([gandalf_results[2].data[i]["Ampl"][20] for i in np.arange(len(gandalf_results[2].data))])
 
-# Hb_flux     = np.array([gandalf_results[2].data[i]["Flux"][11] for i in np.arange(len(gandalf_results[2].data))])
-# OIII_flux   = np.array([gandalf_results[2].data[i]["Flux"][12] for i in np.arange(len(gandalf_results[2].data))])
-# Ha_flux     = np.array([gandalf_results[2].data[i]["Flux"][17] for i in np.arange(len(gandalf_results[2].data))])
-# NII_flux    = np.array([gandalf_results[2].data[i]["Flux"][18] for i in np.arange(len(gandalf_results[2].data))])
-# SII_I_flux  = np.array([gandalf_results[2].data[i]["Flux"][19] for i in np.arange(len(gandalf_results[2].data))])
-# SII_II_flux = np.array([gandalf_results[2].data[i]["Flux"][20] for i in np.arange(len(gandalf_results[2].data))])
+# FLUXES
+# Hb_flux     = np.array([gandalf_results[2].data[i]["Flux"][11] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
+# OIII_flux   = np.array([gandalf_results[2].data[i]["Flux"][12] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
+# Ha_flux     = np.array([gandalf_results[2].data[i]["Flux"][17] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
+# NII_flux    = np.array([gandalf_results[2].data[i]["Flux"][18] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
+# SII_I_flux  = np.array([gandalf_results[2].data[i]["Flux"][19] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
+# SII_II_flux = np.array([gandalf_results[2].data[i]["Flux"][20] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
 Hb_flux     = np.array([gandalf_results[2].data[i]["Ampl"][11]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
 OIII_flux   = np.array([gandalf_results[2].data[i]["Ampl"][12]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
 Ha_flux     = np.array([gandalf_results[2].data[i]["Ampl"][17]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
@@ -194,7 +199,7 @@ NII_flux    = np.array([gandalf_results[2].data[i]["Ampl"][18]*np.sqrt(2*np.pi)*
 SII_I_flux  = np.array([gandalf_results[2].data[i]["Ampl"][19]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
 SII_II_flux = np.array([gandalf_results[2].data[i]["Ampl"][20]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
 
-
+# SIGNAL TO NOISE (AON)
 Hb_AON     = np.array([gandalf_results[2].data[i]["AON"][11] for i in np.arange(len(gandalf_results[2].data))])
 OIII_AON   = np.array([gandalf_results[2].data[i]["AON"][12] for i in np.arange(len(gandalf_results[2].data))])
 Ha_AON     = np.array([gandalf_results[2].data[i]["AON"][17] for i in np.arange(len(gandalf_results[2].data))])
@@ -202,127 +207,170 @@ NII_AON    = np.array([gandalf_results[2].data[i]["AON"][18] for i in np.arange(
 SII_I_AON  = np.array([gandalf_results[2].data[i]["AON"][19] for i in np.arange(len(gandalf_results[2].data))])
 SII_II_AON = np.array([gandalf_results[2].data[i]["AON"][20] for i in np.arange(len(gandalf_results[2].data))])
 
-gandalf_df = pd.DataFrame(index=np.arange(0,len(PNe_df)), columns=("Hb amp","Hb flux", "Hb AON",
+# Create a dataframe called gand_df, for storing the above info.
+gand_df = pd.DataFrame(index=np.arange(0,len(PNe_df)), columns=("Hb amp","Hb flux", "Hb AON",
              "[OIII] amp", "corr [OIII] amp","[OIII] flux","corr [OIII] flux", "[OIII] AON",
              "Ha amp", "Ha flux", "Ha AON", 
              "[NII] amp", "[NII] flux", "[NII] AON",
              "[SII]I amp", "[SII]I flux", "[SII]I AON",
              "[SII]II amp", "[SII]II flux", "[SII]II AON"))
 
-gandalf_df["Hb amp"]          = Hb_ampl
-gandalf_df["Hb flux"]         = Hb_flux
-gandalf_df["Hb AON"]          = Hb_AON
-gandalf_df["[OIII] amp"]      = OIII_ampl
-gandalf_df["[OIII] flux"]     = OIII_flux
-gandalf_df["[OIII] AON"]      = OIII_AON
-gandalf_df["Ha amp"]          = Ha_ampl
-gandalf_df["Ha flux"]         = Ha_flux
-gandalf_df["Ha AON"]          = Ha_AON
-gandalf_df["[NII] amp"]       = NII_ampl
-gandalf_df["[NII] flux"]      = NII_flux
-gandalf_df["[NII] AON"]       = NII_AON
-gandalf_df["[SII]I amp"]      = SII_I_ampl
-gandalf_df["[SII]I flux"]     = SII_I_flux
-gandalf_df["[SII]I AON"]      = SII_I_AON
-gandalf_df["[SII]II amp"]     = SII_II_ampl
-gandalf_df["[SII]II flux"]    = SII_II_flux
-gandalf_df["[SII]II AON"]     = SII_II_AON
+gand_df["Hb amp"]          = Hb_ampl
+gand_df["Hb flux"]         = Hb_flux
+gand_df["Hb AON"]          = Hb_AON
+gand_df["[OIII] amp"]      = OIII_ampl
+gand_df["[OIII] flux"]     = OIII_flux
+gand_df["[OIII] AON"]      = OIII_AON
+gand_df["Ha amp"]          = Ha_ampl
+gand_df["Ha flux"]         = Ha_flux
+gand_df["Ha AON"]          = Ha_AON
+gand_df["[NII] amp"]       = NII_ampl
+gand_df["[NII] flux"]      = NII_flux
+gand_df["[NII] AON"]       = NII_AON
+gand_df["[SII]I amp"]      = SII_I_ampl
+gand_df["[SII]I flux"]     = SII_I_flux
+gand_df["[SII]I AON"]      = SII_I_AON
+gand_df["[SII]II amp"]     = SII_II_ampl
+gand_df["[SII]II flux"]    = SII_II_flux
+gand_df["[SII]II AON"]     = SII_II_AON
 
-# put m5007 values into gandalf_df
-gandalf_df["m 5007"] = m_5007
-gandalf_df["Filter"] = PNe_df["Filter"]
-gandalf_df["Filter"]="Y"
+# put m5007 values into gand_df
+gand_df["m 5007"] = m_5007
+gand_df["ID"] = PNe_df["ID"]
 
+# below is to check all sources, not just pre-filtered sources.
+# gand_df["ID"]="PN"
 
-# gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
-# dM = gal_df["dM PNLF"].loc[gal_df["Galaxy"]==galaxy_name].values
-dM = 31.229
+# Read in the distance modulus for the galaxy in question (galaxy_name)
+gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
+dM = gal_df["dM PNLF"].loc[gal_df["Galaxy"]==galaxy_name].values
+
 # set up conditions
 
+
+###########################################################################################################################
+#########################################    Ha/NII conditions    #########################################################
+###########################################################################################################################
 # First plot conditions
-# Ha or NII over 3, with Filter==Y
-HaNII_or_cond = ((gandalf_df["Ha AON"] > 3.) | (gandalf_df["[NII] AON"]>3)) & (gandalf_df["Filter"]=="Y")  
-# HaNII_or_cond = (gandalf_df["Ha AON"] > 3.) & (gandalf_df["Filter"]=="Y")  
-HaNII_and_cond = ((gandalf_df["Ha AON"] > 3.) & (gandalf_df["[NII] AON"]>3)) & (gandalf_df["Filter"]=="Y")  
-# HaNII_and_cond = (gandalf_df["Ha AON"] > 3.) & (gandalf_df["Filter"]=="Y")  
+# Ha or NII over 3, for ID's that are PN
+HaNII_or_cond = ((gand_df["Ha AON"] >= 3.) | (gand_df["[NII] AON"]>=3.)) & (gand_df["ID"]=="PN")  
 
-# ( (Ha or NII over 3), and SII over 3) and Filter==Y
-HaNII_SII_or_cond = (((gandalf_df["Ha AON"] > 3.) | (gandalf_df["[NII] AON"]>3)) & np.greater_equal((gandalf_df["[SII]I AON"]+gandalf_df["[SII]II AON"])/2, 2.5)) & (gandalf_df["Filter"]=="Y")
-# HaNII_SII_or_cond = ((gandalf_df["Ha AON"] > 3.) & np.greater_equal((gandalf_df["[SII]I AON"]+gandalf_df["[SII]II AON"])/2, 2.5)) & (gandalf_df["Filter"]=="Y")
+# Ha and NII both over 3 times the signal to noise, and ID is PN
+HaNII_and_cond = ((gand_df["Ha AON"] >= 3.) & (gand_df["[NII] AON"]>=3.)) & (gand_df["ID"]=="PN")
 
-HaNII_SII_and_cond = (((gandalf_df["Ha AON"] > 3.) & (gandalf_df["[NII] AON"]>3)) & np.greater_equal((gandalf_df["[SII]I AON"]+gandalf_df["[SII]II AON"])/2, 2.5)) & (gandalf_df["Filter"]=="Y")
-# HaNII_SII_and_cond = ((gandalf_df["Ha AON"] > 3.)  & np.greater_equal((gandalf_df["[SII]I AON"]+gandalf_df["[SII]II AON"])/2, 2.5)) & (gandalf_df["Filter"]=="Y")
+
+# Just Ha over AON of 3
+# HaNII_or_cond = (gand_df["Ha AON"] >= 3.) & (gand_df["ID"]=="PN")
+
+# Just Ha over AON of 3, but with different variable name (easy to switch over)
+# HaNII_and_cond = (gand_df["Ha AON"] > 3.) & (gand_df["ID"]=="PN")  
+
+
+###########################################################################################################################
+###################################    Ha/NII with SII filters    #########################################################
+###########################################################################################################################
+
+# ( (Ha or NII over 3), and SII over 3) and ID==PN
+HaNII_SII_or_cond = (((gand_df["Ha AON"] >= 3.) | (gand_df["[NII] AON"] >= 3.)) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"]) / 2., 2.5)) & (gand_df["ID"]=="PN")
+
+# ( (Ha and NII over 3), and SII over 3) and ID==PN
+HaNII_SII_and_cond = (((gand_df["Ha AON"] >= 3.) & (gand_df["[NII] AON"] >= 3.)) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"]) / 2., 2.5)) & (gand_df["ID"]=="PN")
+
+# Filters for just Ha and SII meeting the conditions
+# HaNII_SII_or_cond = ((gand_df["Ha AON"] > 3.) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"])/2, 2.5)) & (gand_df["ID"]=="PN")
+# HaNII_SII_and_cond = ((gand_df["Ha AON"] > 3.)  & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"])/2, 2.5)) & (gand_df["ID"]=="PN")
 
 
 ######## Filter OIII / Ha+NII vs m_5007 data #############################
-ratio_cond_or = gandalf_df["[OIII] flux"].loc[HaNII_or_cond].values / (gandalf_df["Ha flux"].loc[HaNII_or_cond].values + 1.34*gandalf_df["[NII] flux"].loc[HaNII_or_cond].values)
-ratio_cond_and = gandalf_df["[OIII] flux"].loc[HaNII_and_cond].values / (gandalf_df["Ha flux"].loc[HaNII_and_cond].values + 1.34*gandalf_df["[NII] flux"].loc[HaNII_and_cond].values)
-# ratio_cond = gandalf_df["[OIII] flux"].loc[HaNII_or_cond].values / (gandalf_df["Ha flux"].loc[HaNII_or_cond].values)
+# Flux_[OIII] / F_Ha + (1.34 * F_NII) where Ha or NII are above 3 times AON
+HaNII_ratio_cond_or = gand_df["[OIII] flux"].loc[HaNII_or_cond].values / (gand_df["Ha flux"].loc[HaNII_or_cond].values + 1.34*gand_df["[NII] flux"].loc[HaNII_or_cond].values)
 
-ratio_SII = gandalf_df["[OIII] flux"].loc[HaNII_SII_or_cond].values / (gandalf_df["Ha flux"].loc[HaNII_SII_or_cond].values + 1.34*gandalf_df["[NII] flux"].loc[HaNII_SII_or_cond].values)
-# ratio_SII = gandalf_df["[OIII] flux"].loc[HaNII_SII_or_cond].values / (gandalf_df["Ha flux"].loc[HaNII_SII_or_cond].values)
+# Flux_[OIII] / F_Ha + (1.34 * F_NII) where Ha and NII are above 3 times AON
+HaNII_ratio_cond_and = gand_df["[OIII] flux"].loc[HaNII_and_cond].values / (gand_df["Ha flux"].loc[HaNII_and_cond].values + 1.34*gand_df["[NII] flux"].loc[HaNII_and_cond].values)
 
-# NII correction
+# F_[OIII] / F_Ha + (1.34 * F_NII) where (Ha or NII are over 3 times AON), and SII AON over 3 and ID==PN
+ratio_SII = gand_df["[OIII] flux"].loc[HaNII_SII_or_cond].values / (gand_df["Ha flux"].loc[HaNII_SII_or_cond].values + 1.34*gand_df["[NII] flux"].loc[HaNII_SII_or_cond].values)
+
+
+############## NII correction ##############
+# calcualte the ratio of all fluxes, regardless of AON
 ratio = OIII_flux / (Ha_flux+ 1.34*NII_flux)
-# ratio = OIII_flux / (Ha_flux)
 
+# Make a copy of NII flux array
 F_NII_corr = np.copy(NII_flux)
-# F_NII_corr = np.copy(Ha_flux)
 
-NII_AON_lt_3 = np.where(NII_AON<3)
-# Ha_AON_lt_3 = np.where(Ha_AON<3)
+# find where NII AON is less than 3
+NII_AON_lt_3 = np.where(NII_AON < 3.)
 
+# Where NII AON is less than 3: do 3 * F_NII / AON_NII
 F_NII_corr[NII_AON_lt_3] = 3*(NII_flux[NII_AON_lt_3] / NII_AON[NII_AON_lt_3])
-# F_NII_corr[Ha_AON_lt_3] = 3*(Ha_flux[Ha_AON_lt_3] / Ha_AON[Ha_AON_lt_3])
 
-ratio_corr = np.copy(OIII_flux) / (np.copy(Ha_flux)+ 1.34*F_NII_corr)
-# ratio_corr = np.copy(OIII_flux) / (np.copy(Ha_flux))
+# Now calculate the ratio correction: F_[OIII] / F_Ha + (1.34 * corrected F_NII)
+ratio_corr = np.copy(OIII_flux) / (np.copy(Ha_flux) + 1.34 * F_NII_corr)
 
 
-# SII correction ###################
+############## SII correction ##############
+# Same as for NII, we are correcting the values of SII where SII is detected below a combined AON of 2.5, so as to estimate limits to the values.
 HaoNII = Ha_flux / NII_flux
-HaoSII = Ha_flux / (SII_I_flux+SII_II_flux)
+HaoSII = Ha_flux / (SII_I_flux + SII_II_flux)
 
-SII_I_lt_3 = np.where(SII_I_AON<2.5)
-SII_II_lt_3 = np.where(SII_II_AON<2.5)
+SII_I_lt_3 = np.where(SII_I_AON < 2.5)
+SII_II_lt_3 = np.where(SII_II_AON < 2.5)
 
 SII_I_F_corr = np.copy(SII_I_flux)
 SII_II_F_corr = np.copy(SII_II_flux)
 
-SII_I_F_corr[SII_I_lt_3] = 3*(SII_I_flux[SII_I_lt_3] / SII_I_AON[SII_I_lt_3])
-SII_II_F_corr[SII_II_lt_3] = 3*(SII_II_flux[SII_II_lt_3] / SII_II_AON[SII_II_lt_3])
+SII_I_F_corr[SII_I_lt_3] = 3 * (SII_I_flux[SII_I_lt_3] / SII_I_AON[SII_I_lt_3])
+SII_II_F_corr[SII_II_lt_3] = 3 * (SII_II_flux[SII_II_lt_3] / SII_II_AON[SII_II_lt_3])
 
 HaoSII_corr = Ha_flux / (SII_I_F_corr+SII_II_F_corr)
 
 
+################################ Filter Ha/NII vs Ha/SII data ################################
+# F_Ha / F_NII where Ha and NII are detected above AON of 3, and ID == PN
+Ha_NII = gand_df["Ha flux"].loc[HaNII_and_cond].values / gand_df["[NII] flux"].loc[HaNII_and_cond].values
 
-########## Filter Ha/NII vs Ha/SII data ################################
-Ha_NII = gandalf_df["Ha flux"].loc[HaNII_and_cond].values / gandalf_df["[NII] flux"].loc[HaNII_and_cond].values
-Ha_SII = gandalf_df["Ha flux"].loc[HaNII_and_cond].values / (gandalf_df["[SII]I flux"].loc[HaNII_and_cond].values + gandalf_df["[SII]II flux"].loc[HaNII_and_cond].values)
+# F_Ha / (F_SII I + F_SII II), where Ha and NII are detected above AON of 3, and ID == PN
+Ha_SII = gand_df["Ha flux"].loc[HaNII_and_cond].values / (gand_df["[SII]I flux"].loc[HaNII_and_cond].values + gand_df["[SII]II flux"].loc[HaNII_and_cond].values)
 
-Ha_NII_1 = gandalf_df["Ha flux"].loc[HaNII_SII_and_cond].values / gandalf_df["[NII] flux"].loc[HaNII_SII_and_cond].values
-Ha_SII_1 = gandalf_df["Ha flux"].loc[HaNII_SII_and_cond].values / (gandalf_df["[SII]I flux"].loc[HaNII_SII_and_cond].values + gandalf_df["[SII]II flux"].loc[HaNII_SII_and_cond].values)
+# F_Ha / F_NII where Ha and NII are detected above AON of 3, along with combined SII detected above 2.5, and ID == PN
+Ha_NII_1 = gand_df["Ha flux"].loc[HaNII_SII_and_cond].values / gand_df["[NII] flux"].loc[HaNII_SII_and_cond].values
+
+# F_Ha / (F_SII I + F_SII II), where Ha and NII are detected above AON of 3, along with combined SII detected above 2.5, and ID == PN
+Ha_SII_1 = gand_df["Ha flux"].loc[HaNII_SII_and_cond].values / (gand_df["[SII]I flux"].loc[HaNII_SII_and_cond].values + gand_df["[SII]II flux"].loc[HaNII_SII_and_cond].values)
+
+
+###########################################################################################################################
+#####################################   Plotting begins here   ############################################################
+###########################################################################################################################
 
 # Options and switches
-f_size = 20
-p_s = 40
-ann = args.n
+f_size = 20  # unify the font size
+p_s = 40     # unify the point size 
+ann = args.n # True or False flag for annotating the plots with numbers.
 
 fig = plt.figure(figsize=(8,10))
 ax0 = plt.subplot(2,1,1)
-plt.scatter(gandalf_df["m 5007"].loc[HaNII_or_cond].values, ratio_cond_or, c=gandalf_df["Ha AON"].loc[HaNII_or_cond], vmin=3, vmax=np.max(Ha_AON[HaNII_or_cond]), s=p_s)
+# Scatter plot of m_5007 (x axis) vs F_[OIII] / (Ha + 1.34*NII), where Ha or NII AON is greater than 3, and ID == PN
+# colorof points is set to Ha signal to noise (AON), between 3 and max value of AON_Ha
+plt.scatter(gand_df["m 5007"].loc[HaNII_or_cond].values, Ha_NII_ratio_cond_or, c=gand_df["Ha AON"].loc[HaNII_or_cond], vmin=3, vmax=np.max(Ha_AON[HaNII_or_cond]), s=p_s)
 
 
 #### NEED TO ADD IN CONDITION of Ha or NII >3
-for i in np.squeeze(np.where(HaNII_or_cond)):
-    if NII_AON[i] <3:
-        plotline1, caplines1, barlinecols1 = plt.errorbar(x=gandalf_df["m 5007"].iloc[i], y=ratio[i], yerr=np.abs(ratio[i]-ratio_corr[i]), uplims=True, c="k", alpha=0.7, elinewidth=0.8, ls="None", capsize=0)
+for i in np.where(HaNII_or_cond)[0]:
+    if NII_AON[i] < 3:
+        # for i where Ha or NII AON is greater than 3, and if AON_NII less than 3 (assumes that at least Ha is detected at AON greater than 3), then plot errorbars to indidcate corrected value range
+        # plotline1, caplines1 and barlinecols1 is used so as to customise the tips of the errorbars
+        plotline1, caplines1, barlinecols1 = plt.errorbar(x=gand_df["m 5007"].iloc[i], y=ratio[i], yerr=np.abs(ratio[i]-ratio_corr[i]), uplims=True, c="k", alpha=0.7, elinewidth=0.8, ls="None", capsize=0)
         caplines1[0].set_marker("_")
         caplines1[0].set_markersize(0)
-        
-for n, i in enumerate(gandalf_df["[OIII] flux"].loc[HaNII_or_cond].index.values):
+
+# Annotate the points on the figure
+for n, i in enumerate(gand_df["[OIII] flux"].loc[HaNII_or_cond].index.values):
     if ann == True:
-        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gandalf_df["m 5007"].iloc[i]+0.03, ratio_cond_or[n]))
+        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.03, Ha_NII_ratio_cond_or[n]))
+
+
 #Limits
 plt.xlim(-5.3+dM,-2.+dM)
 plt.ylim(0.25, 20)
@@ -333,7 +381,7 @@ cb.set_label(r"$\rm A_{H\alpha}\ / rN$", fontsize=f_size)
 ax = plt.gca()
 cb.ax.tick_params(labelsize=f_size)
 # SII encircled points
-plt.scatter(gandalf_df["m 5007"].loc[HaNII_SII_or_cond].values, ratio_SII, facecolor="None", edgecolor="k",lw=1.2, s=p_s+150, label=r"$A_{[SII]}/rN > 2.5$")
+plt.scatter(gand_df["m 5007"].loc[HaNII_SII_or_cond].values, ratio_SII, facecolor="None", edgecolor="k",lw=1.2, s=p_s+150, label=r"$A_{[SII]}/rN > 2.5$")
 plt.legend(fontsize=15)
 # Draw regions
 plt.axhline(4,c="k", ls="--", alpha=0.7)
@@ -349,7 +397,7 @@ plt.yticks([0.1, 1, 10], [0.1, 1 ,10])
 ###### Start of second plot ##########
 ax1 = plt.subplot(2,1,2)
 # Plot here
-plt.scatter(Ha_SII, Ha_NII, c=gandalf_df["[NII] AON"].loc[HaNII_and_cond], s=p_s, vmin=3, vmax=6)
+plt.scatter(Ha_SII, Ha_NII, c=gand_df["[NII] AON"].loc[HaNII_and_cond], s=p_s, vmin=3, vmax=6)
 cb = plt.colorbar(ticks=[3,4,5,6])
 cb.set_label(r"$\rm A_{[NII]}\ / rN$", fontsize=f_size)
 ax = plt.gca()
@@ -362,7 +410,7 @@ for i in zip(*np.where(HaNII_and_cond)):
     caplines1[0].set_marker("|")
     caplines1[0].set_markersize(0)
 
-for n, i in enumerate(gandalf_df["Ha flux"].loc[HaNII_and_cond].index.values):
+for n, i in enumerate(gand_df["Ha flux"].loc[HaNII_and_cond].index.values):
     if ann == True:
         plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]+0.1, Ha_NII[n]+0.08))
 # Set scale to Log for x and y, then set limtis
@@ -393,8 +441,8 @@ if plt_save == True:
     
 # Print statements for the index of imposters:
 # initial check for imposters using HII check, on objects with Ha alpha AON of 3
-m = gandalf_df["m 5007"].loc[HaNII_and_cond].values - dM
-imposters = gandalf_df.loc[HaNII_and_cond].iloc[ratio_cond_and < (10**((-0.37 * m) - 1.16))].index.values
+m = gand_df["m 5007"].loc[HaNII_and_cond].values - dM
+imposters = gand_df.loc[HaNII_and_cond].iloc[ratio_cond_and < (10**((-0.37 * m) - 1.16))].index.values
 print("First imposter check, PNe: ", imposters)
 
 HII_region_x = [10**0.5, 10**0.9]
@@ -403,7 +451,7 @@ HII_region_y = [10**0.2, 10**0.7]
 # HII_region_x[0]<Ha_SII.all()<HII_region_y[1]
 
 # SNR first check Ha/SII < 1.3
-SNR = gandalf_df.loc[HaNII_and_cond].iloc[np.where((Ha_SII<1.3) & (Ha_NII<10**0.25) & (Ha_NII>10**-0.5))].index.values
+SNR = gand_df.loc[HaNII_and_cond].iloc[np.where((Ha_SII<1.3) & (Ha_NII<10**0.25) & (Ha_NII>10**-0.5))].index.values
 HII_imposter = [i for i in imposters if i not in SNR]
 
 print(f"SNR imposters {SNR}")

@@ -1,6 +1,10 @@
 from astropy.io import fits
 import yaml
 import numpy as np
+from scipy import stats
+
+
+from functions.MUSE_Models import Gauss
 
 def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     """
@@ -51,7 +55,7 @@ def uncertainty_cube_construct(data, x_P, y_P, n_pix, x_data, wavelength):
     return array_to_fill
 
 
-def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, galaxy_data, G_bkg, G_grad):
+def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, galaxy_info, G_bkg, G_grad):
     """
     calculate the Chi2 for each fitted PN, setting data that equals zero to 1
     
@@ -63,7 +67,7 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
         - wave
         - F_xy_list
         - mean_w_list
-        - galaxy_data
+        - galaxy_info
         - G_bkg
         - G_grad
         
@@ -72,18 +76,16 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
         - redchi
         
     """
+    c = 299792458.0
+    z = galaxy_info["velocity"]*1e3 / c
+
     gauss_list, redchi, Chi_sqr = [], [], []
     for p in range(n_PNe):
         PNe_n = np.copy(PNe_spec[p])
         flux_1D = np.copy(F_xy_list[p][0])
-        A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_data["LSF"]// 2.35482)))
-        
-        def gauss(x, amp, mean, FWHM, bkg, grad):
-            stddev = FWHM/ 2.35482
-            return ((bkg + grad*x) + np.abs(amp) * np.exp(- 0.5 * (x - mean)** 2 / (stddev**2.)) +
-                    (np.abs(amp)/2.85) * np.exp(- 0.5 * (x - (mean - 47.9399*(1+z)))** 2 / (stddev**2.)))
+        A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_info["LSF"]// 2.35482)))
     
-        list_of_gauss = [gauss(wave, A, mean_w_list[p][0], galaxy_data["LSF"], G_bkg[p], G_grad[p]) for A in A_n]
+        list_of_gauss = [Gauss(wave, A, mean_w_list[p][0], galaxy_info["LSF"], G_bkg[p], G_grad[p], z) for A in A_n]
         for kk in range(len(PNe_n)):
             temp = np.copy(list_of_gauss[kk])
             idx  = np.where(PNe_n[kk] == 0.0)[0]
@@ -93,8 +95,7 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
         rN   = robust_sigma(PNe_n - list_of_gauss)
         res  = PNe_n - list_of_gauss
         Chi2 = np.sum((res**2)/(rN**2))
-        # s    = np.shape(PNe_n)
-        redchi.append(Chi2/ ((len(wave) * n_pix**2) - nvarys))
+        redchi.append(Chi2/ ((len(wave) * n_pix**2) - n_vary))
         gauss_list.append(list_of_gauss)
         Chi_sqr.append(Chi2)
     
@@ -147,98 +148,65 @@ def KS2_test(dist_1, dist_2, conf_lim):
     print("\n")
     
     return KS2_test
+ 
 
-
-
-def prep_impostor_files(galaxy_name):
+def calc_Lbol_and_mag(DIR_dict, galaxy_info, dist_mod, dM_err=[0.1,0.1]):
     """
-    Prepare files for impostor checks, no return, only saved files.
-    
+    Feature:
+
     Parameters:
-        - galaxy_name - string
+        - DIR_dict      - directory dictionary
+        - galaxy_info   - dictionary of galaxy info
+        - z             - redshfit
+        - dist_mod      - distance modulus
+        - dM_err        - list of two elements [dM err upper, dM err lower], or [dM err] 
+                            - If one number passed, then it is used for both error bounds.
+    Return:
+        - L_bol - containing 
     """
-    
-    ############# WEIGHTED MUSE data PNe ##############
-    def PSF_weight(MUSE_p, model_p, r_wls, spaxels=81):
-           
-        coeff = np.polyfit(r_wls, np.clip(model_p[0, :], -50, 50), 1) # get continuum on first spaxel, assume the same across the minicube
-        poly = np.poly1d(coeff)
-        tmp = np.copy(model_p)
-        for k in np.arange(0,spaxels):
-             tmp[k,:] = poly(r_wls)
-                
-        res_minicube_model_no_continuum = model_p - tmp # remove continuum
-        
-        # PSF weighted minicube
-        sum_model_no_continuum = np.nansum(res_minicube_model_no_continuum, 0)
-        weights = np.nansum(res_minicube_model_no_continuum, 1)
-        nweights = weights / np.nansum(weights) # spaxel weights
-        weighted_spec = np.dot(nweights, MUSE_p) # dot product of the nweights and spectra
-    
-        return weighted_spec
-    
-    with fits.open("/local/tspriggs/Fornax_data_cubes/"+galaxy_name+"center.fits") as raw_hdulist:
-        raw_data = raw_hdulist[1].data
-        raw_hdr = raw_hdulist[1].header
-        raw_s = raw_hdulist[1].data.shape # (lambda, y, x)
-        full_wavelength = raw_hdr['CRVAL3']+(np.arange(raw_s[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
-        
-        if len(raw_hdulist) == 3:
-            stat_list = np.copy(raw_hdulist[2].data).reshape(raw_s[0], raw_s[1]*raw_s[2])
-            stat_list = np.swapaxes(stat_list, 1,0)
-        elif len(raw_hdulist) == 2:
-            stat_list = np.ones_like(cube_list)
-            
-    
-    cube_list = np.copy(raw_data).reshape(raw_s[0], raw_s[1]*raw_s[2]) # (lambda, list of len y*x)
-    cube_list = np.swapaxes(cube_list, 1,0) # (list of len x*y, lambda)
-    
-    
-    raw_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, cube_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
-    # stat_minicubes = np.ones_like(raw_minicubes)
-    stat_minicubes = np.array([PNe_spectrum_extractor(x,y,n_pixels, stat_list, raw_s[2], full_wavelength) for  x,y in zip(x_PNe, y_PNe)])
-    
-    sum_raw  = np.nansum(raw_minicubes,1)
-    sum_stat = np.nansum(stat_minicubes, 1)
-    
-    hdu_raw_minicubes = fits.PrimaryHDU(sum_raw,raw_hdr)
-    hdu_stat_minicubes = fits.ImageHDU(sum_stat)
-    hdu_long_wavelength = fits.ImageHDU(full_wavelength)
-    
-    raw_hdu_to_write = fits.HDUList([hdu_raw_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
-    
-    raw_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_MUSE_PNe.fits", overwrite=True)
-    print(f"{galaxy_name}_MUSE_PNe.fits file saved.")
-    
-    
-    ##### Residual .fits file ################
-    residual_hdu = fits.PrimaryHDU(PNe_spectra)
-    wavelenth_residual = fits.ImageHDU(wavelength)
-    resid_hdu_to_write = fits.HDUList([residual_hdu, wavelenth_residual])
-    resid_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_residuals_PNe.fits", overwrite=True)
-    print(f"{galaxy_name}_residuals_PNe.fits file saved.")
-    
-    
-    ####### 3D model .fits file ##################
-    models_hdu = fits.PrimaryHDU(model_spectra_list)
-    wavelenth_models = fits.ImageHDU(wavelength)
-    model_hdu_to_write = fits.HDUList([models_hdu, wavelenth_models])
-    model_hdu_to_write.writeto(f"exported_data/{galaxy_name}/{galaxy_name}_3D_models_PNe.fits", overwrite=True)
-    print(f"{galaxy_name}_residuals_PNe.fits file saved.")
-    
-    weighted_PNe = np.ones((n_PNe, n_pixels**2, len(full_wavelength)))  #N_PNe, spaxels, wavelength length
-    
-    for p in np.arange(0, n_PNe):
-        weighted_PNe[p] = PSF_weight(raw_minicubes[p], model_spectra_list[p], wavelength, n_pixels**2)
-    
-    sum_weighted_PNe = np.nansum(weighted_PNe, 1)
-    
-    hdu_weighted_minicubes = fits.PrimaryHDU(sum_weighted_PNe, raw_hdr)
-    hdu_weighted_stat = fits.ImageHDU(np.nansum(stat_minicubes,1))
-    
-    weight_hdu_to_write = fits.HDUList([hdu_weighted_minicubes, hdu_stat_minicubes, hdu_long_wavelength])
-    
-    weight_hdu_to_write.writeto(f"../../gist_PNe/inputData/{galaxy_name}MUSEPNeweighted.fits", overwrite=True)
-    print(f"{galaxy_name}_MUSE_PNe_weighted.fits file saved.")
-    
+    c = 299792458.0
+    z = galaxy_info["velocity"]*1e3 / c
+    raw_data_cube = DIR_dict["RAW_DATA"]  # read in raw data cube
 
+    xe, ye, length, width, alpha = galaxy_info["gal_mask"]
+
+    with fits.open(DIR_dict["RAW_DATA"]) as orig_hdulist:
+        raw_data_cube = np.copy(orig_hdulist[1].data)
+        h1 = orig_hdulist[1].header
+    
+    raw_shape = np.shape(raw_data_cube)
+    
+    # Setup galaxy and star masks
+    Y, X = np.mgrid[:raw_shape[1], :raw_shape[2]]
+    elip_mask = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + \
+        (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
+
+    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc*rc for xc, yc, rc in star_mask_params], 0).astype(bool)
+
+    # Combine elip_mask and star_mask_sum to make total_mask
+    total_mask = ((np.isnan(raw_data_cube[1, :, :]) == False) & (
+        elip_mask == False) & (star_mask_sum == False))
+    indx_mask = np.where(total_mask == True)
+
+    good_spectra = np.zeros((raw_shape[0], len(indx_mask[0])))
+
+    for i, (y, x) in enumerate(zip(tqdm(indx_mask[0]), indx_mask[1])):
+        good_spectra[:, i] = raw_data_cube[:, y, x]
+
+    #for testing at sompoint --> np.nansum(raw_data_cube[:, indx_mask[0], indx_mask[1]], 1)
+
+    print("Collapsing cube now....")
+
+    gal_lin = np.nansum(good_spectra, 1)
+
+    print("Cube has been collapsed...")
+    # Check for if error range given, or single number supplied.
+    if len(dM_err) > 1:
+        L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z,
+                       vel=galaxy_info["velocity"], dist_mod=dM, dM_err=[dM_err_up, dM_err_lo])
+
+    elif len(dM_err) == 1: # if dM_err is len 1, use value for both bounds
+        L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z,
+                           vel=galaxy_info["velocity"], dist_mod=dM, dM_err=[dM_err, dM_err])
+
+    return L_bol
