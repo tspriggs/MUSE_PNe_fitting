@@ -289,7 +289,7 @@ HaNII_ratio_cond_or = gand_df["[OIII] flux"].loc[HaNII_or_cond].values / (gand_d
 HaNII_ratio_cond_and = gand_df["[OIII] flux"].loc[HaNII_and_cond].values / (gand_df["Ha flux"].loc[HaNII_and_cond].values + 1.34*gand_df["[NII] flux"].loc[HaNII_and_cond].values)
 
 # F_[OIII] / F_Ha + (1.34 * F_NII) where (Ha or NII are over 3 times AON), and SII AON over 3 and ID==PN
-ratio_SII = gand_df["[OIII] flux"].loc[HaNII_SII_or_cond].values / (gand_df["Ha flux"].loc[HaNII_SII_or_cond].values + 1.34*gand_df["[NII] flux"].loc[HaNII_SII_or_cond].values)
+HaNII_ratio_SII = gand_df["[OIII] flux"].loc[HaNII_SII_or_cond].values / (gand_df["Ha flux"].loc[HaNII_SII_or_cond].values + 1.34*gand_df["[NII] flux"].loc[HaNII_SII_or_cond].values)
 
 
 ############## NII correction ##############
@@ -344,6 +344,11 @@ Ha_SII_1 = gand_df["Ha flux"].loc[HaNII_SII_and_cond].values / (gand_df["[SII]I 
 #####################################   Plotting begins here   ############################################################
 ###########################################################################################################################
 
+
+###########################################################################################################################
+###########################################  First plot   #################################################################
+###########################################################################################################################
+
 # Options and switches
 f_size = 20  # unify the font size
 p_s = 40     # unify the point size 
@@ -353,7 +358,11 @@ fig = plt.figure(figsize=(8,10))
 ax0 = plt.subplot(2,1,1)
 # Scatter plot of m_5007 (x axis) vs F_[OIII] / (Ha + 1.34*NII), where Ha or NII AON is greater than 3, and ID == PN
 # colorof points is set to Ha signal to noise (AON), between 3 and max value of AON_Ha
-plt.scatter(gand_df["m 5007"].loc[HaNII_or_cond].values, Ha_NII_ratio_cond_or, c=gand_df["Ha AON"].loc[HaNII_or_cond], vmin=3, vmax=np.max(Ha_AON[HaNII_or_cond]), s=p_s)
+plt.scatter(gand_df["m 5007"].loc[HaNII_or_cond].values, HaNII_ratio_cond_or, c=gand_df["Ha AON"].loc[HaNII_or_cond], vmin=3, vmax=np.max(Ha_AON[HaNII_or_cond]), s=p_s)
+
+####################### Define the diagnostic limit for HII region identification
+mag_range = np.arange(-4.75, 0, 0.001) + dM
+limit = 10**((-0.37 * mag_range) - 1.16)
 
 
 #### NEED TO ADD IN CONDITION of Ha or NII >3
@@ -367,26 +376,36 @@ for i in np.where(HaNII_or_cond)[0]:
 
 # Annotate the points on the figure
 for n, i in enumerate(gand_df["[OIII] flux"].loc[HaNII_or_cond].index.values):
-    if ann == True:
-        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.03, Ha_NII_ratio_cond_or[n]))
+    # If data point is below limit, annotate the number
+    if HaNII_ratio_cond_or[n] < limit:
+        if ann == True:
+            # annotate appropriate scatter point with the correct object number ID (1 -> N). 
+            # Ths is to help identify points between the two scatter plots.
+            # here we annotate with the number, at m_5007 (x axis) + 0.03, and  F_[OIII]/(Ha+NII) (y axis).
+            plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.03, HaNII_ratio_cond_or[n]))
 
 
 #Limits
 plt.xlim(-5.3+dM,-2.+dM)
 plt.ylim(0.25, 20)
+
 # Set yscale to log and add colorbar + label
 plt.yscale("log")
+
+# colorbar settings
 cb = plt.colorbar()
 cb.set_label(r"$\rm A_{H\alpha}\ / rN$", fontsize=f_size)
 ax = plt.gca()
 cb.ax.tick_params(labelsize=f_size)
+
 # SII encircled points
-plt.scatter(gand_df["m 5007"].loc[HaNII_SII_or_cond].values, ratio_SII, facecolor="None", edgecolor="k",lw=1.2, s=p_s+150, label=r"$A_{[SII]}/rN > 2.5$")
+plt.scatter(gand_df["m 5007"].loc[HaNII_SII_or_cond].values, HaNII_ratio_SII, facecolor="None", edgecolor="k", lw=1.2, s=p_s+150, label=r"$A_{[SII]}/rN > 2.5$")
 plt.legend(fontsize=15)
-# Draw regions
-plt.axhline(4,c="k", ls="--", alpha=0.7)
-x = np.arange(-4.75, 0,0.001)
-plt.plot(x+dM, 10**((-0.37 * x) - 1.16), c="k", ls="--", alpha=0.7)
+
+# Draw limit lines; horizontal line at y=4, then using condition limit for HII regions.
+plt.axhline(4, c="k", ls="--", alpha=0.7)
+plt.plot(mag_range, limit, c="k", ls="--", alpha=0.7)
+
 # Labels
 plt.xlabel(r"$\rm m_{5007}$", fontsize=f_size)
 plt.ylabel(r"$\rm [OIII] \ / \ ([H\alpha + [NII])$", fontsize=f_size)
@@ -394,7 +413,13 @@ plt.tick_params(labelsize = 18)
 plt.yticks([0.1, 1, 10], [0.1, 1 ,10])
 
 
-###### Start of second plot ##########
+
+
+###########################################################################################################################
+###########################################  Second plot   ################################################################
+###########################################################################################################################
+
+
 ax1 = plt.subplot(2,1,2)
 # Plot here
 plt.scatter(Ha_SII, Ha_NII, c=gand_df["[NII] AON"].loc[HaNII_and_cond], s=p_s, vmin=3, vmax=6)
@@ -442,7 +467,7 @@ if plt_save == True:
 # Print statements for the index of imposters:
 # initial check for imposters using HII check, on objects with Ha alpha AON of 3
 m = gand_df["m 5007"].loc[HaNII_and_cond].values - dM
-imposters = gand_df.loc[HaNII_and_cond].iloc[ratio_cond_and < (10**((-0.37 * m) - 1.16))].index.values
+imposters = gand_df.loc[HaNII_and_cond].iloc[HaNII_ratio_cond_and < (10**((-0.37 * m) - 1.16))].index.values
 print("First imposter check, PNe: ", imposters)
 
 HII_region_x = [10**0.5, 10**0.9]
