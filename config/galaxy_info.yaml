@@ -132,17 +132,17 @@ FCC167_center:
   Galaxy name: FCC167
   velocity: 1878
   eff_r: 56.4
-  FWHM: 3.67
-  FWHM_err: 0.083
-  beta: 2.22
-  beta_err: 0.25
-  LSF: 3.15
-  LSF_err: 0.05
+  FWHM: 3.69
+  FWHM_err: 0.07
+  beta: 2.15
+  beta_err: 0.21
+  LSF: 3.2
+  LSF_err: 0.04
   centre: [1,1]
   gal_mask: [237,195,130,35,0.16]
   star_mask: [[1,1,1]]
-  over_lum: [24]
-  impostor_filter: [[8,14,23,30],[72],[]]
+  over_lum: [22]
+  impostor_filter: [[13,21,27,67],[71],[]]
   interloper_filter: []
   emissions:
     OIII_1: [200, null, null]
@@ -329,18 +329,18 @@ FCC219_center:
   Galaxy name: FCC219
   velocity: 1933
   eff_r: 161.0
-  FWHM: 4.09
-  FWHM_err: 0.07
-  beta: 3.52
-  beta_err: 0.55
-  LSF: 3.07
+  FWHM: 4.07
+  FWHM_err: 0.06
+  beta: 3.37
+  beta_err: 0.43
+  LSF: 3.03
   LSF_err: 0.03
   centre: [220, 220]
   gal_mask: [195,50,40,40,0.0]
   gal_mask_bkg: [195,73,150,85,0.0]
   star_mask: [[299,153,7]]
-  over_lum: [0]
-  impostor_filter: [[38], [], [4,14,39,40]]
+  over_lum: []
+  impostor_filter: [[14,33, 35], [4,6,32,34,], []]
   interloper_filter: []
   emissions:
     OIII_1: [200, null, null]

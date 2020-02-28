@@ -264,9 +264,9 @@ def transmission(lamb, spectra, band):
     spectra. """
 
     if (band =="r") | (band == "g"):
-        file = np.loadtxt(f"Paranal_OmegaCAM.{band}_SDSS.dat") # PUT HERE THE PATH TO YOUR FILTER
+        file = np.loadtxt(f"config/Paranal_OmegaCAM.{band}_SDSS.dat") # PUT HERE THE PATH TO YOUR FILTER
     else:
-        file = np.loadtxt(f"Paranal_OmegaCAM.{band}.dat")
+        file = np.loadtxt(f"config/Paranal_OmegaCAM.{band}.dat")
     # Getting the response function for different wavelenghts
     l_band, response_band = file[:,0], file[:,1]
     

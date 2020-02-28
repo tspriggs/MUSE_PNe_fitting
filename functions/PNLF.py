@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from astropy.io import ascii, fits
 from matplotlib.patches import Rectangle, Ellipse, Circle
-from functions.MUSE_Models import , Moffat
+from functions.MUSE_Models import Moffat
 from functions.PNe_functions import robust_sigma, PNe_spectrum_extractor
+from functions.file_handling import open_data
 import pdb as pdb
 
 from functions.file_handling import paths
@@ -73,19 +74,22 @@ def KS2_test(dist_1, dist_2, conf_lim):
 
 
 
-def completeness(galaxy, loc, DIR_dict, mag, params, Dist, image, peak, gal_mask_params, z, star_mask_params, c1=0.307):
+def completeness(galaxy, loc, DIR_dict, mag, params, dM, image, peak, n_pixels, c1=0.307):
        
     #load up data
-    res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy, loc, DIR_dict)
+    res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy, loc, DIR_dict)
 
-    rN = np.array([robust_sigma(res_data[i]) for i in range(len(hdulist[0].data))])
+    c = 299792458.0
+    z = galaxy_info["velocity"]*1e3 / c
+    
+    rN = np.array([robust_sigma(res_data[i]) for i in range(len(res_data))])
     Noise_map  = rN.reshape(y_data, x_data)
 
     # mask out regions
-    xe, ye, length, width, alpha = gal_mask_params #galaxy_data["gal_mask"]
+    xe, ye, length, width, alpha = galaxy_info["gal_mask"]
     Y, X = np.mgrid[:y_data, :x_data]
     elip_mask_gal = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
-    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in star_mask_params],0).astype(bool) # galaxy_data["star_mask"]
+    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc**2 for xc,yc,rc in galaxy_info["star_mask"]],0).astype(bool) # galaxy_data["star_mask"]
     mask_indx = np.array(np.where((elip_mask_gal+star_mask_sum)==True))
     # End of masking
     
@@ -94,7 +98,6 @@ def completeness(galaxy, loc, DIR_dict, mag, params, Dist, image, peak, gal_mask
     image[image<0] = 0 # iamge data: set any values that are less than 0, equal to 0.
         
     # Construct the PNe FOV coordinate grid for use when fitting PNe.
-    n_pixels = 9
     coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
     x_fit = np.array([item[0] for item in coordinates])
     y_fit = np.array([item[1] for item in coordinates])
@@ -102,7 +105,6 @@ def completeness(galaxy, loc, DIR_dict, mag, params, Dist, image, peak, gal_mask
     # Setup range of Absolute Magnitudes to be converted to 1D max A values
 
     Abs_M = np.arange(-4.52,0.04,0.1)
-    dM = 5. * np.log10(Dist) + 25
 
     app_m = Abs_M + dM
 #     app_m = np.arange(np.min(mag), 30.0, 0.1)

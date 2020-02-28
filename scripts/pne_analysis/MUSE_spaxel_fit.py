@@ -1,24 +1,19 @@
-import os
-import sys
 import sep
 import yaml
 import lmfit
 import argparse
-import scipy as sp
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
-from scipy import stats
-from scipy.stats import norm
 from astropy.table import Table
 from astropy.io import ascii, fits
 from photutils import CircularAperture
 from astropy.wcs import WCS, utils, wcs
 from astropy.coordinates import SkyCoord
-from matplotlib.patches import Rectangle, Ellipse, Circle
-from lmfit import minimize, Minimizer, report_fit, Model, Parameters
+from matplotlib.patches import Ellipse
+from lmfit import minimize, Minimizer, Parameters
 
 # Load in local functions
 from functions.MUSE_Models import spaxel_by_spaxel
@@ -100,9 +95,11 @@ spaxel_params.add("Gauss_grad", value=0.0001)
 if fit_spaxel == True:
     for j,i in tqdm(enumerate(non_zero_index), total=len(non_zero_index)):
         #progbar(j, len(non_zero_index), 40)
-        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data[i], input_errors[i], i, z, data_residuals), nan_policy="propagate")
+        get_data_residuals = []
+        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data[i], input_errors[i], i, z), nan_policy="propagate")
         gauss_A[i] = fit_results.params["Amp"].value
         obj_residuals[i] = fit_results.residual
+        data_residuals[i] = fit_results.residual * input_errors[i]
         g_bkg[i]  = fit_results.params["Gauss_bkg"].value
         g_grad[i] = fit_results.params["Gauss_grad"].value
         
@@ -115,7 +112,7 @@ if fit_spaxel == True:
 #     np.save(f"{DIR_dict["EXPORT_DIR"]}_A_rN", A_rN)
     np.save(DIR_dict["EXPORT_DIR"]+"_gauss_A", gauss_A)
     np.save(DIR_dict["EXPORT_DIR"]+"_gauss_F", gauss_F)
-    np.save(DIR_dict["EXPORT_DIR"]+"_rN", list_of_rN)
+    np.save(DIR_dict["EXPORT_DIR"]+"_A_rN", A_rN)
 
     # save the data and obj res in fits file format to us memmapping.
     hdu_data_res = fits.PrimaryHDU(data_residuals)

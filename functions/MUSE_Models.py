@@ -31,7 +31,7 @@ def PNe_3D_fitter(params, lam, x_2D, y_2D, data, emission_dict):
     wave_list = [params["wave_{}".format(em)] for em in emission_dict]
     G_bkg = params["Gauss_bkg"]
     G_grad = params["Gauss_grad"]
-    G_curve = params["Gauss_curve"]
+    #G_curve = params["Gauss_curve"]
           
     # Use Moffat function to return array of fluxes for each emission line's amplitude.
     flux_xy = np.array([Moffat(A, M_FWHM, beta, x_0, y_0, x_2D, y_2D) for A in amp_2D_list])
@@ -43,7 +43,7 @@ def PNe_3D_fitter(params, lam, x_2D, y_2D, data, emission_dict):
     amp_xy = np.array([F / (np.sqrt(2*np.pi) * gauss_std) for F in flux_xy])
 
     def gauss(Amp_1D, wave):
-        return np.array([(G_bkg + G_grad*lam + G_curve*(lam*lam)) + A * np.exp(- 0.5 * (lam - wave)** 2 / gauss_std**2.) for A in Amp_1D])
+        return np.array([(G_bkg + G_grad*lam) + A * np.exp(- 0.5 * (lam - wave)** 2 / gauss_std**2.) for A in Amp_1D])
 
     model_spectra = np.sum(np.array([gauss(A, w) for A,w in zip(amp_xy, wave_list)]),0) # sum up each emission cube to construct integrated model.
     
@@ -72,7 +72,7 @@ def PSF_residuals_3D(PSF_params, lam, x_2D, y_2D, data, err, z):
 
         A_OIII_xy = ((F_OIII_xy) / (np.sqrt(2*np.pi) * Gauss_std))
 
-        model_spectra = [Gauss(lam, Amp, wave, FWHM, bkg, grad, z) for Amp in A_OIII_xy]
+        model_spectra = [Gauss(lam, Amp, wave, g_LSF, bkg, grad, z) for Amp in A_OIII_xy]
         #(Gauss_bkg + Gauss_grad * lam) + [(Amp * np.exp(- 0.5 * (lam - wave)** 2 / Gauss_std**2.) +
         #     (Amp/3) * np.exp(- 0.5 * (lam - (wave - 47.9399*(1+z)))** 2 / Gauss_std**2.))
         return model_spectra
@@ -94,7 +94,7 @@ def PSF_residuals_3D(PSF_params, lam, x_2D, y_2D, data, err, z):
         return resid["resid_000"]
 
 
-def spaxel_by_spaxel(params, lam, data, error, spec_num, z, data_residuals):
+def spaxel_by_spaxel(params, lam, data, error, spec_num, z):
     """
     Using a Gaussian double peaked model, fit the [OIII] lines at 4959 and 5007 Angstrom, found within Stellar continuum subtracted spectra, from MUSE.
     Inputs:
@@ -120,7 +120,7 @@ def spaxel_by_spaxel(params, lam, data, error, spec_num, z, data_residuals):
     model = Gauss(lam, amp, mean, FWHM, bkg, grad, z)
 
     # Saves both the Residual noise level of the fit, alongside the 'data residual' (data-model) array from the fit.
-    data_residuals[spec_num] = data - model
+#     data_residuals.append(data - model)
 
     return (data - model) / error
 

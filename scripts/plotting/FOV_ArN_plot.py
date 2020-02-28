@@ -7,21 +7,29 @@ from astropy.io import ascii, fits
 from astropy.wcs import WCS, utils, wcs
 from astropy.coordinates import SkyCoord
 from matplotlib.patches import Rectangle, Ellipse, Circle
+from matplotlib.lines import Line2D
+
+from functions.file_handling import paths, open_data, prep_impostor_files
 
 # Setup for argparse
 my_parser = argparse.ArgumentParser()
 
 my_parser.add_argument('--galaxy', action='store', type=str, required=True)
 my_parser.add_argument("--loc",    action="store", type=str, required=True)
+my_parser.add_argument("--ann", action="store_true", default=False)
 my_parser.add_argument("--save", action="store_true", default=False)
+my_parser.add_argument("--matched", action="store", nargs="+" , type=int, default=[])
 args = my_parser.parse_args()
 
 # Define galaxy name
 galaxy_name = args.galaxy   # galaxy name, format of FCC000
 loc = args.loc              # MUSE pointing loc: center, middle, halo
+ann = args.ann              # Annotate sources with numbers
 save_plot = args.save       # save plots
+matched = args.matched
 
-from functions.file_handling import paths, open_data, prep_impostor_files
+
+
 
 DIR_dict = paths(galaxy_name, loc)
 
@@ -36,14 +44,16 @@ A_rN_plot = np.load(DIR_dict["EXPORT_DIR"]+"_A_rN_cen.npy")
 A_rN_plot_shape = A_rN_plot.reshape(y_data, x_data)
 
 # Get WCS coordinates
-with fits.open(DIR_dict["RAW_DAT"]) as hdu_wcs:
+with fits.open(DIR_dict["RAW_DATA"]) as hdu_wcs:
     hdr_wcs = hdu_wcs[1].header
     wcs_obj = WCS(hdr_wcs, naxis=2)
 
 plt.figure(figsize=(15,15))
 plt.axes(projection=wcs_obj)
 plt.imshow(A_rN_plot_shape, origin="lower", cmap="CMRmap_r",  vmin=1.5, vmax=8)
+
 ax = plt.gca()
+
 RA = ax.coords[0]
 DEC = ax.coords[1]
 
@@ -61,9 +71,9 @@ plt.tick_params(labelsize = 22)
 Y, X = np.mgrid[:y_data, :x_data]
 xe, ye, length, width, alpha = galaxy_info["gal_mask"]
 
-# if (galaxy_name=="FCC219") & (loc=="center"):
-#     plt.ylim(0,440)
-#     plt.xlim(0,440);
+if (galaxy_name=="FCC219") & (loc=="center"):
+    plt.ylim(0,440)
+    plt.xlim(0,440);
 # if (galaxy_name=="FCC219") & (loc=="halo"):
 #     plt.ylim(350,)
 # #     plt.xlim(440,);
@@ -93,19 +103,28 @@ ax.add_artist(elip_gal)
 for star in galaxy_info["star_mask"]:
     ax.add_artist(Circle((star[0], star[1]), radius=star[2], fill=False, color="grey", ls="--"))
 
+# plt.gca()
+PN_x_y_list = x_y_list[PNe_df.loc[PNe_df["ID"]=="PN"].index.values]
+ax.scatter(PN_x_y_list[:,0], PN_x_y_list[:,1], facecolor="None", edgecolor="k", lw=1.2, s=250, label="PNe")
+
+if len(PNe_df.loc[PNe_df["ID"]=="OvLu"].index.values) >=1:
+    OvLu_x_y_list = x_y_list[PNe_df.loc[PNe_df["ID"]=="OvLu"].index.values]
+    ax.scatter(OvLu_x_y_list[:,0], OvLu_x_y_list[:,1], marker="s", facecolor="None", edgecolor="k", lw=1.2, s=250, label="Over-luminous object")
+
+if len(matched) > 0:
+    matched_x_y_list = x_y_list[matched]
+    ax.scatter(matched_x_y_list[:,0], matched_x_y_list[:,1], marker="s", facecolor="None", edgecolor="blue", lw=1.2, s=350, label="Literature matched PNe")
+
+# not_PNe_x_y_list = x_y_list[PNe_df.loc[PNe_df["ID"]=="-"].index.values]
+# ax.scatter(not_PNe_x_y_list[:,0], not_PNe_x_y_list[:,1], facecolor="None", edgecolor="r", lw=1.2, s=200, label="filtered-out objects")
+
+plt.legend(loc=2, fontsize=15, labelspacing=1.0)
 
 for i, item in enumerate(x_y_list):
-    if PNe_df.iloc[i].ID == "PN": # If PN, use black circle
-        ax = plt.gca()
-        circ = plt.Circle((item[0], item[1]), 5, color="black", lw=1.2, fill=False)
-        ax.add_artist(circ)
+    if (galaxy_name == "FCC219") & (i == 61):
+        ax.annotate(i, (item[0]+9, item[1]-2), color="black", size=15)
+    if ann == True:
         ax.annotate(i, (item[0]+6, item[1]-2), color="black", size=15)
-    if PNe_df.iloc[i].ID == "OvLu":
-        ax.plt.gca()
-        rect = plt.Rectangle((item[0], item[1]), 7,7, color="black", fill=False)
-        ax.add_artist(rect)
-
-plt.legend((circ, rect), ("PNe", "Over-luminous"))
 
 # Plot arrows
 plt.arrow(400,380, 0,30, head_width=5, width=0.5, color="k")

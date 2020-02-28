@@ -253,10 +253,10 @@ dM = gal_df["dM PNLF"].loc[gal_df["Galaxy"]==galaxy_name].values
 ###########################################################################################################################
 # First plot conditions
 # Ha or NII over 3, for ID's that are PN
-HaNII_or_cond = ((gand_df["Ha AON"] >= 3.) | (gand_df["[NII] AON"]>=3.)) & (gand_df["ID"]=="PN")  
+HaNII_or_cond = ((gand_df["Ha AON"] >= 3.) | (gand_df["[NII] AON"]>=3.)) & (gand_df["ID"]!="-")  
 
 # Ha and NII both over 3 times the signal to noise, and ID is PN
-HaNII_and_cond = ((gand_df["Ha AON"] >= 3.) & (gand_df["[NII] AON"]>=3.)) & (gand_df["ID"]=="PN")
+HaNII_and_cond = ((gand_df["Ha AON"] >= 3.) & (gand_df["[NII] AON"]>=3.)) & (gand_df["ID"]!="-")
 
 
 # Just Ha over AON of 3
@@ -271,10 +271,10 @@ HaNII_and_cond = ((gand_df["Ha AON"] >= 3.) & (gand_df["[NII] AON"]>=3.)) & (gan
 ###########################################################################################################################
 
 # ( (Ha or NII over 3), and SII over 3) and ID==PN
-HaNII_SII_or_cond = (((gand_df["Ha AON"] >= 3.) | (gand_df["[NII] AON"] >= 3.)) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"]) / 2., 2.5)) & (gand_df["ID"]=="PN")
+HaNII_SII_or_cond = (((gand_df["Ha AON"] >= 3.) | (gand_df["[NII] AON"] >= 3.)) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"]) / 2., 2.5)) & (gand_df["ID"]!="-")
 
 # ( (Ha and NII over 3), and SII over 3) and ID==PN
-HaNII_SII_and_cond = (((gand_df["Ha AON"] >= 3.) & (gand_df["[NII] AON"] >= 3.)) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"]) / 2., 2.5)) & (gand_df["ID"]=="PN")
+HaNII_SII_and_cond = (((gand_df["Ha AON"] >= 3.) & (gand_df["[NII] AON"] >= 3.)) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"]) / 2., 2.5)) & (gand_df["ID"]!="-")
 
 # Filters for just Ha and SII meeting the conditions
 # HaNII_SII_or_cond = ((gand_df["Ha AON"] > 3.) & np.greater_equal((gand_df["[SII]I AON"] + gand_df["[SII]II AON"])/2, 2.5)) & (gand_df["ID"]=="PN")
@@ -340,14 +340,18 @@ Ha_NII_1 = gand_df["Ha flux"].loc[HaNII_SII_and_cond].values / gand_df["[NII] fl
 Ha_SII_1 = gand_df["Ha flux"].loc[HaNII_SII_and_cond].values / (gand_df["[SII]I flux"].loc[HaNII_SII_and_cond].values + gand_df["[SII]II flux"].loc[HaNII_SII_and_cond].values)
 
 
-###########################################################################################################################
-#####################################   Plotting begins here   ############################################################
-###########################################################################################################################
+################################################################################################
+###########################   Plotting begins here   ###########################################
+################################################################################################
 
 
-###########################################################################################################################
-###########################################  First plot   #################################################################
-###########################################################################################################################
+############# Define the diagnostic limit for HII region identification ########################
+mag_range = np.arange(-4.75, 0, 0.001)
+limit = 10**((-0.37 * mag_range) - 1.16)
+
+################################################################################################
+################################  First plot   #################################################
+################################################################################################
 
 # Options and switches
 f_size = 20  # unify the font size
@@ -360,15 +364,12 @@ ax0 = plt.subplot(2,1,1)
 # colorof points is set to Ha signal to noise (AON), between 3 and max value of AON_Ha
 plt.scatter(gand_df["m 5007"].loc[HaNII_or_cond].values, HaNII_ratio_cond_or, c=gand_df["Ha AON"].loc[HaNII_or_cond], vmin=3, vmax=np.max(Ha_AON[HaNII_or_cond]), s=p_s)
 
-####################### Define the diagnostic limit for HII region identification
-mag_range = np.arange(-4.75, 0, 0.001) + dM
-limit = 10**((-0.37 * mag_range) - 1.16)
-
 
 #### NEED TO ADD IN CONDITION of Ha or NII >3
 for i in np.where(HaNII_or_cond)[0]:
     if NII_AON[i] < 3:
-        # for i where Ha or NII AON is greater than 3, and if AON_NII less than 3 (assumes that at least Ha is detected at AON greater than 3), then plot errorbars to indidcate corrected value range
+        # for i where Ha or NII AON is greater than 3, and if AON_NII less than 3 (assumes that at least Ha is detected at AON greater than 3), 
+        # then plot errorbars to indidcate corrected value range.
         # plotline1, caplines1 and barlinecols1 is used so as to customise the tips of the errorbars
         plotline1, caplines1, barlinecols1 = plt.errorbar(x=gand_df["m 5007"].iloc[i], y=ratio[i], yerr=np.abs(ratio[i]-ratio_corr[i]), uplims=True, c="k", alpha=0.7, elinewidth=0.8, ls="None", capsize=0)
         caplines1[0].set_marker("_")
@@ -377,12 +378,23 @@ for i in np.where(HaNII_or_cond)[0]:
 # Annotate the points on the figure
 for n, i in enumerate(gand_df["[OIII] flux"].loc[HaNII_or_cond].index.values):
     # If data point is below limit, annotate the number
-    if HaNII_ratio_cond_or[n] < limit:
+    if (galaxy_name == "FCC219") & (i in [52,53,54,63]):
+        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]-0.15, HaNII_ratio_cond_or[n]-0.35), c="r", )
+    elif (galaxy_name == "FCC167") & (i in [46,69]):
+        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]-0.15, HaNII_ratio_cond_or[n]-0.35), c="r", )
+    if HaNII_ratio_cond_or[n] < 10**((-0.37 * (gand_df["m 5007"].iloc[i]-dM)) - 1.16):
         if ann == True:
             # annotate appropriate scatter point with the correct object number ID (1 -> N). 
             # Ths is to help identify points between the two scatter plots.
             # here we annotate with the number, at m_5007 (x axis) + 0.03, and  F_[OIII]/(Ha+NII) (y axis).
-            plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.03, HaNII_ratio_cond_or[n]))
+            if i == 35:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.02, HaNII_ratio_cond_or[n]-0.12))
+            elif i == 6:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]-0.1, HaNII_ratio_cond_or[n]))
+            elif i == 32:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.05, HaNII_ratio_cond_or[n]-0.1))
+            else:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.05, HaNII_ratio_cond_or[n]))
 
 
 #Limits
@@ -404,7 +416,7 @@ plt.legend(fontsize=15)
 
 # Draw limit lines; horizontal line at y=4, then using condition limit for HII regions.
 plt.axhline(4, c="k", ls="--", alpha=0.7)
-plt.plot(mag_range, limit, c="k", ls="--", alpha=0.7)
+plt.plot(mag_range+dM, limit, c="k", ls="--", alpha=0.7)
 
 # Labels
 plt.xlabel(r"$\rm m_{5007}$", fontsize=f_size)
@@ -415,29 +427,56 @@ plt.yticks([0.1, 1, 10], [0.1, 1 ,10])
 
 
 
-###########################################################################################################################
-###########################################  Second plot   ################################################################
-###########################################################################################################################
+########################################################################################
+################################  Second plot   ########################################
+########################################################################################
 
 
 ax1 = plt.subplot(2,1,2)
-# Plot here
-plt.scatter(Ha_SII, Ha_NII, c=gand_df["[NII] AON"].loc[HaNII_and_cond], s=p_s, vmin=3, vmax=6)
+
+# Plot Ha / SII (x axis) against Ha / NII, scatter point colour scale is set to AON of NII, where Ha and NII AON is above 3. colorbar bar ranges from 3 to 6
+plt.scatter(Ha_SII, Ha_NII, c=gand_df["[NII] AON"].loc[HaNII_and_cond], s=p_s, vmin=3, vmax=6, edgecolors="k", lw=0.8)
+
+# Plot the colorbar, setting the ticks, labels and label size
 cb = plt.colorbar(ticks=[3,4,5,6])
 cb.set_label(r"$\rm A_{[NII]}\ / rN$", fontsize=f_size)
 ax = plt.gca()
 cb.ax.tick_params(labelsize=f_size)
-plt.scatter(Ha_SII_1, Ha_NII_1, s=p_s+150, facecolors="None", edgecolors="k",lw=1.2)
 
+# Circle scatter points that have SII above 2.5, along with AON of Ha and NII both above 3
+plt.scatter(Ha_SII_1, Ha_NII_1, s=p_s+150, facecolors="None", edgecolors="k", lw=1.2)
+
+# For objects where Ha and NII are detected above AON of 3
+# Where either of the SII lines is below AON of 3, plot a onesided error bar to indicate potential range of values.
 for i in zip(*np.where(HaNII_and_cond)):
     if (SII_I_AON[i] <3) | (SII_II_AON[i]<3):
         plotline1, caplines1, barlinecols1 = plt.errorbar(x=HaoSII[i], y=HaoNII[i], xerr=np.abs(HaoSII_corr[i]-HaoSII[i]), c="k", xuplims=True ,alpha=0.7, elinewidth=0.8, ls="None", capsize=0)
     caplines1[0].set_marker("|")
     caplines1[0].set_markersize(0)
 
+# if ann arg is True, annotate the plot with the ID number
 for n, i in enumerate(gand_df["Ha flux"].loc[HaNII_and_cond].index.values):
     if ann == True:
-        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]+0.1, Ha_NII[n]+0.08))
+        if galaxy_name == "FCC167":
+            if i == 27:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]-0.1, Ha_NII[n]-0.15))
+            elif i == 13:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]+0.06, Ha_NII[n]+0.14))
+            elif i == 67:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]-0.1, Ha_NII[n]-0.15))
+            elif i == 21:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]-0.16, Ha_NII[n]+0.12))
+            else:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]-0.1, Ha_NII[n]+0.12))
+        if galaxy_name == "FCC219":
+            if i == 54:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]-0.4, Ha_NII[n]-0.32))
+            elif i == 34:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]-0.1, Ha_NII[n]+0.2))
+            else:
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (Ha_SII[n]-0.1, Ha_NII[n]+0.12))
+            
+        
 # Set scale to Log for x and y, then set limtis
 plt.xscale("log")
 plt.yscale("log")
@@ -445,24 +484,36 @@ plt.ylim(0.1,10)
 plt.xlim(0.1,10**1.5)
 # plt.colorbar()
 
-# Draw out the HII region and SNR regions
+# Draw out the HII region
 plt.plot(np.power(10, [0.5,0.9,0.9,0.5,0.5]), np.power(10, [0.2,0.2,0.7,0.7,0.2]), c="k", alpha=0.8, lw=0.8)
+# Draw out the SNR region
 plt.plot(np.power(10, [-0.1,0.3,0.3,0.1,0.1,-0.1,-0.1]),np.power(10,[0.05,0.25,0.05,-0.05,-0.5,-0.5,0.05]), c="k", alpha=0.8, lw=0.8)
 
+# Draw line for condition of x axis of 1.3, objects to the left of this line, and reside close to the SNR region are considered SNR
 plt.axvline(1.3, c="k", alpha=0.5, ls="--", lw=0.8)
+
 # Annotate the regions
 plt.annotate("HII", (4.2,6), fontsize=f_size)
 plt.annotate("SNR", (0.78, 0.21), fontsize=f_size)
+
+# Change the size and intervals of the axis ticks
 plt.tick_params(labelsize = 18)
 plt.xticks([0.1, 1, 10], [0.1, 1, 10])
 plt.yticks([0.1, 1, 10], [0.1, 1 ,10])
 
+# Label x and y axis
 plt.xlabel(r"$\rm H\alpha \ / \ [SII]$", fontsize=f_size)
 plt.ylabel(r"$\rm H\alpha \ / \ [NII]$", fontsize=f_size)
 
 
 if plt_save == True:
     plt.savefig(f"Plots/{galaxy_name}_contamination_test.pdf", bbox_inches='tight')
+
+
+###########################################################################################################################
+#########################################   End of plotting   #############################################################
+###########################################################################################################################
+    
     
 # Print statements for the index of imposters:
 # initial check for imposters using HII check, on objects with Ha alpha AON of 3
@@ -485,12 +536,12 @@ print(f"HII imposters {HII_imposter}")
 
 # Plot out brightest PNe with filter Y
 
-p = int(PNe_df.loc[PNe_df["Filter"]=="Y"].nsmallest(1, "m 5007").index.values)
+p = int(PNe_df.loc[PNe_df["ID"]=="PN"].nsmallest(1, "m 5007").index.values)
 
 
 
 
-def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fig=False):
+def emission_plot_maker(obj_n, obj_t, top_plt_y_range, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fig=False):
     ind_OIII = [np.argmin(abs(wave-4850)), np.argmin(abs(wave-5100))]
     ind_Ha   = [np.argmin(abs(wave-6500)), np.argmin(abs(wave-6750))]
     
@@ -498,11 +549,12 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
     gs = fig.add_gridspec(3, 2)
     
     f_ax1 = fig.add_subplot(gs[0, :]) # data, stellar and best-fit plots
+    f_ax1.set_title(f"{obj_t}, number {obj_n}", fontsize=f_size)
     f_ax1.plot(wave, AllSpectra[1].data[obj_n][0], c="k", lw=1, alpha=0.8, label="data")
     f_ax1.plot(wave, gandalf_best[1].data[obj_n][0], c="g", lw=1.1, label="best fit", )
     f_ax1.plot(wave, gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0], c="r", lw=0.7,label="stellar")
     f_ax1.set_xlim(min(wave)-20, max(wave)+20)
-    f_ax1.set_ylim(0,)
+    f_ax1.set_ylim(top_plt_y_range[0], top_plt_y_range[1])
     f_ax1.set_xlabel(r"Wavelength $(\AA)$", fontsize=f_size)
     f_ax1.set_ylabel("Flux Density", fontsize=f_size)
     f_ax1.tick_params(axis="both", labelsize=f_size )
@@ -550,7 +602,7 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
     
     f_ax4.annotate("[NII]", (6590,1000+shift), fontsize=12)
     f_ax4.annotate(r"$H\alpha$", (6567, 1000+shift), fontsize=12)
-    f_ax4.annotate("[SII]", (6715, 1500+shift), fontsize=12)
+    f_ax4.annotate("[SII]", (6715, 1000+shift), fontsize=12)
     
     if plt_save == True:
         plt.savefig(f"Plots/{galaxy_name}_{obj_t}_gandalf_spec.pdf", bbox_inches='tight')
@@ -558,12 +610,18 @@ def emission_plot_maker(obj_n, obj_t, sub_OIII=2e4, sub_Ha=2e4, shift=0, save_fi
 
         
 # PNe Plot
-emission_plot_maker(p, obj_t="PNe", sub_OIII=3.2e4, sub_Ha=4e4, )
+# FCC167
+emission_plot_maker(p, obj_t="PNe", top_plt_y_range=[4e4,8e4], sub_OIII=5e4, sub_Ha=5.8e4, )
+# FCC219
+# emission_plot_maker(p, obj_t="PNe", top_plt_y_range=[4e4,8e4], sub_OIII=5e4, sub_Ha=5.8e4, )
 # SNR plot
 # Plot out brightest SNR object with filter Y
 if len(SII_II_AON[SNR]) != 0:
     n = SNR[np.argmax(SII_II_AON[SNR])]
-    emission_plot_maker(n, obj_t="SNR", sub_OIII=1.2e4, sub_Ha=1.5e4, )
+    # FCC167
+    emission_plot_maker(n, obj_t="SNR", top_plt_y_range=[2e4,5.5e4], sub_OIII=3e4, sub_Ha=3.5e4, )
+    # FCC219
+#     emission_plot_maker(n, obj_t="SNR", top_plt_y_range=[2e4,5.5e4], sub_OIII=3e4, sub_Ha=3.5e4, )
 
 plt.show()    
 

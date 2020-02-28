@@ -86,7 +86,7 @@ def reconstructed_image(galaxy_name, loc):
     return data, wave, hdr
 
 
-def prep_impostor_files(galaxy_name, DIR_dict, galaxy_info, PNe_spectra, model_spectra_list, short_wave, n_PNe, n_pixels=9):
+def prep_impostor_files(galaxy_name, DIR_dict, galaxy_info, PNe_spectra, model_spectra_list, short_wave, n_PNe, n_pixels, x_PNe, y_PNe):
     """
     Prepare files for impostor checks, no return, only saved files.
     
@@ -118,7 +118,7 @@ def prep_impostor_files(galaxy_name, DIR_dict, galaxy_info, PNe_spectra, model_s
         raw_data = raw_hdulist[1].data
         raw_hdr = raw_hdulist[1].header
         raw_shape = raw_hdulist[1].data.shape # (lambda, y, x)
-        full_wavelength = raw_hdr['CRVAL3']+(np.arange(raw_s[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
+        full_wavelength = raw_hdr['CRVAL3']+(np.arange(raw_shape[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
 
         cube_list = np.copy(raw_data).reshape(raw_shape[0], raw_shape[1]*raw_shape[2]) # (lambda, list of len y*x)
         cube_list = np.swapaxes(cube_list, 1,0) # (list of len x*y, lambda)

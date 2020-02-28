@@ -2,12 +2,24 @@ from astropy.io import fits
 import yaml
 import numpy as np
 from scipy import stats
-
+from tqdm import tqdm
+from astropy.table import Table
+from functions.ppxf_gal_L import ppxf_L_tot
 
 from functions.MUSE_Models import Gauss
 
 def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     """
+    Input:
+        x      - x coordinate
+        y      - y coordinate
+        n_pix  - number of pixels
+        data   - residual data, in list format
+        x_d    - x dimension size
+        wave   - wavelength array
+        
+    Returns:
+        array of PNe spectra: (N_Pne, n_pix*n_pix, len(wave))
     """
     xc = round(x)
     yc = round(y)
@@ -65,6 +77,7 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
         - n_vary
         - PNe_spec
         - wave
+        - model_spectra
         - F_xy_list
         - mean_w_list
         - galaxy_info
@@ -83,7 +96,7 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
     for p in range(n_PNe):
         PNe_n = np.copy(PNe_spec[p])
         flux_1D = np.copy(F_xy_list[p][0])
-        A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_info["LSF"]// 2.35482)))
+        A_n = ((flux_1D) / (np.sqrt(2*np.pi) * (galaxy_info["LSF"]/ 2.35482)))
     
         list_of_gauss = [Gauss(wave, A, mean_w_list[p][0], galaxy_info["LSF"], G_bkg[p], G_grad[p], z) for A in A_n]
         for kk in range(len(PNe_n)):
@@ -92,9 +105,9 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
             temp[idx] = 0.0
             PNe_n[kk,idx] = 1.0
             list_of_gauss[kk] = np.copy(temp)
-        rN   = robust_sigma(PNe_n - list_of_gauss)
+        rN   = np.std(PNe_n - list_of_gauss)
         res  = PNe_n - list_of_gauss
-        Chi2 = np.sum((res**2)/(rN**2))
+        Chi2 = np.nansum((res**2)/(rN**2))
         redchi.append(Chi2/ ((len(wave) * n_pix**2) - n_vary))
         gauss_list.append(list_of_gauss)
         Chi_sqr.append(Chi2)
@@ -150,7 +163,7 @@ def KS2_test(dist_1, dist_2, conf_lim):
     return KS2_test
  
 
-def calc_Lbol_and_mag(DIR_dict, galaxy_info, dist_mod, dM_err=[0.1,0.1]):
+def calc_Lbol_and_mag(DIR_dict, galaxy_info, dM, dM_err=[0.1,0.1]):
     """
     Feature:
 
@@ -166,6 +179,7 @@ def calc_Lbol_and_mag(DIR_dict, galaxy_info, dist_mod, dM_err=[0.1,0.1]):
     """
     c = 299792458.0
     z = galaxy_info["velocity"]*1e3 / c
+    
     raw_data_cube = DIR_dict["RAW_DATA"]  # read in raw data cube
 
     xe, ye, length, width, alpha = galaxy_info["gal_mask"]
@@ -181,32 +195,117 @@ def calc_Lbol_and_mag(DIR_dict, galaxy_info, dist_mod, dM_err=[0.1,0.1]):
     elip_mask = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + \
         (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
 
-    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc*rc for xc, yc, rc in star_mask_params], 0).astype(bool)
+    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc*rc for xc, yc, rc in galaxy_info["star_mask"]], 0).astype(bool)
 
     # Combine elip_mask and star_mask_sum to make total_mask
     total_mask = ((np.isnan(raw_data_cube[1, :, :]) == False) & (
         elip_mask == False) & (star_mask_sum == False))
     indx_mask = np.where(total_mask == True)
 
-    good_spectra = np.zeros((raw_shape[0], len(indx_mask[0])))
+#     good_spectra = np.zeros((raw_shape[0], len(indx_mask[0])))
 
-    for i, (y, x) in enumerate(zip(tqdm(indx_mask[0]), indx_mask[1])):
-        good_spectra[:, i] = raw_data_cube[:, y, x]
-
-    #for testing at sompoint --> np.nansum(raw_data_cube[:, indx_mask[0], indx_mask[1]], 1)
-
+#     for i, (y, x) in enumerate(zip(tqdm(indx_mask[0]), indx_mask[1])):
+#         good_spectra[:, i] = raw_data_cube[:, y, x]
     print("Collapsing cube now....")
-
-    gal_lin = np.nansum(good_spectra, 1)
+    gal_lin = np.nansum(raw_data_cube[:, indx_mask[0], indx_mask[1]], 1)
 
     print("Cube has been collapsed...")
     # Check for if error range given, or single number supplied.
     if len(dM_err) > 1:
         L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z,
-                       vel=galaxy_info["velocity"], dist_mod=dM, dM_err=[dM_err_up, dM_err_lo])
+                       vel=galaxy_info["velocity"], dist_mod=dM, dM_err=[dM_err[0], dM_err[1]])
 
     elif len(dM_err) == 1: # if dM_err is len 1, use value for both bounds
         L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z,
                            vel=galaxy_info["velocity"], dist_mod=dM, dM_err=[dM_err, dM_err])
 
     return L_bol
+
+
+
+def LOSV_interloper_check(DIR_dict, galaxy_info, fitted_wave_list, PNe_indx, x_PNe, y_PNe):
+    """
+    Calculate the PN LOSVD from the systemic velocity, measured from the centre of the galaxy.
+    Also returns the indexes of any PN found to be interlopers (vel ratio is outside 3 sigma).
+
+    Parameters:
+        - DIR_dict          - directory dictionary
+        - galaxy_info       - dictionary of galaxy info
+        - fitted_wave_list  - list of fitted mean wavelength's for each object
+        - PNe_indx          - indexes of where ID == "PNe"
+        - x_PNe             - list of x coordinates of sources
+        - y_PNe             - list of y coordinates of sources
+        
+    Return:
+        - PNe_LOS_V         - PNe Line of Sight velocities
+        - interlopers       - list of interloper indexes
+    """   
+    ## Velocity from files
+    with fits.open(DIR_dict["RAW_DIR"]+f"/{galaxy_info['Galaxy name']}center_ppxf_SPAXELS.fits") as hdulist_ppxf:
+        v_star, s_star = hdulist_ppxf[1].data.V, hdulist_ppxf[1].data.SIGMA
+    
+    
+    with fits.open(DIR_dict["RAW_DIR"]+f"/{galaxy_info['Galaxy name']}center_table.fits") as hdulist_table:
+        X_star, Y_star = hdulist_table[1].data.XBIN, hdulist_table[1].data.YBIN
+        flux_star = hdulist_table[1].data.FLUX
+    
+    idx = flux_star.argmax()
+    X_star, Y_star = X_star-X_star[idx], Y_star-Y_star[idx]
+    
+    # systemic velocity from inner 5 arcsecond circle of galaxy centre
+    cond = np.sqrt( (X_star)**2 + (Y_star)**2 ) <= 5.0
+    vsys = np.median(v_star[cond]) 
+    v_star = v_star-vsys
+    
+    c = 299792458.0
+    
+    LOS_z = (vsys * 1e3) / c
+    
+    LOS_de_z = np.array(fitted_wave_list[:,0] / (1 + LOS_z))
+        
+    PNe_LOS_V = (c * (LOS_de_z - 5006.77) / 5006.77) / 1000. 
+        
+    gal_centre_pix = Table.read("exported_data/galaxy_centre_pix.dat", format="ascii")
+    
+    gal_ind = np.where(gal_centre_pix["Galaxy"]==galaxy_info["Galaxy name"])
+    gal_x_c = gal_centre_pix["x_pix"][gal_ind]
+    gal_y_c = gal_centre_pix["y_pix"][gal_ind]
+    
+    xpne, ypne = (x_PNe[PNe_indx]-gal_x_c)*0.2, (y_PNe[PNe_indx]-gal_y_c)*0.2
+    
+    # Estimating the velocity dispersion of the PNe along the LoS
+    def sig_PNe(X_star, Y_star, v_stars, sigma, x_PNe, y_PNe, vel_PNe):
+    
+        d_PNe_to_skin = np.zeros(len(x_PNe))
+        Vs_PNe = np.ones(len(x_PNe)) # Velocity of the closest star
+        Ss_PNe = np.ones(len(x_PNe)) # Sigma for each PNe
+        i_skin_PNe = []
+    
+        """ To estimate the velocity dispersion for PNe we need to
+        extract the sigma of the closest stars for each PNe """
+    
+        for i in range(len(x_PNe)):
+            r_tmp = np.sqrt((X_star-x_PNe[i])**2+(Y_star-y_PNe[i])**2)
+            d_PNe_to_skin[i] = min(r_tmp)
+            i_skin_PNe.append(r_tmp.argmin())
+    
+        Vs_PNe  = v_stars[i_skin_PNe]
+        Ss_PNe  = sigma[i_skin_PNe]
+        rad_PNe = np.sqrt(x_PNe**2+y_PNe**2)
+        k = np.where(d_PNe_to_skin > 1.0)
+    
+        return rad_PNe, (vel_PNe-Vs_PNe)/Ss_PNe, k, Vs_PNe, Ss_PNe
+    
+    rad_PNe, vel_ratio, k, Vs_PNe, Ss_PNe  = sig_PNe(X_star, Y_star, v_star, s_star, xpne, ypne, PNe_LOS_V[PNe_indx])
+    # rad_PNe, vel_ratio, k  = sig_PNe(X_star, Y_star, v_star, s_star, xpne, ypne, PNe_df["V (km/s)"].loc[PNe_df["Filter"]=="Y"])
+    # rad_PNe, vel_ratio, k  = sig_PNe(X_star, Y_star, v_star, s_star, xpne, ypne, PNe_df["PNe_LOS_V"])
+    
+    # Filter interlopers by PN that have vel ratio's outside a 3 sigma range
+    interlopers = vel_ratio[(vel_ratio<-3) | (vel_ratio>3)]
+    print(interlopers)
+    # for inter in interlopers:
+    #     PNe_df.loc[PNe_df["PNe number"]==inter, "Filter"] = "N"
+        
+    #print(stats.norm.fit(PNe_df["V (km/s)"].loc[PNe_df["Filter"]=="Y"].values))
+    
+    return PNe_LOS_V, interlopers, vel_ratio
