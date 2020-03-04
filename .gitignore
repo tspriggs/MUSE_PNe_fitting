@@ -1,6 +1,8 @@
-*.~tmp
-*.pyc
-.ipynb_checkpoints
+
+exported_data/FCC3*
+exported_data/FCC3*
+exported_data/FCC3*
+pynb_checkpoints
 __pycache__
 exported_data/FCC0*
 exported_data/FCC1*
@@ -26,5 +28,5 @@ emiles/
 gandalf_PNe/
 Gandalf_pipeline/
 .vscode
-from_github/
-
+from_github/exported_data/FCC3*
+.ipynb_checkpoints
