@@ -254,7 +254,7 @@ def LOSV_interloper_check(DIR_dict, galaxy_info, fitted_wave_list, PNe_indx, x_P
     
     # systemic velocity from inner 5 arcsecond circle of galaxy centre
     cond = np.sqrt( (X_star)**2 + (Y_star)**2 ) <= 5.0
-    vsys = np.median(v_star[cond]) 
+    vsys = np.median(v_star[cond])
     v_star = v_star-vsys
     
     c = 299792458.0
@@ -301,11 +301,10 @@ def LOSV_interloper_check(DIR_dict, galaxy_info, fitted_wave_list, PNe_indx, x_P
     # rad_PNe, vel_ratio, k  = sig_PNe(X_star, Y_star, v_star, s_star, xpne, ypne, PNe_df["PNe_LOS_V"])
     
     # Filter interlopers by PN that have vel ratio's outside a 3 sigma range
-    interlopers = vel_ratio[(vel_ratio<-3) | (vel_ratio>3)]
-    print(interlopers)
+    interlopers = np.where((vel_ratio<-3) | (vel_ratio>3))
     # for inter in interlopers:
     #     PNe_df.loc[PNe_df["PNe number"]==inter, "Filter"] = "N"
         
     #print(stats.norm.fit(PNe_df["V (km/s)"].loc[PNe_df["Filter"]=="Y"].values))
     
-    return PNe_LOS_V, interlopers, vel_ratio
+    return PNe_LOS_V, interlopers, vel_ratio, vsys

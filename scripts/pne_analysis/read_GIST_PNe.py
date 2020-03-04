@@ -239,7 +239,7 @@ gand_df["m 5007"] = m_5007
 gand_df["ID"] = PNe_df["ID"]
 
 # below is to check all sources, not just pre-filtered sources.
-# gand_df["ID"]="PN"
+gand_df["ID"].loc[gand_df["ID"].isin(["SNR", "HII", "OvLu"])]="PN"
 
 # Read in the distance modulus for the galaxy in question (galaxy_name)
 gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
@@ -381,18 +381,20 @@ for n, i in enumerate(gand_df["[OIII] flux"].loc[HaNII_or_cond].index.values):
     if (galaxy_name == "FCC219") & (i in [52,53,54,63]):
         plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]-0.15, HaNII_ratio_cond_or[n]-0.35), c="r", )
     elif (galaxy_name == "FCC167") & (i in [46,69]):
-        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]-0.15, HaNII_ratio_cond_or[n]-0.35), c="r", )
+        plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]-0.15, HaNII_ratio_cond_or[n]-0.4), c="r", )
     if HaNII_ratio_cond_or[n] < 10**((-0.37 * (gand_df["m 5007"].iloc[i]-dM)) - 1.16):
         if ann == True:
             # annotate appropriate scatter point with the correct object number ID (1 -> N). 
             # Ths is to help identify points between the two scatter plots.
             # here we annotate with the number, at m_5007 (x axis) + 0.03, and  F_[OIII]/(Ha+NII) (y axis).
-            if i == 35:
+            if (galaxy_name == "FCC219") & (i == 35):
                 plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.02, HaNII_ratio_cond_or[n]-0.12))
-            elif i == 6:
+            elif (galaxy_name == "FCC219") & (i == 6):
                 plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]-0.1, HaNII_ratio_cond_or[n]))
-            elif i == 32:
+            elif (galaxy_name == "FCC219") & (i == 32):
                 plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.05, HaNII_ratio_cond_or[n]-0.1))
+            elif (galaxy_name == "FCC167") & (i == 27):
+                plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.07, HaNII_ratio_cond_or[n]))
             else:
                 plt.annotate(str(PNe_df["PNe number"].iloc[i]), (gand_df["m 5007"].iloc[i]+0.05, HaNII_ratio_cond_or[n]))
 
@@ -549,7 +551,6 @@ def emission_plot_maker(obj_n, obj_t, top_plt_y_range, sub_OIII=2e4, sub_Ha=2e4,
     gs = fig.add_gridspec(3, 2)
     
     f_ax1 = fig.add_subplot(gs[0, :]) # data, stellar and best-fit plots
-    f_ax1.set_title(f"{obj_t}, number {obj_n}", fontsize=f_size)
     f_ax1.plot(wave, AllSpectra[1].data[obj_n][0], c="k", lw=1, alpha=0.8, label="data")
     f_ax1.plot(wave, gandalf_best[1].data[obj_n][0], c="g", lw=1.1, label="best fit", )
     f_ax1.plot(wave, gandalf_best[1].data[obj_n][0] - gandalf_emission[1].data[obj_n][0], c="r", lw=0.7,label="stellar")

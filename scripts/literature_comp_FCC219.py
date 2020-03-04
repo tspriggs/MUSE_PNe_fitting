@@ -52,8 +52,8 @@ indx = np.array(([np.squeeze(np.where(smallest_sep[i] == np.min(smallest_sep[i])
 
 F3D_index = indx[np.where(diff<0.001)]
 
-matched_lit_m = m5007_1404[lit_index]
-matched_F3D_m = PNe_df["m 5007"].loc[F3D_index]
+matched_lit_m = m5007_1404[[2,4,7,38,43]]
+matched_F3D_m = PNe_df["m 5007"].loc[[31,36,57,59,61]]
 
 print(lit_index)
 
@@ -89,8 +89,8 @@ centre_lit = [26.79, 26.83, 26.98, 27.54, 27.68]
 
 halo_lit   = [27.53, 27.55, 27.7 ]
 halo_F3D   = [27.642509, 27.985619, 27.739837]
-plt.scatter(centre_F3D, centre_lit, label="centre")
 plt.scatter(halo_F3D, halo_lit, label="halo")
+plt.scatter(centre_F3D, centre_lit, label="centre")
 plt.plot(np.arange(26.5,29), np.arange(26.5,29))
 plt.legend(fontsize=15)
 plt.xticks(fontsize=15)

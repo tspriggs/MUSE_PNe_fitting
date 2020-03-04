@@ -143,7 +143,7 @@ FCC167_center:
   star_mask: [[1,1,1]]
   over_lum: [22]
   impostor_filter: [[13,21,27,67],[71],[]]
-  interloper_filter: []
+  interloper_filter: [39]
   emissions:
     OIII_1: [200, null, null]
     OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']

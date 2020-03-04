@@ -1,0 +1,31 @@
+name: F3D_PNe
+channel:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.7
+  - numpy
+  - matplotlib
+  - pandas
+  - lmfit
+  - astropy
+  - ipython
+  - jupyter
+  - jupyterlab
+  - mcerp
+  - notebook
+  - photutils
+  - pymc3
+  - scikit-image
+  - seaborn
+  - scipy
+  - sep=1.0.3=py37hc1659b7_1001
+  - tqdm
+  - yaml
+  - pip
+  - pip:
+    - mock==3.0.5
+    - numexpr==2.6.9
+    - ppxf==6.7.16
+    - pyphot==1.0
+    - tables==3.5.2

@@ -17,6 +17,7 @@ from astropy.coordinates import SkyCoord
 from matplotlib.patches import Rectangle, Ellipse, Circle
 from lmfit import minimize, Minimizer, report_fit, Model, Parameters
 
+
 from functions.ppxf_gal_L import ppxf_L_tot
 from functions.PNLF import reconstructed_image, completeness, KS2_test
 from functions.MUSE_Models import PNe_residuals_3D, PSF_residuals_3D
@@ -228,9 +229,12 @@ PNe_df.loc[PNe_df["Chi2"]>=upper_chi, "ID"] = "-"
 print("################################################################")
 print("##################### Filtering objects ########################")
 print("################################################################")
-PNe_LOS_V, interlopers, vel_ratio = LOSV_interloper_check(DIR_dict, galaxy_info, mean_wave_list, PNe_df.loc[PNe_df["ID"]!="-"].index.values, x_PNe, y_PNe)
+PNe_LOS_V, interlopers, vel_ratio, vsys = LOSV_interloper_check(DIR_dict, galaxy_info, mean_wave_list, PNe_df.loc[PNe_df["ID"]=="PN"].index.values, x_PNe, y_PNe)
 PNe_df["PNe_LOS_V"] = PNe_LOS_V
 print(interlopers)
+
+
+
 
 # list of objects that are chosen to be filtered out (bad fits, objviously not PN, over luminous, etc.)
 over_lum_filter = galaxy_info["over_lum"]
@@ -248,6 +252,21 @@ PNe_df.loc[PNe_df["PNe number"].isin(SNR_filter), "ID"] = "SNR"
 PNe_df.loc[PNe_df["PNe number"].isin(HII_filter), "ID"] = "HII"
 PNe_df.loc[PNe_df["PNe number"].isin(unknown_imp_filter), "ID"] = "imp" 
 PNe_df.loc[PNe_df["PNe number"].isin(interloper_filter), "ID"] = "interl"
+
+PNe_df.loc[PNe_df["PNe number"].isin(interlopers[0]), "ID"] = "interl"
+
+# Plotting LOSV distribution ratio 
+plt.figure(figsize=(10,8))
+plt.clf()
+hist = plt.hist(vel_ratio, bins=8, edgecolor="k", alpha=0.8, linewidth=1)
+plt.xlabel(r"$\mathrm{\frac{V_{PNe} - V_{star}}{\sigma_{star}}}$", fontsize=30)
+plt.ylabel("PNe per bin", fontsize=30, labelpad=10)
+plt.tick_params(labelsize = 18)
+plt.xlim(-3.25,3.25)
+plt.ylim(0,np.max(hist[0])+3)
+plt.annotate(galaxy_name, xy=(-3,np.max(hist[0])-1), fontsize=25)
+plt.savefig(DIR_dict["PLOT_DIR"]+"_velocity_bins_plot.pdf", bbox_inches='tight')
+# End of LOSV plot #
 
 #### Fit for PSF via N highest A/rN PNe
 if fit_PSF == True:
