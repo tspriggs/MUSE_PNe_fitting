@@ -1,4 +1,5 @@
 # Detecting PNe within reduced MUSE data.
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/master)
 
 ## Intro
 
