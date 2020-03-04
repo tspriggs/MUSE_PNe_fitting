@@ -1,5 +1,5 @@
 name: F3D_PNe
-channel:
+channels:
   - conda-forge
   - defaults
 dependencies:
