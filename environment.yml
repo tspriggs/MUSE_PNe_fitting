@@ -27,5 +27,5 @@ dependencies:
     - mock==3.0.5
     - numexpr==2.6.9
     - ppxf==6.7.16
-    - pyphot==1.0
+    - git+https://github.com/mfouesneau/pyphot
     - tables==3.5.2
