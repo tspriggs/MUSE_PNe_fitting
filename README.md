@@ -5,12 +5,12 @@
 
 ## Binder
 
-'''python
+```python
 # for ipython, run from the MUSE_PNe_fitting directory
 %run scripts/pne_analysis/MUSE_spaxel_fitting.py --galaxy FCCtest --loc center --fit
 # or from a terminal line
 $ python scripts/pne_analysis/MUSE_spaxel_fitting.py --galaxy FCCtest --loc center --fit
-'''
+```
 
 
 The purpose of this pipeline is to first run a spaxel-by-spaxel fit for [OIII] 5007 Angstrom doublet (4959 Angstrom), then store files and save plots (exported_data/ and Plots/). Then having formed a x,y list of coordinates (pixel coordinates) from running SEP on the A/rN map, fit the PNe with the 1D+2D model fitting routine, using LMfit for the minimisation efforts.
