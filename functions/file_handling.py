@@ -72,6 +72,49 @@ def open_data(galaxy_name, loc, DIR_dict):
     
     return residual_data, wavelength, residual_shape, x_data, y_data, galaxy_info
 
+def open_PNe(galaxy_name, loc, DIR_dict):
+    """
+    Load up both the yaml and residual data associated with input galaxy and location
+    Parameters:
+        - galaxy - string - name of galaxy - FCC000
+        - loc    - string - location       - center, middle or halo
+        - DIR_dict - dict - dict object containing all directories
+    
+    Returns:
+        - PNe_spectra
+        - hdr
+        - wavelength
+        - obj_err
+        - res_err        
+        - residual_shape
+        - x_data
+        - y_data
+        - galaxy_info
+    """
+    # Load in the residual data, in list form
+    
+    # Open the yaml config file for galaxy_info
+    with open(DIR_dict["YAML"], "r") as yaml_data:
+        yaml_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
+        
+    galaxy_info = yaml_info[f"{galaxy_name}_{loc}"]
+
+    # Open the residual list fits file for the selected galaxy and location
+    with fits.open(DIR_dict["DATA_DIR"]+"_PNe_spectra.fits") as hdulist: # Path to data
+        PNe_spectra = np.copy(hdulist[1].data)
+        hdr = hdulist[1].header # extract header from residual cube
+        wavelength = np.copy(hdulist[2].data)
+        obj_err = np.copy(hdulist[3].data)
+        res_err = np.copy(hdulist[4].data)
+    
+    # store the shape of the data, should be three dimensional: N_PNe, n_pixels**2, len(wavelength)
+    residual_shape = np.shape(PNe_spectra)
+    
+    x_data = hdr["XAXIS"]
+    y_data = hdr["YAXIS"]
+    
+    return PNe_spectra, hdr, wavelength, obj_err, res_err, residual_shape, x_data, y_data, galaxy_info
+
 
 def reconstructed_image(galaxy_name, loc):
     DIR_dict = paths(galaxy_name, loc)

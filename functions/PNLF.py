@@ -74,11 +74,14 @@ def KS2_test(dist_1, dist_2, conf_lim):
 
 
 
-def completeness(galaxy, loc, DIR_dict, mag, params, dM, image, peak, n_pixels, c1=0.307):
+def completeness(galaxy, loc, DIR_dict, mag, params, dM,  peak, n_pixels, c1=0.307):
        
     #load up data
     res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy, loc, DIR_dict)
-
+    
+    galaxy_image, rec_wave, rec_hdr = reconstructed_image(galaxy, loc)
+    image = galaxy_image.reshape(y_data, x_data)
+    
     c = 299792458.0
     z = galaxy_info["velocity"]*1e3 / c
     

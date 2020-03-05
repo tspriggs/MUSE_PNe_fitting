@@ -22,7 +22,7 @@ from functions.ppxf_gal_L import ppxf_L_tot
 from functions.PNLF import reconstructed_image, completeness, KS2_test
 from functions.MUSE_Models import PNe_residuals_3D, PSF_residuals_3D
 from functions.PNe_functions import PNe_spectrum_extractor, robust_sigma, uncertainty_cube_construct, calc_chi2, calc_Lbol_and_mag, LOSV_interloper_check
-from functions.file_handling import paths, open_data, prep_impostor_files
+from functions.file_handling import paths, open_PNe, prep_impostor_files
 
 # Let's use a logging package to store stuff, instead of printing.....
 
@@ -47,7 +47,8 @@ calc_Lbol = args.Lbol
 DIR_dict = paths(galaxy_name, loc)
 
 # Load in the residual data, in list form
-res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
+# res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
+PNe_spectra, hdr, wavelength, obj_err, res_err, residual_shape, x_data, y_data, galaxy_info = open_PNe(galaxy_name, loc, DIR_dict)
 
 # Constants
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
@@ -73,30 +74,20 @@ y_PNe = np.array([y[1] for y in x_y_list])
 
 n_PNe = len(x_PNe)
 
-# Retrieve the respective spectra for each PNe source, from the list of spectra data file, using a function to find the associated index locations of the spectra for a PNe.
-PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, res_data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
 
 # create Pandas dataframe for storage of values from the 3D fitter.
 PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "V (km/s)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "redchi", "ID"))
 PNe_df["PNe number"] = np.arange(0, n_PNe)
 PNe_df["ID"] = "PN" # all start as PN
 
-with fits.open(DIR_dict["RAW_DATA"]) as hdu_wcs:
-    hdr_wcs = hdu_wcs[1].header
-    wcs_obj = WCS(hdr_wcs, naxis=2)
+
+wcs_obj = WCS(hdr, naxis=2)
 
 for i in np.arange(0, n_PNe):
     Ra_Dec = utils.pixel_to_skycoord(x_PNe[i],y_PNe[i], wcs_obj).to_string("hmsdms", precision=2).split()
     PNe_df.loc[i,"Ra (J2000)"] = Ra_Dec[0]
     PNe_df.loc[i,"Dec (J2000)"] = Ra_Dec[1]
 
-# Read in Objective Residual Cube .fits file.
-
-with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits") as obj_residual_cube:
-    obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
-
-with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_data.fits") as data_residual_cube:
-    error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
 
 
 ##################################################
@@ -160,7 +151,7 @@ Gauss_grad_err = np.zeros((n_PNe, len(emission_dict)))
 def run_minimiser(parameters):
     for PNe_num in tqdm(np.arange(0, n_PNe)):
         useful_stuff = []        
-        PNe_minimizer       = lmfit.Minimizer(PNe_residuals_3D, PNe_multi_params, fcn_args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], error_cube[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
+        PNe_minimizer       = lmfit.Minimizer(PNe_residuals_3D, PNe_multi_params, fcn_args=(wavelength, x_fit, y_fit, PNe_spectra[PNe_num], res_err[PNe_num], PNe_num, emission_dict, useful_stuff), nan_policy="propagate")
         multi_fit_results   = PNe_minimizer.minimize()
         total_Flux[PNe_num] = np.sum(useful_stuff[1][1],1) * 1e-20
         list_of_fit_residuals[PNe_num] = useful_stuff[0]
@@ -275,7 +266,7 @@ if fit_PSF == True:
     print(sel_PNe)
 
     selected_PNe = PNe_spectra[sel_PNe]
-    selected_PNe_err = obj_error_cube[sel_PNe]
+    selected_PNe_err = obj_err[sel_PNe]
 
     # Set up PSF params
     PSF_params = Parameters()
@@ -429,15 +420,15 @@ print("########## PNLF ##########")
 print("##########################")
 
 
-galaxy_image, rec_wave, rec_hdr = reconstructed_image(galaxy_name, loc)
-galaxy_image = galaxy_image.reshape([y_data, x_data])
+#galaxy_image, rec_wave, rec_hdr = reconstructed_image(galaxy_name, loc)
+#galaxy_image = galaxy_image.reshape(y_data, x_data)
 
 PNe_mag = PNe_df["M 5007"].loc[PNe_df["ID"]=="PN"].values
 app_mag = PNe_df["m 5007"].loc[PNe_df["ID"]=="PN"].values
 app_mag_OvLu = PNe_df["m 5007"].loc[PNe_df["ID"].isin(["OvLu"])].values
 
 # Total PNLF
-PNLF, PNLF_corr, completeness_ratio, Abs_M, app_m = completeness(galaxy_name, loc, DIR_dict, PNe_mag, PNe_multi_params, dM, galaxy_image, 3.0, n_pixels, c1=0.307)  # Estimating the completeness for the central pointing
+PNLF, PNLF_corr, completeness_ratio, Abs_M, app_m = completeness(galaxy_name, loc, DIR_dict, PNe_mag, PNe_multi_params, dM, 3.0, n_pixels, c1=0.307)  # Estimating the completeness for the central pointing
 
 step = abs(Abs_M[1]-Abs_M[0])
 # Getting the normalisation - sum of correctied PNLF, times bin size

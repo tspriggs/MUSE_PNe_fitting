@@ -17,7 +17,7 @@ from lmfit import minimize, Minimizer, Parameters
 
 # Load in local functions
 from functions.MUSE_Models import spaxel_by_spaxel
-from functions.PNe_functions import PNe_spectrum_extractor, robust_sigma
+from functions.PNe_functions import PNe_spectrum_extractor, uncertainty_cube_construct, robust_sigma
 from functions.file_handling import paths, open_data
 
 
@@ -115,10 +115,10 @@ if fit_spaxel == True:
     np.save(DIR_dict["EXPORT_DIR"]+"_A_rN", A_rN)
 
     # save the data and obj res in fits file format to us memmapping.
-    hdu_data_res = fits.PrimaryHDU(data_residuals)
-    hdu_obj_res = fits.PrimaryHDU(obj_residuals)
-    hdu_data_res.writeto(DIR_dict["EXPORT_DIR"]+"_resids_data.fits", overwrite=True)
-    hdu_obj_res.writeto(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits", overwrite=True)
+    # hdu_data_res = fits.PrimaryHDU(data_residuals)
+    # hdu_obj_res = fits.PrimaryHDU(obj_residuals)
+    # hdu_data_res.writeto(DIR_dict["EXPORT_DIR"]+"_resids_data.fits", overwrite=True)
+    # hdu_obj_res.writeto(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits", overwrite=True)
 
     print("Cube fitted, data saved.")
 
@@ -193,7 +193,7 @@ peak_filter = np.where(objects["peak"] < 30)
 x_sep = objects["x"][peak_filter]
 y_sep = objects["y"][peak_filter]
 
-positions = (x_sep, y_sep)
+positions = [(x,y) for x,y in zip(x_sep, y_sep)]
 apertures = CircularAperture(positions, r=4)
 plt.figure(figsize=(16,16))
 plt.imshow(A_rN_img-bkg, origin="lower", cmap="CMRmap", vmin=1, vmax=8.)
@@ -215,3 +215,35 @@ print(f"Number of detected [OIII] sources: {len(x_y_list)}")
 if save_sep == True:
     np.save(DIR_dict["EXPORT_DIR"]+"_PNe_x_y_list", x_y_list)
     
+######
+# save a fits file of the PNe, with objective and error lists
+# including header for wcs info
+
+# Retrieve the respective spectra for each PNe source, from the list of spectra data file, using a function to find the associated index locations of the spectra for a PNe.
+PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, res_data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
+
+with fits.open(DIR_dict["RAW_DATA"]) as raw_hdu:
+    raw_hdr = raw_hdu[1].header
+
+# with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits") as obj_residual_cube:
+    # obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
+obj_error_cube = uncertainty_cube_construct(obj_residuals, x_PNe, y_PNe, n_pixels, x_data, wavelength)
+
+# with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_data.fits") as data_residual_cube:
+    # error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
+error_cube = uncertainty_cube_construct(data_residuals, x_PNe, y_PNe, n_pixels, x_data, wavelength)
+
+primary_hdu = fits.PrimaryHDU()
+
+raw_hdr.set("YAXIS", value=x_data)
+raw_hdr.set("XAXIS", value=y_data)
+
+PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=raw_hdr, name="PNe_spectra")
+wave_hdu = fits.ImageHDU(data=wavelength, name="wavelength", )
+objective_hdu = fits.ImageHDU(data=obj_error_cube, name="obj_err", )
+res_error_hdu = fits.ImageHDU(data=error_cube, name="res_err",)
+
+
+# Save fits file
+PNe_HDUList = fits.HDUList([primary_hdu, PNe_hdu, wave_hdu, objective_hdu, res_error_hdu])
+PNe_HDUList.writeto(DIR_dict["DATA_DIR"]+"_PNe_spectra.fits", overwrite=True)
