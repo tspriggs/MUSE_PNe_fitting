@@ -3,9 +3,9 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3698303.svg)](https://doi.org/10.5281/zenodo.3698303)
 
 
-## Intro
+## Binder Instructions and notes
 
-## Binder
+The Binder for this repository has been built and ready to go. As of the release of 1.0.0, there is only a single functioning example within the Binder environment. Please see the following code snippet for how to run a spaxel by spaxel fit on a segment of FCC167's residual data cube:
 
 ```
 # for ipython, run from the MUSE_PNe_fitting directory
@@ -14,6 +14,14 @@
 $ python scripts/pne_analysis/MUSE_spaxel_fit.py --galaxy FCCtest --loc center --fit
 ```
 
+More functionality will be added to the Binder environment, however the current issue is the data handle and data size, which restricts us from running a full PNe analysis.
+
+
+## Data requirements
+
+This project uses the output of the GIST IFU pipeline ([![GIST]](https://abittner.gitlab.io/thegistpipeline/)). Where the stellar continuum has been modelled (ppxf), along with the emission lines of the diffuse ionised gas (Gandalf; Sarzi, M. 2006). Once the stellar continuum is subtracted (MUSE_spectra - (Best fit - emission fit) ), we are left with a residual data cube, where the emission lines of unresolved point sources can be mapped out, along with regions of diffuse ionised gas. The residual cube is what is needed for this workflow. To create a residual data cube, please use the gist_residual_data.py script, under `scripts/other`, this will load up the relevant files and create a residual data cube for use with the PNe detection scripts.
+
+## Intro
 
 The purpose of this pipeline is to first run a spaxel-by-spaxel fit for [OIII] 5007 Angstrom doublet (4959 Angstrom), then store files and save plots (exported_data/ and Plots/). Then having formed a x,y list of coordinates (pixel coordinates) from running SEP on the A/rN map, fit the PNe with the 1D+2D model fitting routine, using LMfit for the minimisation efforts.
 

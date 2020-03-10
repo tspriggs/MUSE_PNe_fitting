@@ -30,6 +30,24 @@ def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     ind = [i * x_d + x_range for i in y_range]
     return data[np.ravel(ind)]
 
+def PNe_minicube_extractor(x,y,n_pix, data, wave):
+    """
+    Input:
+        x      - x coordinate
+        y      - y coordinate
+        n_pix  - number of pixels
+        data   - residual data, in list format
+        wave   - wavelength array
+        
+    Returns:
+        list format array of PN spectra: (n_pix*n_pix, len(wave))
+    """
+    xc = round(x)
+    yc = round(y)
+    offset = n_pix // 2
+    PN = data[yc-offset:yc+offset+1, xc-offset:xc+offset+1]
+    return PN.reshape(n_pix*n_pix, len(wave))
+
 
 def robust_sigma(y, zero=False):
     """

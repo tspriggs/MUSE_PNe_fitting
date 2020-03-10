@@ -513,6 +513,4 @@ if calc_Lbol == True:
 
 
 
-
-
 ######### This is the end of PNe analysis script
