@@ -30,7 +30,8 @@ def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
     ind = [i * x_d + x_range for i in y_range]
     return data[np.ravel(ind)]
 
-def PNe_minicube_extractor(x,y,n_pix, data, wave):
+# To replace PNe_spectrum_extractor function
+def PNe_minicube_extractor(x, y, n_pix, data, wave):
     """
     Input:
         x      - x coordinate
@@ -71,15 +72,15 @@ def robust_sigma(y, zero=False):
     return sigma
 
 
-def uncertainty_cube_construct(data, x_P, y_P, n_pix, x_data, wavelength):
+def uncertainty_cube_construct(data, x_P, y_P, n_pix, PN_data, wavelength):
     """
     Extract and construct uncertainty cubes for PNe fitting weighting
     """
     data[data == np.inf] = 0.01
-    extract_data = np.array([PNe_spectrum_extractor(x, y, n_pix, data, x_data, wave=wavelength) for x,y in zip(x_P, y_P)])
+    # extract_data = np.array([PNe_minicube_extractor(x, y, n_pix, data, wavelength) for x,y in zip(x_P, y_P)])
     array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
     for p in np.arange(0, len(x_P)):
-        list_of_std = np.abs([robust_sigma(dat) for dat in extract_data[p]])
+        list_of_std = np.abs([robust_sigma(dat) for dat in PN_data[p]])
         array_to_fill[p] = [np.repeat(list_of_std[i], len(wavelength)) for i in np.arange(0, len(list_of_std))]
         
     return array_to_fill

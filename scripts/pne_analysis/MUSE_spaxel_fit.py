@@ -17,7 +17,7 @@ from lmfit import minimize, Minimizer, Parameters
 
 # Load in local functions
 from functions.MUSE_Models import spaxel_by_spaxel
-from functions.PNe_functions import PNe_spectrum_extractor, uncertainty_cube_construct, robust_sigma
+from functions.PNe_functions import PNe_minicube_extractor, uncertainty_cube_construct, robust_sigma
 from functions.file_handling import paths, open_data
 
 
@@ -38,9 +38,18 @@ save_sep = args.sep
 
 DIR_dict = paths(galaxy_name, loc)
 
+# To be used when working with residual cubes
+# res_data, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
+
 res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
 
+# reshape the residual cube into a residual list, so as to work with current code
+# res_data = res_data.reshape(len(wavelength),x_data*y_data)
+# res_data = np.swapaxes(res_data, 1, 0)
+
+
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
+# non_zero_index = np.squeeze(np.where(res_data[0,:] != 0.)) # use with residual cube
 non_zero_index = np.squeeze(np.where(res_data[:,0] != 0.))
     
 list_of_std = np.abs([robust_sigma(dat) for dat in res_data])
@@ -220,28 +229,33 @@ if save_sep == True:
 # including header for wcs info
 
 # Retrieve the respective spectra for each PNe source, from the list of spectra data file, using a function to find the associated index locations of the spectra for a PNe.
-PNe_spectra = np.array([PNe_spectrum_extractor(x, y, n_pixels, res_data, x_data, wave=wavelength) for x,y in zip(x_PNe, y_PNe)])
+PNe_spectra = np.array([PNe_minicube_extractor(x, y, n_pixels, res_data, wavelength) for x,y in zip(x_PNe, y_PNe)])
 
+## remove once residual cubes are used
 with fits.open(DIR_dict["RAW_DATA"]) as raw_hdu:
     raw_hdr = raw_hdu[1].header
+##
 
 # with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits") as obj_residual_cube:
     # obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
-obj_error_cube = uncertainty_cube_construct(obj_residuals, x_PNe, y_PNe, n_pixels, x_data, wavelength)
+obj_error_cube = uncertainty_cube_construct(obj_residuals, x_PNe, y_PNe, n_pixels, PNe_spectra, wavelength)
 
 # with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_data.fits") as data_residual_cube:
     # error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
-error_cube = uncertainty_cube_construct(data_residuals, x_PNe, y_PNe, n_pixels, x_data, wavelength)
+res_error_cube = uncertainty_cube_construct(data_residuals, x_PNe, y_PNe, n_pixels, PNe_spectra, wavelength)
 
 primary_hdu = fits.PrimaryHDU()
 
 raw_hdr.set("YAXIS", value=x_data)
 raw_hdr.set("XAXIS", value=y_data)
 
+# Use once residual cubes are introduced
+# PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=res_hdr, name="PNe_spectra")
+
 PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=raw_hdr, name="PNe_spectra")
 wave_hdu = fits.ImageHDU(data=wavelength, name="wavelength", )
-objective_hdu = fits.ImageHDU(data=obj_error_cube, name="obj_err", )
-res_error_hdu = fits.ImageHDU(data=error_cube, name="res_err",)
+objective_hdu = fits.ImageHDU(data=obj_error_cube, name="obj_err",)
+res_error_hdu = fits.ImageHDU(data=res_error_cube, name="res_err",)
 
 
 # Save fits file

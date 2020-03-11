@@ -59,6 +59,12 @@ def open_data(galaxy_name, loc, DIR_dict):
     galaxy_info = yaml_info[f"{galaxy_name}_{loc}"]
 
     # Open the residual list fits file for the selected galaxy and location
+    # with fits.open(DIR_dict["DATA_DIR"]+"_residual_cube.fits") as hdulist:# Path to data
+        # residual_data = np.copy(hdulist[1].data)
+        # residual_hdr = hdulist[1].header # extract raw data header info, including wcs, from residual cube
+        # wavelength = np.copy(hdulist[2].data)
+
+    
     with fits.open(DIR_dict["DATA_DIR"]+"_residuals_list.fits") as hdulist:# Path to data
         residual_data = np.copy(hdulist[0].data)
         residual_hdr = hdulist[0].header # extract header from residual cube
@@ -70,7 +76,7 @@ def open_data(galaxy_name, loc, DIR_dict):
     x_data = residual_hdr["XAXIS"]
     y_data = residual_hdr["YAXIS"]
     
-    return residual_data, wavelength, residual_shape, x_data, y_data, galaxy_info
+    return residual_data, residual_hdr, wavelength, residual_shape, x_data, y_data, galaxy_info
 
 def open_PNe(galaxy_name, loc, DIR_dict):
     """

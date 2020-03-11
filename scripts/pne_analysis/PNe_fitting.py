@@ -76,7 +76,7 @@ n_PNe = len(x_PNe)
 
 
 # create Pandas dataframe for storage of values from the 3D fitter.
-PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "V (km/s)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "redchi", "ID"))
+PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "redchi", "ID"))
 PNe_df["PNe number"] = np.arange(0, n_PNe)
 PNe_df["ID"] = "PN" # all start as PN
 
@@ -185,19 +185,19 @@ def run_minimiser(parameters):
     PNe_df["redchi"] = redchi
     
     # velocity
-    de_z_means = np.array(mean_wave_list[:,0] / (1 + z)) # de redshift OIII wavelength position
+    # de_z_means = np.array(mean_wave_list[:,0] / (1 + z)) # de redshift OIII wavelength position
     
-    PNe_df["V (km/s)"] = (c * (de_z_means - 5006.77) / 5006.77) / 1000.    
+    # PNe_df["V (km/s)"] = (c * (de_z_means - 5006.77) / 5006.77) / 1000.    
     
     PNe_df["fitted_mean_wave"] = mean_wave_list[:,0]
 
     PNe_df["[OIII] Flux"] = total_Flux[:,0] #store total OIII 5007 line flux
         
-    if "hb" in emission_dict:
-        PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2] # store [OIII]/Hb ratio
+    #if "hb" in emission_dict:
+    #    PNe_df["[OIII]/Hb"] = PNe_df["[OIII] Flux"] / total_Flux[:,2] # store [OIII]/Hb ratio
 
-    if "ha" in emission_dict:
-        PNe_df["Ha Flux"] = total_Flux[:, 1]
+    #if "ha" in emission_dict:
+    #    PNe_df["Ha Flux"] = total_Flux[:, 1]
     
     PNe_df["m 5007"] = -2.5 * np.log10(PNe_df["[OIII] Flux"].values) - 13.74
     

@@ -16,13 +16,13 @@ cvel      = 299792.458
 # Storing the data in .fits file
 def save_cube(data, wave, hdr , fname, s):
     p_hdu  = fits.PrimaryHDU()
-    data_hdu = fits.ImageHDU(data = np.copy(data), header=hdr, name="DATA", )
+    data_hdu = fits.ImageHDU(data=np.copy(data), header=hdr, name="DATA", )
     wave_hdu = fits.ImageHDU(data=wave, name='WAVELENGTH',)
     # hdr = data_hdu.header
     # hdr.set("YAXIS", value=s[1])
     # hdr.set("XAXIS", value=s[2])
 
-    print(f'Data cube recovered in --> {name}')
+    print(f'Data cube recovered in --> {fname}')
 
     # Create HDU list and write to file
     HDUList = fits.HDUList([p_hdu, data_hdu, wave_hdu])
