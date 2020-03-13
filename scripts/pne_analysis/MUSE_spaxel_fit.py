@@ -39,20 +39,21 @@ save_sep = args.sep
 DIR_dict = paths(galaxy_name, loc)
 
 # To be used when working with residual cubes
-# res_data, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
+res_cube, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
 
-res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
+# res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
 
 # reshape the residual cube into a residual list, so as to work with current code
-# res_data = res_data.reshape(len(wavelength),x_data*y_data)
-# res_data = np.swapaxes(res_data, 1, 0)
+res_data_list = res_cube.reshape(len(wavelength),x_data*y_data)
+res_data_list = np.swapaxes(res_data_list, 1, 0)
+n_spax = np.shape(res_data_list)[0]
 
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
 # non_zero_index = np.squeeze(np.where(res_data[0,:] != 0.)) # use with residual cube
-non_zero_index = np.squeeze(np.where(res_data[:,0] != 0.))
+non_zero_index = np.squeeze(np.where(res_data_list[:,0] != 0.))
     
-list_of_std = np.abs([robust_sigma(dat) for dat in res_data])
+list_of_std = np.abs([robust_sigma(dat) for dat in res_data_list])
 input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
        
 # Constants
@@ -79,18 +80,18 @@ print("Spaxel by Spaxel fit underway...")
 # Run Spaxel by Spaxel fitter
 print("Fitting Spaxel by Spaxel for [OIII] doublet.")
 
-list_of_std = np.abs([robust_sigma(dat) for dat in res_data])
+list_of_std = np.abs([robust_sigma(dat) for dat in res_data_list])
 input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std] # Intially use the standard deviation of each spectra as the uncertainty for the spaxel fitter.
 
 # Setup numpy arrays for storage of best fit values.
-gauss_A = np.zeros(res_shape[0])
-list_of_rN = np.zeros(res_shape[0])
-list_of_models = np.zeros((res_shape[0], len(wavelength)))
-data_residuals = np.zeros((res_shape[0], len(wavelength)))
-obj_residuals = np.zeros((res_shape[0], len(wavelength)))
-g_bkg  = np.zeros(res_shape[0])
-g_grad = np.zeros(res_shape[0])
-list_of_mean = np.zeros(res_shape[0])
+gauss_A = np.zeros(n_spax)
+list_of_rN = np.zeros(n_spax)
+list_of_models = np.zeros((n_spax, len(wavelength)))
+data_residuals = np.zeros((n_spax, len(wavelength)))
+obj_residuals = np.zeros((n_spax, len(wavelength)))
+g_bkg  = np.zeros(n_spax)
+g_grad = np.zeros(n_spax)
+list_of_mean = np.zeros(n_spax)
 
 # setup LMfit paramterts
 spaxel_params = Parameters()
@@ -105,7 +106,7 @@ if fit_spaxel == True:
     for j,i in tqdm(enumerate(non_zero_index), total=len(non_zero_index)):
         #progbar(j, len(non_zero_index), 40)
         get_data_residuals = []
-        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data[i], input_errors[i], i, z), nan_policy="propagate")
+        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data_list[i], input_errors[i], i, z), nan_policy="propagate")
         gauss_A[i] = fit_results.params["Amp"].value
         obj_residuals[i] = fit_results.residual
         data_residuals[i] = fit_results.residual * input_errors[i]
@@ -169,7 +170,7 @@ print(f"Plots saved in Plots/{galaxy_name}")
 ################################# run SEP  #################################
 ############################################################################
 
-A_rN_img = A_rN.reshape(y_data,x_data)
+A_rN_img = A_rN.reshape(y_data, x_data)
 
 # Where element is equal to element [0,0], set equal to 0.0, essentially making out of bound areas equal to 0.0
 A_rN_img[A_rN_img == A_rN_img[0,0]] = 0.0
@@ -229,11 +230,11 @@ if save_sep == True:
 # including header for wcs info
 
 # Retrieve the respective spectra for each PNe source, from the list of spectra data file, using a function to find the associated index locations of the spectra for a PNe.
-PNe_spectra = np.array([PNe_minicube_extractor(x, y, n_pixels, res_data, wavelength) for x,y in zip(x_PNe, y_PNe)])
+PNe_spectra = np.array([PNe_minicube_extractor(x, y, n_pixels, res_data_list, wavelength) for x,y in zip(x_PNe, y_PNe)])
 
 ## remove once residual cubes are used
-with fits.open(DIR_dict["RAW_DATA"]) as raw_hdu:
-    raw_hdr = raw_hdu[1].header
+# with fits.open(DIR_dict["RAW_DATA"]) as raw_hdu:
+    # raw_hdr = raw_hdu[1].header
 ##
 
 # with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits") as obj_residual_cube:
@@ -250,9 +251,9 @@ raw_hdr.set("YAXIS", value=x_data)
 raw_hdr.set("XAXIS", value=y_data)
 
 # Use once residual cubes are introduced
-# PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=res_hdr, name="PNe_spectra")
+PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=res_hdr, name="PNe_spectra")
 
-PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=raw_hdr, name="PNe_spectra")
+# PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=raw_hdr, name="PNe_spectra")
 wave_hdu = fits.ImageHDU(data=wavelength, name="wavelength", )
 objective_hdu = fits.ImageHDU(data=obj_error_cube, name="obj_err",)
 res_error_hdu = fits.ImageHDU(data=res_error_cube, name="res_err",)

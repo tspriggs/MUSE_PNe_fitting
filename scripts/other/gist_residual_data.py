@@ -66,23 +66,28 @@ else:
     file_extra = extra
     
 
-WORK_DIR   = f"/local/tspriggs/re_reduced_F3D/gist_results/" # Where the GIST output files are located
+WORK_DIR   = f"/local/tspriggs/re_reduced_F3D/gist_results/{galaxy}{loc}_{loc}/" # Where the GIST output files are located
 RAW_DIR    = "/local/tspriggs/re_reduced_F3D/"
-EXPORT_DIR = "/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/" 
+# WORK_DIR   = f"/local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/{galaxy}center_center/" # Where the GIST output files are located
+# RAW_DIR    = f"/local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/"
+EXPORT_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/" 
 
 ## extract Residual data
 hdu_Allspec = fits.open(WORK_DIR+f"{galaxy}{loc}_AllSpectra.fits{file_extra}")
 spectra = hdu_Allspec[1].data.SPEC.T
+wavelength = np.array(hdu_Allspec[2].data, dtype=np.float)
+wavelength = np.exp(wavelength)
 # 
 hdu_bestfit = fits.open(WORK_DIR+f"{galaxy}{loc}_gandalf-bestfit_SPAXEL.fits{file_extra}")
 hdu_emission = fits.open(WORK_DIR+f'{galaxy}{loc}_gandalf-emission_SPAXEL.fits{file_extra}')
 # 
-aux = np.array(hdu_bestfit[1].data, dtype=float) - np.array(hdu_emission[1].data, dtype=float)
+aux = hdu_bestfit[1].data.BESTFIT - hdu_emission[1].data.EMISSION 
 residuals = spectra - aux.T    
 
-with fits.open(RAW_DIR+"{galaxy}{loc}.fits") as raw_hdu:
+with fits.open(RAW_DIR+f"{galaxy}{loc}.fits") as raw_hdu:
     raw_hdr = raw_hdu[1].header
     raw_shape = np.shape(raw_hdu[1].data)
+
 
 xaxis = np.arange(raw_shape[2])*raw_hdr['CD2_2']*3600.0
 yaxis = np.arange(raw_shape[1])*raw_hdr['CD2_2']*3600.0
@@ -102,15 +107,10 @@ for n,(i,j) in enumerate(zip(x_pix, y_pix)):
     index_pix[n] = [np.squeeze(np.where(xaxis == i)), np.squeeze(np.where(yaxis==j))]
 
 
-# load up the cleaned_spaxel data and get wavelength
-with fits.open(WORK_DIR+f"{galaxy}{loc}_gandalf-cleaned_SPAXEL.fits") as clean_hdulist:
-    wavelength = np.exp(clean_hdulist[2].data.LOGLAM)
-
-
 # Make an empty pointing of the same shape as the input raw data cube: y, x, lambda
-residual_cube = np.zeros((len(wavelength), raw_shape[1], raw_shape[2], ))
+residual_cube = np.zeros((len(wavelength), raw_shape[1], raw_shape[2]))
 
-# Fill in the empty pointing, using the x,y index values of the fitted pixel locations.
+# Fill in the empty pointing, using the y,x index values of the fitted pixel locations.
 for n, i in enumerate(index_pix):
     residual_cube[:,int(i[1]),int(i[0])] = residuals[:,n]
 
@@ -118,10 +118,12 @@ for n, i in enumerate(index_pix):
 
 # use wavelength shortening condition to reduce wavelength range to between 4900 and 5100
 # rename empty_gal
-cond = (wavelength >= np.log(float(4900.))) & (wavelength <= np.log(float(5100.)))
-residual_cube[cond,:,:]
+cond = (wavelength >= float(4900.)) & (wavelength <= float(5100.))
+residual_cube = residual_cube[cond,:,:]
+wavelength = wavelength[cond]
 
-save_cube(residual_cube, wavelength, raw_hdr, WORK_DIR+f"{galaxy}{loc}_residual_cube.fits", raw_shape)
+save_cube(residual_cube, wavelength, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube.fits", raw_shape)
+
 
 
 
@@ -133,16 +135,16 @@ save_cube(residual_cube, wavelength, raw_hdr, WORK_DIR+f"{galaxy}{loc}_residual_
 
 
 
+# RAW_DIR = f"/local/tspriggs/re_reduced_F3D/"
+# DATA_DIR = f"/local/tspriggs/re_reduced_F3D/gist_results/{galaxy}{loc}_{loc}/"
+# ####
 
 
-####
-
-
-# # hdu = fits.open(RAW_DIR+f"{galaxy}{loc}.fits")
+# # # hdu = fits.open(RAW_DIR+f"{galaxy}{loc}.fits")
 # hdu = fits.open(RAW_DIR+f"{galaxy}center.fits")
 
 # # huduu = fits.open(DATA_DIR+f"{galaxy}{loc}_AllSpectra.fits{file_extra}")
-# huduu = fits.open(DATA_DIR+f"{galaxy}_AllSpectra.fits{file_extra}")
+# huduu = fits.open(DATA_DIR+f"{galaxy}{loc}_AllSpectra.fits{file_extra}")
 
 # data  = hdu[1].data
 # #stat  = hdu[2].data
@@ -163,23 +165,26 @@ save_cube(residual_cube, wavelength, raw_hdr, WORK_DIR+f"{galaxy}{loc}_residual_
 # vsys   = float(params['REDSHIFT'])
 
 # # Applying some wavelength cuts
-# idx       = (wave >= float(params["LMIN"])*(1.0 + vsys/cvel)) & \
-#             (wave <= float(params["LMAX"])*(1.0 + vsys/cvel))
+# idx       = (wave >= float(params["LMIN_GANDALF"])*(1.0 + vsys/cvel)) & \
+#             (wave <= float(params["LMAX_GANDALF"])*(1.0 + vsys/cvel))
 # spec      = spec[idx,:]
 
-# idx_good = np.where( np.median(spec, axis=0) > 0.0 )[0]
+# idx_good = np.where( np.nanmedian(spec, axis=0) > 0.0 )[0]
 
 # # Computing the SNR per spaxel
 # signal = np.nanmedian(spec,axis=0)
 # #noise  = np.abs(np.nanmedian(np.sqrt(espec),axis=0))
 # #snr    = signal / noise
 
-# hdu1 = fits.open(DATA_DIR+f'{galaxy}_gandalf-residuals_SPAXEL.fits{file_extra}')
-# hdu2 = fits.open(DATA_DIR+f'{galaxy}_gandalf-emission_SPAXEL.fits{file_extra}')
-# data1, data2    = hdu1[1].data, (hdu2[1].data)
-# resid, emission = data1['RESIDUALS'], data2['EMISSION'].T
+# # hdu1 = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf-residuals_SPAXEL.fits{file_extra}')
+# hdu2 = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf-emission_SPAXEL.fits{file_extra}')
+# # data1, data2    = hdu1[1].data, (hdu2[1].data)
+# data2    = (hdu2[1].data)
+# # resid, emission = data1['RESIDUALS'], data2['EMISSION'].T
+# emission = data2['EMISSION'].T
+# resid = residuals.T
 
-# hdu  = fits.open(DATA_DIR+f'{galaxy}_gandalf_SPAXEL.fits{file_extra}')
+# hdu  = fits.open(DATA_DIR+f'{galaxy}{loc}_gandalf_SPAXEL.fits{file_extra}')
 # data = hdu[2].data
 
 # AoN = data['AoN'][:,0]
@@ -211,12 +216,12 @@ save_cube(residual_cube, wavelength, raw_hdr, WORK_DIR+f"{galaxy}{loc}_residual_
 # #rN_tot = rN_tot[cond,:]
 # s[0] = len(tmp)
 
-# # Rearrange cube to list for saving to a list format .fits file
-# resid_list = np.swapaxes(np.copy(resid_tot), 1, 0) # shape swapped to x*y, lambda
+# # # Rearrange cube to list for saving to a list format .fits file
+# # resid_list = np.swapaxes(np.copy(resid_tot), 1, 0) # shape swapped to x*y, lambda
 
-# # Save the data cubes
-# save_list(resid_list, tmp, WORK_DIR+f"{galaxy}{loc}_residuals_list.fits", s)
-# #save_cube(resid_tot.reshape((s[0],s[1],s[2])),tmp, directory + WORK_DIR+f"{galaxy}_residuals_cube.fits", s)
+# # # Save the data cubes
+# # save_list(resid_list, tmp, WORK_DIR+f"{galaxy}{loc}_residuals_list_test.fits", s)
+# # #save_cube(resid_tot.reshape((s[0],s[1],s[2])),tmp, directory + WORK_DIR+f"{galaxy}_residuals_cube.fits", s)
 
 
 

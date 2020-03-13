@@ -59,22 +59,24 @@ def open_data(galaxy_name, loc, DIR_dict):
     galaxy_info = yaml_info[f"{galaxy_name}_{loc}"]
 
     # Open the residual list fits file for the selected galaxy and location
-    # with fits.open(DIR_dict["DATA_DIR"]+"_residual_cube.fits") as hdulist:# Path to data
-        # residual_data = np.copy(hdulist[1].data)
-        # residual_hdr = hdulist[1].header # extract raw data header info, including wcs, from residual cube
-        # wavelength = np.copy(hdulist[2].data)
+    with fits.open(DIR_dict["DATA_DIR"]+"_residual_cube.fits") as hdulist:# Path to data
+        residual_data = np.copy(hdulist[1].data)
+        residual_hdr = hdulist[1].header # extract raw data header info, including wcs, from residual cube
+        wavelength = np.copy(hdulist[2].data)
 
     
-    with fits.open(DIR_dict["DATA_DIR"]+"_residuals_list.fits") as hdulist:# Path to data
-        residual_data = np.copy(hdulist[0].data)
-        residual_hdr = hdulist[0].header # extract header from residual cube
-        wavelength = np.exp(hdulist[1].data)
+    # with fits.open(DIR_dict["DATA_DIR"]+"_residuals_list.fits") as hdulist:# Path to data
+    #     residual_data = np.copy(hdulist[0].data)
+    #     residual_hdr = hdulist[0].header # extract header from residual cube
+    #     wavelength = np.exp(hdulist[1].data)
     
     # store the shape of the data, should be two dimensional
     residual_shape = np.shape(residual_data)
     
-    x_data = residual_hdr["XAXIS"]
-    y_data = residual_hdr["YAXIS"]
+    # x_data = residual_hdr["XAXIS"]
+    x_data = residual_hdr["NAXIS1"]
+    # y_data = residual_hdr["YAXIS"]
+    y_data = residual_hdr["NAXIS2"]
     
     return residual_data, residual_hdr, wavelength, residual_shape, x_data, y_data, galaxy_info
 

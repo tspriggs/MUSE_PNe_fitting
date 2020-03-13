@@ -46,8 +46,9 @@ def PNe_minicube_extractor(x, y, n_pix, data, wave):
     xc = round(x)
     yc = round(y)
     offset = n_pix // 2
-    PN = data[yc-offset:yc+offset+1, xc-offset:xc+offset+1]
-    return PN.reshape(n_pix*n_pix, len(wave))
+    PN = data[:, int(yc-offset):int(yc+offset+1), int(xc-offset):int(xc+offset+1)]
+    PN = PN.reshape(len(wave),n_pix*n_pix)
+    return np.swapaxes(PN, 1, 0)
 
 
 def robust_sigma(y, zero=False):
