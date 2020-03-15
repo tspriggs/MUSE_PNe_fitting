@@ -33,6 +33,7 @@ my_parser = argparse.ArgumentParser()
 my_parser.add_argument('--galaxy', action='store', type=str, required=True)
 my_parser.add_argument("--loc",    action="store", type=str, required=True)
 my_parser.add_argument("--fit_psf", action="store_true", default=False)
+my_parser.add_argument("--LOSV", actions="store_true", default=False)
 my_parser.add_argument("--save_gist", action="store_true", default=False)
 my_parser.add_argument("--Lbol", action="store_true", default=False)
 args = my_parser.parse_args()
@@ -43,6 +44,7 @@ loc = args.loc              # MUSE pointing loc: center, middle, halo
 fit_PSF = args.fit_psf
 save_gist = args.save_gist
 calc_Lbol = args.Lbol
+LOSV = args.LOSV
 
 DIR_dict = paths(galaxy_name, loc)
 
@@ -76,7 +78,7 @@ n_PNe = len(x_PNe)
 
 
 # create Pandas dataframe for storage of values from the 3D fitter.
-PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "redchi", "ID"))
+PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "PNe_LOS_V", "redchi", "ID"))
 PNe_df["PNe number"] = np.arange(0, n_PNe)
 PNe_df["ID"] = "PN" # all start as PN
 
@@ -220,9 +222,11 @@ PNe_df.loc[PNe_df["Chi2"]>=upper_chi, "ID"] = "-"
 print("################################################################")
 print("##################### Filtering objects ########################")
 print("################################################################")
-PNe_LOS_V, interlopers, vel_ratio, vsys = LOSV_interloper_check(DIR_dict, galaxy_info, mean_wave_list, PNe_df.loc[PNe_df["ID"]=="PN"].index.values, x_PNe, y_PNe)
-PNe_df["PNe_LOS_V"] = PNe_LOS_V
-print(interlopers)
+
+# if LOSV == True:
+#     PNe_LOS_V, interlopers, vel_ratio, vsys = LOSV_interloper_check(DIR_dict, galaxy_info, mean_wave_list, PNe_df.loc[PNe_df["ID"]=="PN"].index.values, x_PNe, y_PNe)
+#     PNe_df["PNe_LOS_V"] = PNe_LOS_V
+#     print(interlopers)
 
 
 
@@ -244,20 +248,24 @@ PNe_df.loc[PNe_df["PNe number"].isin(HII_filter), "ID"] = "HII"
 PNe_df.loc[PNe_df["PNe number"].isin(unknown_imp_filter), "ID"] = "imp" 
 PNe_df.loc[PNe_df["PNe number"].isin(interloper_filter), "ID"] = "interl"
 
-PNe_df.loc[PNe_df["PNe number"].isin(interlopers[0]), "ID"] = "interl"
+# PNe_df.loc[PNe_df["PNe number"].isin(interlopers[0]), "ID"] = "interl"
 
-# Plotting LOSV distribution ratio 
-plt.figure(figsize=(10,8))
-plt.clf()
-hist = plt.hist(vel_ratio, bins=8, edgecolor="k", alpha=0.8, linewidth=1)
-plt.xlabel(r"$\mathrm{\frac{V_{PNe} - V_{star}}{\sigma_{star}}}$", fontsize=30)
-plt.ylabel("PNe per bin", fontsize=30, labelpad=10)
-plt.tick_params(labelsize = 18)
-plt.xlim(-3.25,3.25)
-plt.ylim(0,np.max(hist[0])+3)
-plt.annotate(galaxy_name, xy=(-3,np.max(hist[0])-1), fontsize=25)
-plt.savefig(DIR_dict["PLOT_DIR"]+"_velocity_bins_plot.pdf", bbox_inches='tight')
-# End of LOSV plot #
+if LOSV == True:
+    PNe_LOS_V, interlopers, vel_ratio, vsys = LOSV_interloper_check(DIR_dict, galaxy_info, mean_wave_list, PNe_df.loc[PNe_df["ID"]=="PN"].index.values, x_PNe, y_PNe)
+    PNe_df["PNe_LOS_V"] = PNe_LOS_V
+    print(interlopers)
+    # Plotting LOSV distribution ratio 
+    plt.figure(figsize=(10,8))
+    plt.clf()
+    hist = plt.hist(vel_ratio, bins=8, edgecolor="k", alpha=0.8, linewidth=1)
+    plt.xlabel(r"$\mathrm{\frac{V_{PNe} - V_{star}}{\sigma_{star}}}$", fontsize=30)
+    plt.ylabel("PNe per bin", fontsize=30, labelpad=10)
+    plt.tick_params(labelsize = 18)
+    plt.xlim(-3.25,3.25)
+    plt.ylim(0,np.max(hist[0])+3)
+    plt.annotate(galaxy_name, xy=(-3,np.max(hist[0])-1), fontsize=25)
+    plt.savefig(DIR_dict["PLOT_DIR"]+"_velocity_bins_plot.pdf", bbox_inches='tight')
+    # End of LOSV plot #
 
 #### Fit for PSF via N highest A/rN PNe
 if fit_PSF == True:

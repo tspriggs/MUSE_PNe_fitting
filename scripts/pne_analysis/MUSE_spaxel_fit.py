@@ -50,7 +50,7 @@ n_spax = np.shape(res_data_list)[0]
 
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
-# non_zero_index = np.squeeze(np.where(res_data[0,:] != 0.)) # use with residual cube
+# non_zero_index = np.squeeze(np.where(res_cube[0,:,:] != 0.)) # use with residual cube
 non_zero_index = np.squeeze(np.where(res_data_list[:,0] != 0.))
     
 list_of_std = np.abs([robust_sigma(dat) for dat in res_data_list])
@@ -80,6 +80,7 @@ print("Spaxel by Spaxel fit underway...")
 # Run Spaxel by Spaxel fitter
 print("Fitting Spaxel by Spaxel for [OIII] doublet.")
 
+# list_of_std = np.abs(np.std(res_cube, 0)
 list_of_std = np.abs([robust_sigma(dat) for dat in res_data_list])
 input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std] # Intially use the standard deviation of each spectra as the uncertainty for the spaxel fitter.
 
@@ -104,10 +105,11 @@ spaxel_params.add("Gauss_grad", value=0.0001)
 
 # Loop through spectra from list format of data.
 if fit_spaxel == True:
-    for j,i in tqdm(enumerate(non_zero_index), total=len(non_zero_index)):
+    for i, (y,x) in tqdm(enumerate(zip(non_zero_index[0], non_zero_index[1])), total=len(non_zero_index)):
         #progbar(j, len(non_zero_index), 40)
         get_data_residuals = []
-        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data_list[i], input_errors[i], i, z), nan_policy="propagate")
+        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data_list[i], input_errors[i], z), nan_policy="propagate")
+        # fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_cube[:,y,x], np.nanstd(res_cube[:,y,x],0), z), nan_policy="propagate")
         gauss_A[i] = fit_results.params["Amp"].value
         obj_residuals[i] = fit_results.residual
         data_residuals[i] = fit_results.residual * input_errors[i]
@@ -235,17 +237,8 @@ if save_sep == True:
 # Retrieve the respective spectra for each PNe source, from the list of spectra data file, using a function to find the associated index locations of the spectra for a PNe.
 PNe_spectra = np.array([PNe_minicube_extractor(x, y, n_pixels, res_cube, wavelength) for x,y in zip(x_PNe, y_PNe)])
 
-## remove once residual cubes are used
-# with fits.open(DIR_dict["RAW_DATA"]) as raw_hdu:
-    # raw_hdr = raw_hdu[1].header
-##
-
-# with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_obj.fits") as obj_residual_cube:
-    # obj_error_cube = uncertainty_cube_construct(obj_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
 obj_error_cube = uncertainty_cube_construct(obj_residuals, x_PNe, y_PNe, n_pixels, PNe_spectra, wavelength)
 
-# with fits.open(DIR_dict["EXPORT_DIR"]+"_resids_data.fits") as data_residual_cube:
-    # error_cube = uncertainty_cube_construct(data_residual_cube[0].data, x_PNe, y_PNe, n_pixels, x_data, wavelength)
 res_error_cube = uncertainty_cube_construct(data_residuals, x_PNe, y_PNe, n_pixels, PNe_spectra, wavelength)
 
 primary_hdu = fits.PrimaryHDU()
@@ -256,12 +249,12 @@ res_hdr.set("XAXIS", value=y_data)
 # Use once residual cubes are introduced
 PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=res_hdr, name="PNe_spectra")
 
-# PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=raw_hdr, name="PNe_spectra")
 wave_hdu = fits.ImageHDU(data=wavelength, name="wavelength", )
 objective_hdu = fits.ImageHDU(data=obj_error_cube, name="obj_err",)
 res_error_hdu = fits.ImageHDU(data=res_error_cube, name="res_err",)
 
 
 # Save fits file
+print("PNe minicubes saved to "+DIR_dict["DATA_DIR"])
 PNe_HDUList = fits.HDUList([primary_hdu, PNe_hdu, wave_hdu, objective_hdu, res_error_hdu])
 PNe_HDUList.writeto(DIR_dict["DATA_DIR"]+"_PNe_spectra.fits", overwrite=True)

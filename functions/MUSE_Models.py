@@ -94,7 +94,7 @@ def PSF_residuals_3D(PSF_params, lam, x_2D, y_2D, data, err, z):
         return resid["resid_000"]
 
 
-def spaxel_by_spaxel(params, lam, data, error, spec_num, z):
+def spaxel_by_spaxel(params, lam, data, error, z):
     """
     Using a Gaussian double peaked model, fit the [OIII] lines at 4959 and 5007 Angstrom, found within Stellar continuum subtracted spectra, from MUSE.
     Inputs:
@@ -107,7 +107,6 @@ def spaxel_by_spaxel(params, lam, data, error, spec_num, z):
         x - Wavelength array
         data - read in sprectrum by spectrum of data via list form.
         error - associated errors for each spectrum.
-        spec_num - from enumerate, just the index number of spectrum, for storing value sin np array.
 
     Returns -  (Data - model) / error   for chi square minimiser.
     """
