@@ -1,5 +1,5 @@
 # Detecting PNe within reduced MUSE data.
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/fec5a221e1759e9671fcdb75acba88f46b36e525)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/fec5a221e1759e9671fcdb75acba88f46b36e525?urlpath=lab)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3698303.svg)](https://doi.org/10.5281/zenodo.3698303)
 
 
@@ -19,7 +19,7 @@ More functionality will be added to the Binder environment, however the current 
 
 ## Data requirements
 
-This project uses the output of the GIST IFU pipeline ([![GIST]](https://abittner.gitlab.io/thegistpipeline/)). Where the stellar continuum has been modelled (ppxf), along with the emission lines of the diffuse ionised gas (Gandalf; Sarzi, M. 2006). Once the stellar continuum is subtracted (MUSE_spectra - (Best fit - emission fit) ), we are left with a residual data cube, where the emission lines of unresolved point sources can be mapped out, along with regions of diffuse ionised gas. The residual cube is what is needed for this workflow. To create a residual data cube, please use the gist_residual_data.py script, under `scripts/other`, this will load up the relevant files and create a residual data cube for use with the PNe detection scripts.
+This project uses the output of the GIST IFU pipeline ([[GIST]](https://abittner.gitlab.io/thegistpipeline/)). Where the stellar continuum has been modelled (ppxf), along with the emission lines of the diffuse ionised gas (Gandalf; Sarzi, M. 2006). Once the stellar continuum is subtracted (MUSE_spectra - (Best fit - emission fit) ), we are left with a residual data cube, where the emission lines of unresolved point sources can be mapped out, along with regions of diffuse ionised gas. The residual cube is what is needed for this workflow. To create a residual data cube, please use the gist_residual_data.py script, under `scripts/other`, this will load up the relevant files and create a residual data cube for use with the PNe detection scripts.
 
 ## Intro
 

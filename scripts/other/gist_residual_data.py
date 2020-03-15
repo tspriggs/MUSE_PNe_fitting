@@ -75,7 +75,7 @@ EXPORT_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data
 ## extract Residual data
 hdu_Allspec = fits.open(WORK_DIR+f"{galaxy}{loc}_AllSpectra.fits{file_extra}")
 spectra = hdu_Allspec[1].data.SPEC.T
-wavelength = np.array(hdu_Allspec[2].data, dtype=np.float)
+wavelength = hdu_Allspec[2].data["LOGLAM"]
 wavelength = np.exp(wavelength)
 # 
 hdu_bestfit = fits.open(WORK_DIR+f"{galaxy}{loc}_gandalf-bestfit_SPAXEL.fits{file_extra}")
@@ -88,6 +88,8 @@ with fits.open(RAW_DIR+f"{galaxy}{loc}.fits") as raw_hdu:
     raw_hdr = raw_hdu[1].header
     raw_shape = np.shape(raw_hdu[1].data)
 
+
+raw_wave = raw_hdr['CRVAL3']+(np.arange(raw_shape[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
 
 xaxis = np.arange(raw_shape[2])*raw_hdr['CD2_2']*3600.0
 yaxis = np.arange(raw_shape[1])*raw_hdr['CD2_2']*3600.0
@@ -119,12 +121,14 @@ for n, i in enumerate(index_pix):
 # use wavelength shortening condition to reduce wavelength range to between 4900 and 5100
 # rename empty_gal
 cond = (wavelength >= float(4900.)) & (wavelength <= float(5100.))
+cond_raw = (raw_wave >= float(4900.)) & (raw_wave <= float(1500.))
 residual_cube = residual_cube[cond,:,:]
-wavelength = wavelength[cond]
+wavelength_cond = wavelength[cond]
+raw_wave_cond = raw_wave[cond_raw]
 
-save_cube(residual_cube, wavelength, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube.fits", raw_shape)
+save_cube(residual_cube, wavelength_cond, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube.fits", raw_shape)
 
-
+save_cube(residual_cube, raw_wave_cond, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube_raw_wave.fits", raw_shape) 
 
 
 # WORK_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
@@ -168,7 +172,6 @@ save_cube(residual_cube, wavelength, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residua
 # idx       = (wave >= float(params["LMIN_GANDALF"])*(1.0 + vsys/cvel)) & \
 #             (wave <= float(params["LMAX_GANDALF"])*(1.0 + vsys/cvel))
 # spec      = spec[idx,:]
-
 # idx_good = np.where( np.nanmedian(spec, axis=0) > 0.0 )[0]
 
 # # Computing the SNR per spaxel

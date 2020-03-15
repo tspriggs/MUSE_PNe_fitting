@@ -60,7 +60,7 @@ input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
 
-z = galaxy_info["velocity"] * 1e3 / c
+z = 0#galaxy_info["velocity"] * 1e3 / c
 gal_mask = galaxy_info["gal_mask"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
@@ -92,12 +92,13 @@ obj_residuals = np.zeros((n_spax, len(wavelength)))
 g_bkg  = np.zeros(n_spax)
 g_grad = np.zeros(n_spax)
 list_of_mean = np.zeros(n_spax)
+g_FWHM = np.zeros(n_spax)
 
 # setup LMfit paramterts
 spaxel_params = Parameters()
 spaxel_params.add("Amp",value=150., min=0.001)
-spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-25, max=(500677*(1+z))+25) #Starting position calculated from redshift value of galaxy.
-spaxel_params.add("FWHM", value=galaxy_info["LSF"], vary=False) # Line Spread Function
+spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-15, max=(500677*(1+z))+15) #Starting position calculated from redshift value of galaxy.
+spaxel_params.add("FWHM", value=2.8, vary=False)#galaxy_info["LSF"], vary=False) # Line Spread Function
 spaxel_params.add("Gauss_bkg", value=0.01)
 spaxel_params.add("Gauss_grad", value=0.0001)
 
@@ -214,6 +215,8 @@ ax = plt.gca()
 elip_gal = Ellipse((xe, ye), width, length, angle=alpha*(180/np.pi), fill=False, color="white")
 ax.add_artist(elip_gal)
 
+plt.savefig(DIR_dict["PLOT_DIR"]+"_circled_sources.png", bbox_inches='tight')
+
 # store list of objects, and print number of detected objects
 
 x_y_list = np.array([[x,y] for x,y in zip(x_sep, y_sep)])
@@ -230,7 +233,7 @@ if save_sep == True:
 # including header for wcs info
 
 # Retrieve the respective spectra for each PNe source, from the list of spectra data file, using a function to find the associated index locations of the spectra for a PNe.
-PNe_spectra = np.array([PNe_minicube_extractor(x, y, n_pixels, res_data_list, wavelength) for x,y in zip(x_PNe, y_PNe)])
+PNe_spectra = np.array([PNe_minicube_extractor(x, y, n_pixels, res_cube, wavelength) for x,y in zip(x_PNe, y_PNe)])
 
 ## remove once residual cubes are used
 # with fits.open(DIR_dict["RAW_DATA"]) as raw_hdu:
@@ -247,8 +250,8 @@ res_error_cube = uncertainty_cube_construct(data_residuals, x_PNe, y_PNe, n_pixe
 
 primary_hdu = fits.PrimaryHDU()
 
-raw_hdr.set("YAXIS", value=x_data)
-raw_hdr.set("XAXIS", value=y_data)
+res_hdr.set("YAXIS", value=x_data)
+res_hdr.set("XAXIS", value=y_data)
 
 # Use once residual cubes are introduced
 PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=res_hdr, name="PNe_spectra")
