@@ -89,7 +89,7 @@ with fits.open(RAW_DIR+f"{galaxy}{loc}.fits") as raw_hdu:
     raw_shape = np.shape(raw_hdu[1].data)
 
 
-raw_wave = raw_hdr['CRVAL3']+(np.arange(raw_shape[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
+#raw_wave = raw_hdr['CRVAL3']+(np.arange(raw_shape[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
 
 xaxis = np.arange(raw_shape[2])*raw_hdr['CD2_2']*3600.0
 yaxis = np.arange(raw_shape[1])*raw_hdr['CD2_2']*3600.0
@@ -121,14 +121,16 @@ for n, i in enumerate(index_pix):
 # use wavelength shortening condition to reduce wavelength range to between 4900 and 5100
 # rename empty_gal
 cond = (wavelength >= float(4900.)) & (wavelength <= float(5100.))
-cond_raw = (raw_wave >= float(4900.)) & (raw_wave <= float(1500.))
-residual_cube = residual_cube[cond,:,:]
+#cond_raw = (raw_wave >= float(4900.)) & (raw_wave <= float(1500.))
+residual_cube_cond = residual_cube[cond,:,:]
 wavelength_cond = wavelength[cond]
-raw_wave_cond = raw_wave[cond_raw]
+#raw_wave_cond = raw_wave[cond_raw]
 
-save_cube(residual_cube, wavelength_cond, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube.fits", raw_shape)
+save_cube(residual_cube_cond, wavelength_cond, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube.fits", raw_shape)
 
-save_cube(residual_cube, raw_wave_cond, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube_raw_wave.fits", raw_shape) 
+#resid_cube_raw = residual_cube[cond_raw, :,:]
+
+#save_cube(resid_cube_raw, raw_wave_cond, raw_hdr, EXPORT_DIR+f"{galaxy}{loc}_residual_cube_raw_wave.fits", np.shape(resid_cube_raw)) 
 
 
 # WORK_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
