@@ -50,11 +50,11 @@ n_spax = np.shape(res_data_list)[0]
 
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
-# non_zero_index = np.squeeze(np.where(res_cube[0,:,:] != 0.)) # use with residual cube
-non_zero_index = np.squeeze(np.where(res_data_list[:,0] != 0.))
+non_zero_index = np.squeeze(np.where(res_cube[0,:,:] != 0.)) # use with residual cube
+# non_zero_index = np.squeeze(np.where(res_data_list[:,0] != 0.))
     
-list_of_std = np.abs([robust_sigma(dat) for dat in res_data_list])
-input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
+# list_of_std = np.abs([robust_sigma(dat) for dat in res_data_list])
+# input_errors = [np.repeat(item, len(wavelength)) for item in list_of_std]
        
 # Constants
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
@@ -98,18 +98,18 @@ g_FWHM = np.zeros(n_spax)
 # setup LMfit paramterts
 spaxel_params = Parameters()
 spaxel_params.add("Amp",value=150., min=0.001)
-spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-15, max=(500677*(1+z))+15) #Starting position calculated from redshift value of galaxy.
+spaxel_params.add("wave", value=5006.77*(1+z), min=(5006.77*(1+z))-30, max=(500677*(1+z))+30) #Starting position calculated from redshift value of galaxy.
 spaxel_params.add("FWHM", value=2.8, vary=False)#galaxy_info["LSF"], vary=False) # Line Spread Function
 spaxel_params.add("Gauss_bkg", value=0.01)
 spaxel_params.add("Gauss_grad", value=0.0001)
 
 # Loop through spectra from list format of data.
 if fit_spaxel == True:
-    for i, (y,x) in tqdm(enumerate(zip(non_zero_index[0], non_zero_index[1])), total=len(non_zero_index)):
+    for i, (y,x) in tqdm(enumerate(zip(non_zero_index[0], non_zero_index[1])), total=len(non_zero_index[0])):
         #progbar(j, len(non_zero_index), 40)
         get_data_residuals = []
-        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data_list[i], input_errors[i], z), nan_policy="propagate")
-        # fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_cube[:,y,x], np.nanstd(res_cube[:,y,x],0), z), nan_policy="propagate")
+#         fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data_list[i], input_errors[i], z), nan_policy="propagate")
+        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_cube[:,y,x], np.nanstd(res_cube[:,y,x],0), z), nan_policy="propagate")
         gauss_A[i] = fit_results.params["Amp"].value
         obj_residuals[i] = fit_results.residual
         data_residuals[i] = fit_results.residual * input_errors[i]
@@ -217,13 +217,21 @@ ax = plt.gca()
 elip_gal = Ellipse((xe, ye), width, length, angle=alpha*(180/np.pi), fill=False, color="white")
 ax.add_artist(elip_gal)
 
-plt.savefig(DIR_dict["PLOT_DIR"]+"_circled_sources.png", bbox_inches='tight')
-
-# store list of objects, and print number of detected objects
 
 x_y_list = np.array([[x,y] for x,y in zip(x_sep, y_sep)])
 x_PNe = np.array([x[0] for x in x_y_list])
 y_PNe = np.array([y[1] for y in x_y_list])
+
+
+for i, item in enumerate(x_y_list):
+     ax.annotate(i, (item[0]+6, item[1]-2), color="white", size=15)
+
+        
+plt.savefig(DIR_dict["PLOT_DIR"]+"_circled_sources.png", bbox_inches='tight')
+
+# store list of objects, and print number of detected objects
+
+
 
 print(f"Number of detected [OIII] sources: {len(x_y_list)}")
 

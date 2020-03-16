@@ -33,7 +33,7 @@ my_parser = argparse.ArgumentParser()
 my_parser.add_argument('--galaxy', action='store', type=str, required=True)
 my_parser.add_argument("--loc",    action="store", type=str, required=True)
 my_parser.add_argument("--fit_psf", action="store_true", default=False)
-my_parser.add_argument("--LOSV", actions="store_true", default=False)
+my_parser.add_argument("--LOSV", action="store_true", default=False)
 my_parser.add_argument("--save_gist", action="store_true", default=False)
 my_parser.add_argument("--Lbol", action="store_true", default=False)
 args = my_parser.parse_args()
@@ -59,7 +59,7 @@ c = 299792458.0 # speed of light
 # Read from the yaml
 emission_dict = galaxy_info["emissions"]
 
-z = galaxy_info["velocity"]*1e3 / c
+z = 0#galaxy_info["velocity"]*1e3 / c
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
 coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]

@@ -55,7 +55,7 @@ def PNe_residuals_3D(params, l, x_2D, y_2D, data, error, PNe_number, emission_di
     list_to_append_data.clear()
     list_to_append_data.append(data-model)
     list_to_append_data.append(useful_info)    
-    zero_mask = np.where(data[:,0]!=0)
+    zero_mask = np.where((data[:,0]!=0) & (np.isnan(data[:,0])==False))
     
     return (data[zero_mask]- model[zero_mask]) / error[zero_mask]
 

@@ -261,7 +261,9 @@ def LOSV_interloper_check(DIR_dict, galaxy_info, fitted_wave_list, PNe_indx, x_P
         - interlopers       - list of interloper indexes
     """   
     ## Velocity from files
-    with fits.open(DIR_dict["RAW_DIR"]+f"/{galaxy_info['Galaxy name']}center_ppxf_SPAXELS.fits") as hdulist_ppxf:
+#     with fits.open(DIR_dict["RAW_DIR"]+f"/{galaxy_info['Galaxy name']}center_ppxf_SPAXELS.fits") as hdulist_ppxf:    
+    with fits.open(f"/local/tspriggs/re_reduced_F3D/gist_results/{galaxy_info['Galaxy name']}center_center/{galaxy_info['Galaxy name']}center_ppxf.fits") as hdulist_ppxf:
+
         v_star, s_star = hdulist_ppxf[1].data.V, hdulist_ppxf[1].data.SIGMA
     
     

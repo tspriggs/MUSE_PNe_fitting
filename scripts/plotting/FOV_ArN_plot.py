@@ -33,8 +33,7 @@ matched = args.matched
 
 DIR_dict = paths(galaxy_name, loc)
 
-res_data, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
-
+res_cube, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy_name, loc, DIR_dict)
 
 # Read in PN dataframe, and using the object column, plot signage of PNe, SNR, HII, impostor and over-luminous.
 PNe_df = pd.read_csv(DIR_dict["EXPORT_DIR"]+"_PNe_df.csv")
