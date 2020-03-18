@@ -42,8 +42,8 @@ if origin == "re_reduced":
     RAW_DIR = "/local/tspriggs/re_reduced_F3D/"
 elif origin == "F3D_gist":
     if galaxy in ["FCC153", "FCC167", "FCC170", "FCC177", "FCC219"]:
-        WORK_DIR = f"/local/tspriggs/muse/MILES_star_Guerou/{galaxy}/{galaxy}{loc}_{loc}/"
-        RAW_DIR =  f"/ local/tspriggs/muse/MILES_star_Guerou/{galaxy}/"
+        WORK_DIR = f"/local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/{galaxy}{loc}_{loc}/"
+        RAW_DIR =  f"/ local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/"
     else:
         WORK_DIR = f"/local/tspriggs/muse/{galaxy}/{galaxy}{loc}_{loc}/"
         RAW_DIR =  f"/local/tspriggs/muse/{galaxy}/"
