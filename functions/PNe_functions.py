@@ -271,12 +271,12 @@ def LOSV_interloper_check(DIR_dict, galaxy_info, fitted_wave_list, PNe_indx, x_P
         X_star, Y_star = hdulist_table[1].data.XBIN, hdulist_table[1].data.YBIN
         flux_star = hdulist_table[1].data.FLUX
     
-    idx = flux_star.argmax()
+    idx = np.nanargmax(flux_star)
     X_star, Y_star = X_star-X_star[idx], Y_star-Y_star[idx]
     
     # systemic velocity from inner 5 arcsecond circle of galaxy centre
     cond = np.sqrt( (X_star)**2 + (Y_star)**2 ) <= 5.0
-    vsys = np.median(v_star[cond])
+    vsys = np.median(v_star[cond]) # v_star may be the number of fitted pixels, need to reshape to be like res cube
     v_star = v_star-vsys
     
     c = 299792458.0

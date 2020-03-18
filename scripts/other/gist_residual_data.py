@@ -98,6 +98,8 @@ yaxis = np.arange(raw_shape[1])*raw_hdr['CD2_2']*3600.0
 table_hdu = fits.open(WORK_DIR+f"{galaxy}{loc}_table.fits")
 table_data = table_hdu[1].data
 
+
+
 x_pix = table_data["X"]
 y_pix = table_data["Y"]
 

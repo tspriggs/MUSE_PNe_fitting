@@ -77,15 +77,19 @@ def KS2_test(dist_1, dist_2, conf_lim):
 def completeness(galaxy, loc, DIR_dict, mag, params, dM,  peak, n_pixels, c1=0.307):
        
     #load up data
-    res_data, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy, loc, DIR_dict)
+    res_cube, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy, loc, DIR_dict)
     
+    if res_data.ndim > 2:
+        res_data_list = res_cube.reshape(len(wavelength), x_data*y_data)
+        res_data_list = np.swapaxes(res_data_list, 1, 0)
+
     galaxy_image, rec_wave, rec_hdr = reconstructed_image(galaxy, loc)
     image = galaxy_image.reshape(y_data, x_data)
     
     c = 299792458.0
     z = galaxy_info["velocity"]*1e3 / c
     
-    rN = np.array([robust_sigma(res_data[i]) for i in range(len(res_data))])
+    rN = np.array([robust_sigma(res_data_list[i]) for i in range(len(res_data_list))])
     Noise_map  = rN.reshape(y_data, x_data)
 
     # mask out regions
