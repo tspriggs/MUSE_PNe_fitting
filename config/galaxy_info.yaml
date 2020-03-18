@@ -139,9 +139,9 @@ FCC167_center:
   LSF: 3.2
   LSF_err: 0.04
   centre: [1,1]
-  gal_mask: [237,195,130,35,0.16]
+  gal_mask: [235,195,130,35,0.16]
   star_mask: [[1,1,1]]
-  over_lum: [20]
+  over_lum: [19]
   impostor_filter: [[],[],[]]
   impostor_filter_old: [[13,21,27,67],[71],[]]
   interloper_filter: []

@@ -52,12 +52,18 @@ AllSpectra       = fits.open(f"{gist_dir}_AllSpectra.fits")
 ppxf_results     = fits.open(f"{gist_dir}_ppxf.fits")
 lamb = np.array(AllSpectra[2].data, dtype=np.float64)
 wave = np.exp(lamb)
-# [OIII] index 12
-# Hb index 11
-# [NII] index 18
-# Ha index 17
-# [SII] I index 19
-# [SII] II index 20
+# [OIII] index 3
+# Hb index N/A
+# [NII] index 9
+# Ha index 8
+# [SII] I index 10
+# [SII] II index 11
+
+OIII_ind = 3
+NII_ind = 9
+Ha_ind = 8
+SII_I_ind = 10
+SII_II_ind = 11
 
 
 ###################################################################################################
@@ -178,12 +184,12 @@ wave = np.exp(lamb)
 #####################################################################################################
 
 # AMPLITUDES
-Hb_ampl     = np.array([gandalf_results[2].data[i]["Ampl"][11] for i in np.arange(len(gandalf_results[2].data))])
-OIII_ampl   = np.array([gandalf_results[2].data[i]["Ampl"][12] for i in np.arange(len(gandalf_results[2].data))])
-Ha_ampl     = np.array([gandalf_results[2].data[i]["Ampl"][17] for i in np.arange(len(gandalf_results[2].data))])
-NII_ampl    = np.array([gandalf_results[2].data[i]["Ampl"][18] for i in np.arange(len(gandalf_results[2].data))])
-SII_I_ampl  = np.array([gandalf_results[2].data[i]["Ampl"][19] for i in np.arange(len(gandalf_results[2].data))])
-SII_II_ampl = np.array([gandalf_results[2].data[i]["Ampl"][20] for i in np.arange(len(gandalf_results[2].data))])
+# Hb_ampl     = np.array([gandalf_results[2].data[i]["Ampl"][11] for i in np.arange(len(gandalf_results[2].data))])
+OIII_ampl   = np.array([gandalf_results[2].data[i]["Ampl"][OIII_ind] for i in np.arange(len(gandalf_results[2].data))])
+Ha_ampl     = np.array([gandalf_results[2].data[i]["Ampl"][Ha_ind] for i in np.arange(len(gandalf_results[2].data))])
+NII_ampl    = np.array([gandalf_results[2].data[i]["Ampl"][NII_ind] for i in np.arange(len(gandalf_results[2].data))])
+SII_I_ampl  = np.array([gandalf_results[2].data[i]["Ampl"][SII_I_ind] for i in np.arange(len(gandalf_results[2].data))])
+SII_II_ampl = np.array([gandalf_results[2].data[i]["Ampl"][SII_II_ind] for i in np.arange(len(gandalf_results[2].data))])
 
 # FLUXES
 # Hb_flux     = np.array([gandalf_results[2].data[i]["Flux"][11] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
@@ -192,32 +198,38 @@ SII_II_ampl = np.array([gandalf_results[2].data[i]["Ampl"][20] for i in np.arang
 # NII_flux    = np.array([gandalf_results[2].data[i]["Flux"][18] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
 # SII_I_flux  = np.array([gandalf_results[2].data[i]["Flux"][19] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
 # SII_II_flux = np.array([gandalf_results[2].data[i]["Flux"][20] for i in np.arange(len(gandalf_results[2].data))])* 1e-20
-Hb_flux     = np.array([gandalf_results[2].data[i]["Ampl"][11]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
-OIII_flux   = np.array([gandalf_results[2].data[i]["Ampl"][12]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
-Ha_flux     = np.array([gandalf_results[2].data[i]["Ampl"][17]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
-NII_flux    = np.array([gandalf_results[2].data[i]["Ampl"][18]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
-SII_I_flux  = np.array([gandalf_results[2].data[i]["Ampl"][19]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
-SII_II_flux = np.array([gandalf_results[2].data[i]["Ampl"][20]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
+# Hb_flux     = np.array([gandalf_results[2].data[i]["Ampl"][11]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
+OIII_flux   = np.array([gandalf_results[2].data[i]["Ampl"][OIII_ind]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
+Ha_flux     = np.array([gandalf_results[2].data[i]["Ampl"][Ha_ind]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
+NII_flux    = np.array([gandalf_results[2].data[i]["Ampl"][NII_ind]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
+SII_I_flux  = np.array([gandalf_results[2].data[i]["Ampl"][SII_I_ind]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
+SII_II_flux = np.array([gandalf_results[2].data[i]["Ampl"][SII_II_ind]*np.sqrt(2*np.pi)*(((gandalf_results[2].data[i]["Sigma"][12]*1e3)  / 299792458.0)*5006.77) for i in np.arange(len(m_5007))]) * 1e-20
 
 # SIGNAL TO NOISE (AON)
-Hb_AON     = np.array([gandalf_results[2].data[i]["AON"][11] for i in np.arange(len(gandalf_results[2].data))])
-OIII_AON   = np.array([gandalf_results[2].data[i]["AON"][12] for i in np.arange(len(gandalf_results[2].data))])
-Ha_AON     = np.array([gandalf_results[2].data[i]["AON"][17] for i in np.arange(len(gandalf_results[2].data))])
-NII_AON    = np.array([gandalf_results[2].data[i]["AON"][18] for i in np.arange(len(gandalf_results[2].data))])
-SII_I_AON  = np.array([gandalf_results[2].data[i]["AON"][19] for i in np.arange(len(gandalf_results[2].data))])
-SII_II_AON = np.array([gandalf_results[2].data[i]["AON"][20] for i in np.arange(len(gandalf_results[2].data))])
+# Hb_AON     = np.array([gandalf_results[2].data[i]["AON"][11] for i in np.arange(len(gandalf_results[2].data))])
+OIII_AON   = np.array([gandalf_results[2].data[i]["AON"][OIII_ind] for i in np.arange(len(gandalf_results[2].data))])
+Ha_AON     = np.array([gandalf_results[2].data[i]["AON"][Ha_ind] for i in np.arange(len(gandalf_results[2].data))])
+NII_AON    = np.array([gandalf_results[2].data[i]["AON"][NII_ind] for i in np.arange(len(gandalf_results[2].data))])
+SII_I_AON  = np.array([gandalf_results[2].data[i]["AON"][SII_I_ind] for i in np.arange(len(gandalf_results[2].data))])
+SII_II_AON = np.array([gandalf_results[2].data[i]["AON"][SII_II_ind] for i in np.arange(len(gandalf_results[2].data))])
 
 # Create a dataframe called gand_df, for storing the above info.
-gand_df = pd.DataFrame(index=np.arange(0,len(PNe_df)), columns=("Hb amp","Hb flux", "Hb AON",
+# gand_df = pd.DataFrame(index=np.arange(0,len(PNe_df)), columns=("Hb amp","Hb flux", "Hb AON",
+#              "[OIII] amp", "corr [OIII] amp","[OIII] flux","corr [OIII] flux", "[OIII] AON",
+#              "Ha amp", "Ha flux", "Ha AON", 
+#              "[NII] amp", "[NII] flux", "[NII] AON",
+#              "[SII]I amp", "[SII]I flux", "[SII]I AON",
+#              "[SII]II amp", "[SII]II flux", "[SII]II AON"))
+gand_df = pd.DataFrame(index=np.arange(0,len(PNe_df)), columns=(
              "[OIII] amp", "corr [OIII] amp","[OIII] flux","corr [OIII] flux", "[OIII] AON",
              "Ha amp", "Ha flux", "Ha AON", 
              "[NII] amp", "[NII] flux", "[NII] AON",
              "[SII]I amp", "[SII]I flux", "[SII]I AON",
              "[SII]II amp", "[SII]II flux", "[SII]II AON"))
 
-gand_df["Hb amp"]          = Hb_ampl
-gand_df["Hb flux"]         = Hb_flux
-gand_df["Hb AON"]          = Hb_AON
+# gand_df["Hb amp"]          = Hb_ampl
+# gand_df["Hb flux"]         = Hb_flux
+# gand_df["Hb AON"]          = Hb_AON
 gand_df["[OIII] amp"]      = OIII_ampl
 gand_df["[OIII] flux"]     = OIII_flux
 gand_df["[OIII] AON"]      = OIII_AON
