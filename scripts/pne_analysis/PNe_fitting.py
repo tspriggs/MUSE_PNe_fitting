@@ -187,9 +187,9 @@ def run_minimiser(parameters):
     PNe_df["redchi"] = redchi
     
     # velocity
-    # de_z_means = np.array(mean_wave_list[:,0] / (1 + z)) # de redshift OIII wavelength position
+    de_z_means = np.array(mean_wave_list[:,0] / (1 + z)) # de redshift OIII wavelength position
     
-    # PNe_df["V (km/s)"] = (c * (de_z_means - 5006.77) / 5006.77) / 1000.    
+    PNe_df["PNe_LOS_V"] = (c * (de_z_means - 5006.77) / 5006.77) / 1000.    
     
     PNe_df["fitted_mean_wave"] = mean_wave_list[:,0]
 
