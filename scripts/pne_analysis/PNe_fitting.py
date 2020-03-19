@@ -36,6 +36,7 @@ my_parser.add_argument("--fit_psf", action="store_true", default=False)
 my_parser.add_argument("--LOSV", action="store_true", default=False)
 my_parser.add_argument("--save_gist", action="store_true", default=False)
 my_parser.add_argument("--Lbol", action="store_true", default=False)
+my_parser.add_argument("--test", action="store_true", default=False)
 args = my_parser.parse_args()
 
 # Define galaxy name
@@ -45,6 +46,7 @@ fit_PSF = args.fit_psf
 save_gist = args.save_gist
 calc_Lbol = args.Lbol
 LOSV = args.LOSV
+test = args.test
 
 DIR_dict = paths(galaxy_name, loc)
 
@@ -436,88 +438,89 @@ app_mag = PNe_df["m 5007"].loc[PNe_df["ID"]=="PN"].values
 app_mag_OvLu = PNe_df["m 5007"].loc[PNe_df["ID"].isin(["OvLu"])].values
 
 # Total PNLF
-PNLF, PNLF_corr, completeness_ratio, Abs_M, app_m = completeness(galaxy_name, loc, DIR_dict, PNe_mag, PNe_multi_params, dM, 3.0, n_pixels, c1=0.307)  # Estimating the completeness for the central pointing
+if test == False:
+    PNLF, PNLF_corr, completeness_ratio, Abs_M, app_m = completeness(galaxy_name, loc, DIR_dict, PNe_mag, PNe_multi_params, dM, 3.0, n_pixels, c1=0.307)  # Estimating the completeness for the central pointing
 
-step = abs(Abs_M[1]-Abs_M[0])
-# Getting the normalisation - sum of correctied PNLF, times bin size
-total_norm = np.sum(np.abs(PNLF_corr)) * step
+    step = abs(Abs_M[1]-Abs_M[0])
+    # Getting the normalisation - sum of correctied PNLF, times bin size
+    total_norm = np.sum(np.abs(PNLF_corr)) * step
 
-# Scaling factor
-scal = len(PNe_mag) / total_norm
+    # Scaling factor
+    scal = len(PNe_mag) / total_norm
 
-# Constraining to -2.0 in magnitude
-idx = np.where(Abs_M <= np.min(PNe_mag)+2.5)
+    # Constraining to -2.0 in magnitude
+    idx = np.where(Abs_M <= np.min(PNe_mag)+2.5)
 
-# Plot the PNLF
-plt.figure(figsize=(14,10))
+    # Plot the PNLF
+    plt.figure(figsize=(14,10))
 
-binwidth = 0.2
+    binwidth = 0.2
 
-hist = plt.hist(app_mag, bins=np.arange(min(app_mag), max(app_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue', label="PNe")
+    hist = plt.hist(app_mag, bins=np.arange(min(app_mag), max(app_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.8, alpha=0.5, color='blue', label="PNe")
 
-if len(PNe_df.loc[PNe_df["ID"]=="OvLu"].index.values) >= 1:
-    plt.hist(app_mag_OvLu, bins=np.arange(min(app_mag_OvLu), max(app_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.5, alpha=0.5, color='red', label="Over-luminous source")
-
-
-KS2_stat = KS2_test(dist_1=PNLF_corr[1:18:2]*scal*binwidth, dist_2=hist[0], conf_lim=0.1)
-print(KS2_stat)
-
-ymax = max(hist[0])
-
-plt.plot(app_m, PNLF*scal*binwidth, '-', color='blue', marker="o", label="PNLF")
-plt.plot(app_m, PNLF_corr*scal*binwidth,'-.', color='blue', label="Incompleteness corrected PNLF")
-plt.xlabel(r'$m_{5007}$', fontsize=30)
-plt.ylabel(r'$N_{PNe}$', fontsize=30)
-#plt.yticks(np.arange(0,ymax+4, 5))
-plt.plot(0,0, alpha=0.0, label=f"KS2 test = {round(KS2_stat[0],3)}")
-plt.plot(0,0, alpha=0.0, label=f"pvalue   = {round(KS2_stat[1],3)}")
-plt.xlim(-5.0+dM,-1.5+dM)
-plt.ylim(0,ymax+(2*ymax))
-# plt.xlim(26.0,30.0); plt.ylim(0,45);
-
-plt.tick_params(labelsize = 25)
-
-#plt.axvline(PNe_df["m 5007"].loc[PNe_df["ID"]=="PN"].values.min() - 31.63)
-plt.legend(loc=2, fontsize=20)
-plt.savefig(DIR_dict["PLOT_DIR"]+"_PNLF.pdf", bbox_inches='tight')
-plt.savefig(DIR_dict["PLOT_DIR"]+"_PNLF.png", bbox_inches='tight')
-
-# Calculate the number of PNe, via the PNLF
-N_PNe = np.sum(PNLF[idx]*scal) * step
-
-print("Number of PNe from PNLF: ", N_PNe, "+/-", (1/np.sqrt(len(PNe_df.loc[PNe_df["ID"]=="PN"])))*N_PNe)
-
-plt.figure()
-##### Integrated, bolometric Luminosity of galaxy FOV spectra #####
-if calc_Lbol == True:
-    print("################################################################")
-    print("####################### Calculating Lbol #######################")
-    print("################################################################")
-    L_bol = calc_Lbol_and_mag(DIR_dict, galaxy_info,
-                              dM, dM_err=[dM_err_up, dM_err_lo])
-
-#### alpha_2.5
-
-#### save values to gal_df csv file
-print("Number of PNe after A/rN cut: ", len(PNe_df["ID"].loc[PNe_df["ID"]=="PN"]))
-
-print("Number of PNe after A/rN and Reduced chi-square cuts: ", len(PNe_df["ID"].loc[PNe_df["ID"]=="PN"]))
+    if len(PNe_df.loc[PNe_df["ID"]=="OvLu"].index.values) >= 1:
+        plt.hist(app_mag_OvLu, bins=np.arange(min(app_mag_OvLu), max(app_mag) + binwidth, binwidth), edgecolor="black", linewidth=0.5, alpha=0.5, color='red', label="Over-luminous source")
 
 
-print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table.txt")
-print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table_latex.txt")
-print("\n")
-print(galaxy_name)
-n_p = len(PNe_df.loc[PNe_df["ID"]=="PN"])
-print(f"N PNe used:      {n_p}")
-print(f"PNLF N:          {N_PNe}")
-print(f"Distance of:     {Dist_est} +/- {Dist_err_up}")
-print(f"Distance Mod of: {dM} +/- {dM_err_up}")
-if calc_Lbol == True:
-    print(f"L_bol of:        {L_bol[0]}")
-    print(f"L_bol error:     + {L_bol[1][0] - L_bol[0]}, - {L_bol[0] - L_bol[1][1]}")
-    print(f"Rmag of :        {L_bol[7]}")
-    print(f"Vmag of :        {L_bol[8]}")
+    KS2_stat = KS2_test(dist_1=PNLF_corr[1:18:2]*scal*binwidth, dist_2=hist[0], conf_lim=0.1)
+    print(KS2_stat)
+
+    ymax = max(hist[0])
+
+    plt.plot(app_m, PNLF*scal*binwidth, '-', color='blue', marker="o", label="PNLF")
+    plt.plot(app_m, PNLF_corr*scal*binwidth,'-.', color='blue', label="Incompleteness corrected PNLF")
+    plt.xlabel(r'$m_{5007}$', fontsize=30)
+    plt.ylabel(r'$N_{PNe}$', fontsize=30)
+    #plt.yticks(np.arange(0,ymax+4, 5))
+    plt.plot(0,0, alpha=0.0, label=f"KS2 test = {round(KS2_stat[0],3)}")
+    plt.plot(0,0, alpha=0.0, label=f"pvalue   = {round(KS2_stat[1],3)}")
+    plt.xlim(-5.0+dM,-1.5+dM)
+    plt.ylim(0,ymax+(2*ymax))
+    # plt.xlim(26.0,30.0); plt.ylim(0,45);
+
+    plt.tick_params(labelsize = 25)
+
+    #plt.axvline(PNe_df["m 5007"].loc[PNe_df["ID"]=="PN"].values.min() - 31.63)
+    plt.legend(loc=2, fontsize=20)
+    plt.savefig(DIR_dict["PLOT_DIR"]+"_PNLF.pdf", bbox_inches='tight')
+    plt.savefig(DIR_dict["PLOT_DIR"]+"_PNLF.png", bbox_inches='tight')
+
+    # Calculate the number of PNe, via the PNLF
+    N_PNe = np.sum(PNLF[idx]*scal) * step
+
+    print("Number of PNe from PNLF: ", N_PNe, "+/-", (1/np.sqrt(len(PNe_df.loc[PNe_df["ID"]=="PN"])))*N_PNe)
+
+    plt.figure()
+    ##### Integrated, bolometric Luminosity of galaxy FOV spectra #####
+    if calc_Lbol == True:
+        print("################################################################")
+        print("####################### Calculating Lbol #######################")
+        print("################################################################")
+        L_bol = calc_Lbol_and_mag(DIR_dict, galaxy_info,
+                                dM, dM_err=[dM_err_up, dM_err_lo])
+
+    #### alpha_2.5
+
+    #### save values to gal_df csv file
+    print("Number of PNe after A/rN cut: ", len(PNe_df["ID"].loc[PNe_df["ID"]=="PN"]))
+
+    print("Number of PNe after A/rN and Reduced chi-square cuts: ", len(PNe_df["ID"].loc[PNe_df["ID"]=="PN"]))
+
+
+    print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table.txt")
+    print(f"File saved: exported_data/{galaxy_name}/{galaxy_name}_table_latex.txt")
+    print("\n")
+    print(galaxy_name)
+    n_p = len(PNe_df.loc[PNe_df["ID"]=="PN"])
+    print(f"N PNe used:      {n_p}")
+    print(f"PNLF N:          {N_PNe}")
+    print(f"Distance of:     {Dist_est} +/- {Dist_err_up}")
+    print(f"Distance Mod of: {dM} +/- {dM_err_up}")
+    if calc_Lbol == True:
+        print(f"L_bol of:        {L_bol[0]}")
+        print(f"L_bol error:     + {L_bol[1][0] - L_bol[0]}, - {L_bol[0] - L_bol[1][1]}")
+        print(f"Rmag of :        {L_bol[7]}")
+        print(f"Vmag of :        {L_bol[8]}")
 
 
 
