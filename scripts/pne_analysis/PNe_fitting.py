@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from mcerp import *
+import mcerp as mcerp
 from tqdm import tqdm
 from astropy.table import Table
 from scipy.stats import norm, chi2
@@ -335,7 +335,7 @@ if save_gist == True:
 #### calc errors and determine Distance estimate from brightest m_5007 PNe
 ##### Error estimation #####
 def Moffat_err(Moff_A, FWHM, beta, x_0, y_0):
-    alpha = FWHM / (2. * umath.sqrt(2.**(1./beta) - 1.))
+    alpha = FWHM / (2. * mcerp.umath.sqrt(2.**(1./beta) - 1.))
     rr_gg = ((x_fit - x_0)**2 + (y_fit - y_0)**2) / alpha**2
     F_OIII_xy_dist = Moff_A * (2 * ((beta -1)/(alpha**2)))*(1 + rr_gg)**(-beta)
     
@@ -349,11 +349,11 @@ print("##################### Calculating errors #######################")
 print("################################################################")
 
 for i,p in enumerate(tqdm(range(n_PNe))):
-    Moff_A_dist = N(moff_A[p][0], moff_A_err[p][0])
-    FWHM_dist   = N(galaxy_info["FWHM"], galaxy_info["FWHM_err"])
-    beta_dist   = N(galaxy_info["beta"], galaxy_info["beta_err"])
-    x_0_dist    = N(list_of_x[p], x_0_err[p][0])
-    y_0_dist    = N(list_of_y[p], y_0_err[p][0])
+    Moff_A_dist = mcerp.N(moff_A[p][0], moff_A_err[p][0])
+    FWHM_dist   = mcerp.N(galaxy_info["FWHM"], galaxy_info["FWHM_err"])
+    beta_dist   = mcerp.N(galaxy_info["beta"], galaxy_info["beta_err"])
+    x_0_dist    = mcerp.N(list_of_x[p], x_0_err[p][0])
+    y_0_dist    = mcerp.N(list_of_y[p], y_0_err[p][0])
     
     flux_array = [Moffat_err(Moff_A_dist._mcpts[i], FWHM_dist._mcpts[i], beta_dist._mcpts[i], x_0_dist._mcpts[i], y_0_dist._mcpts[i]) for i in range(len(FWHM_dist._mcpts))]
 

@@ -1,27 +1,115 @@
-# Detecting PNe within reduced MUSE data.
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/fec5a221e1759e9671fcdb75acba88f46b36e525?urlpath=lab)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3698303.svg)](https://doi.org/10.5281/zenodo.3698303)
+# Detecting PNe within reduced MUSE data
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/fec5a221e1759e9671fcdb75acba88f46b36e525?urlpath=lab) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3698303.svg)](https://doi.org/10.5281/zenodo.3698303)
 
-## Binder Instructions and notes
+# Binder Instructions
 
-The Binder for this repository has been built and ready to go. As of the release of 1.0.0, there is only a single functioning example within the Binder environment. Please see the following code snippet for how to run a spaxel by spaxel fit on a segment of FCC167's residual data cube:
+THe Binder button will take you to a fully interactive Jupyter Lab environment, where you can execute some of the scripts found within this repository. At present, there are two data files in `galaxy_data/FCCtest_data/`. The first is a residual cube ready for spaxel by spaxel fitting, and the second is a cut-out of the original MUSE cube (FCC167) that the residual cube has been cut from.
 
+When you launch the Binder server, the first change you need to make is in `functions/file_handling.py`. The first function sets out the paths to the files that the scripts will be referring back to when opening up useful resources. The `RAW_DATA` path should be changed to show:
+
+```python
+"RAW_DATA" : "galax_data/FCCtest_data/FCCtestcenter.fits",
 ```
-# for ipython, run from the MUSE_PNe_fitting directory
+
+Then save and close the file.
+
+## Spaxel-by-spaxel fitting of Residual Cube
+
+To start the process of detecting and subsequebtly fitting Planetary Nebulae, your terminal needs to be at the top directory:
+`/MUSE_PNe_fitting/`. This is where we will execute all scripts from.
+
+The first script that we want to run is called `MUSE_spaxel_fit.py`, located in `scripts/pne_analysis/`. This script reads in the residual cube from `galaxy_data/FCCtest_data/` and performs a spaxel by spaxel fit for the [OIII] 4959 5007 \AA doublet, saving the results for plotting and source detection purposes.
+
+To run this script, we first need to provide it with some command line arguments:
+
+```python
+--galaxy FCCtest  # This defines the galaxy name that we want to fit.
+                  # (Required)
+
+--loc center      # This defines the location of the datacube:
+                  # e.g. with the Fornax3D survey, FCC167 had center, disk and halo pointings.
+                  # (Required)
+
+-- fit            # This flag tells the script to perform the spaxel by spaxel fit,
+                  # as sometimes you just want to extract the PNe, and not re-fit all spaxels.
+                  # (Not required)
+
+-- sep            # This flag tells the script to save the PNe minicubes in a fits file for futher analysis.
+                  # (Not required)
+```
+
+Using either an IPython console, or the Terminal, run the following commands:
+
+```bash
+# For ipython, run from the MUSE_PNe_fitting/ directory:
 %run scripts/pne_analysis/MUSE_spaxel_fit.py --galaxy FCCtest --loc center --fit
-# or from a terminal line
+
+# For Terminal:
 $ python scripts/pne_analysis/MUSE_spaxel_fit.py --galaxy FCCtest --loc center --fit
 ```
 
-More functionality will be added to the Binder environment, however the current issue is the data handle and data size, which restricts us from running a full PNe analysis.
+Once completed, you should be presented with four plots:
 
+* Amplitude over residual noise (A/rN) intensity map
+* Amplitude in [OIII] 5007 \AA map
+* Flux in [OIII] 5007 \AA map
+* A second A/rN map, though with detected [OIII] sources circled and numbered.
+
+These plots will be saved into `Plots/FCCtest/` for you to view whenever.
+
+The primary out of `MUSE_spaxel_fit.py` is a fits file that contains the residual minicubes of the [OIII] sources, (i.e. Planetary Nebulae). This file will be utilised by the next script to fit, filter and analyse the sources for PNe identification.
+
+## Fitting the Planetary Nebulae with the 1D+2D modelling technique
+
+Now that the unresovled point sources in [OIII] 5007 \AA have been identified and extracted, we can move onto fitting their emission peak profile, allowing us to model their total flux and apparent magnitude, in [OIII]. These values can later be used for distance determination and Planetary Nebulae Luminosity Function (PNLF) construction.
+
+To run the PNe fitting script, we need to specify another set of flags:
+
+```python
+--galaxy FCCtest  # This defines the galaxy name that we want to fit.
+                  # (Required)
+
+--loc center      # This defines the location of the datacube:
+                  # e.g. with the Fornax3D survey, FCC167 had center, disk and halo pointings.
+                  #  (Required)
+
+-- fit_psf        # This tells the script to fit for the PSF, using the 5-7 brightest sources,
+                  # in signal to noise, for the best fit parameters.
+                  # (Not required, works in Binder)
+
+-- LOSV           # This switch is for if you want to extract the Line of Sight kinematics of the PNe,
+                  # using some extra information from the GIST ppxf files. (Not required, NOT WORKING IN BINDER)
+
+-- save_gist      # For when we want to analyse the raw spectrum of the sources, 
+                  # we save PNe minicubes to run them through a custom GIST routine for impostor identification.
+                  # (Not required, NOT WORKING IN BINDER)
+
+-- Lbol           # Set this flag to get the script to calculate the bolometric luminosity of the galaxy 
+                  # (Not required, works in Binder)
+```
+
+Then, again, either using the Ipython console, or Terminal:
+
+```bash
+# For ipython, run from the MUSE_PNe_fitting/ directory:
+%run scripts/pne_analysis/PNe_fitting.py --galaxy FCCtest --loc center --fit_psf --Lbol
+
+# For Terminal:
+$ python scripts/pne_analysis/PNe_fitting.py --galaxy FCCtest --loc center --fit_psf --Lbol
+```
+
+The distance estimation here, assuming the brightest source of [OIII] is at the bright end of the PNLF, will be incorrect, due to the limited number of sources present. (Please see introductory paper about this tehcnique and analysis of NGC1380 and NG1404, in prep 2020).
+
+You have now run the two important scripts for spaxel by spaxel fitting of residual MUSE data (stellar continuum subtracted data), detected the presence of unresolved point sources in [OIII] 5007 \AA, and fitted them with the novel 1D+2D fitting technique enclosed herein.
+
+Any suggestions are welcome for progressing this method, or queries on how to run it with your data. Please see the rest of the README for information about data requirements.
 
 ## Data requirements
 
 This project uses the output of the GIST IFU pipeline ([[GIST]](https://abittner.gitlab.io/thegistpipeline/)). Where the stellar continuum has been modelled (ppxf), along with the emission lines of the diffuse ionised gas (Gandalf; Sarzi, M. 2006). Once the stellar continuum is subtracted (MUSE_spectra - (Best fit - emission fit) ), we are left with a residual data cube, where the emission lines of unresolved point sources can be mapped out, along with regions of diffuse ionised gas. The residual cube is what is needed for this workflow. To create a residual data cube, please use the gist_residual_data.py script, under `scripts/other`, this will load up the relevant files and create a residual data cube for use with the PNe detection scripts.
 
-## Intro
+## Introduction - WIP
 
 The purpose of this pipeline is to first run a spaxel-by-spaxel fit for [OIII] 5007 Angstrom doublet (4959 Angstrom), then store files and save plots (exported_data/ and Plots/). Then having formed a x,y list of coordinates (pixel coordinates) from running SEP on the A/rN map, fit the PNe with the 1D+2D model fitting routine, using LMfit for the minimisation efforts.
 
@@ -39,14 +127,13 @@ The final folder required here is "exported_data/", where the results of the spa
 
 The directory will look something like this:
 
-    Working_directory/
+    MUSE_PNe_fitting/
         galaxy_data/
 
             FCC000_data/
             
-                FCC000_residauls_list.fits
+                FCC000_residauls_cube.fits
                 
-                FCC000_wavelength.npy
             
         Plots/
         
@@ -55,12 +142,12 @@ The directory will look something like this:
         exported_data/
         
             FCC000/
-        
 
 ## Galaxy information
+
 For storing the galaxy information that is required to detect and fit for PNe, a yaml file is used. The format, as it stands, of the yaml entry for each galaxy is:
 
-    FCC000:
+    FCC000_center:
         Distance: 20 # this is in Mpc
         Galaxy name: FCC000
         velocity: 1500 # km/s
@@ -76,22 +163,16 @@ For storing the galaxy information that is required to detect and fit for PNe, a
             OOIII_1: [200, null, null, null]
             OIII_2: [null, Amp_2D_OIII_1/2.85, 'wave_OIII_1 - 47.9399 * (1+{})', null]
 
-
 ## Spaxel-by-Spaxel [OIII] fitting
-To start the Spaxel by Spaxel fit of a galaxy, you will run the MUSE_spaxel_fit.py python file, stating the galaxy name you want to fit, like so:
-*python MUSE_spaxel_fit.py FCC000 # terminal use
-*ipython MUSE_spaxel_fit.py FCC000 # ipython terminal
-*%run MUSE_spaxel_fit.py FCC000 # inside ipython
 
-This routine will take in the galaxy FCC000's residual list data file, fit spaxel by spaxel for [OIII] doublets, and save the output files and plots in the relevant files. The shape of the galaxy (x and y lengths) are stored in the header now and easy to access.
-
-
-
+This routine will take in the galaxy FCC000's residual cube data file, fit spaxel by spaxel for [OIII] doublets, and save the output files and plots in the relevant files. The shape of the galaxy (x and y lengths) are stored in the header now and easy to access.
 
 ## PNe detection and PSF analysis
+
 Once you have run MUSE_spaxel_fit.py, then you will want to run SEP on the A/rN map (this is not included in the scripts yet, only in master_book.ipynb). SEP will save a list of x,y pixel coordinates of the detected sources. Once they are read in as minicubes, you need to run the PSF routine to get values for FWHM, beta and LSF, with the relevant errors. On the first fit, to determine the signal to noise ratio, the PSF is defaulted to FWHM=4.0, beta=2.5 and LSF=3.0. For the PSF part, you will need to select a suitable number of sources via the brightest and work downwards. 5 or 10 objects is adequate. This will be incorporated later into a script.
 
 ## PNe 3D modelling
+
 After you have a list of PNe coordinates, and the PSF values saved into the galaxy_info.yaml file, you are ready to run the PNe_fitting.py file. To run this script, use:
 *python PNe_fitting.py FCC000 # terminal use
 *ipython PNe_fitting.py FCC000 # ipython terminal
