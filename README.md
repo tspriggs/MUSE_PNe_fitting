@@ -31,11 +31,11 @@ To run this script, we first need to provide it with some command line arguments
                   # e.g. with the Fornax3D survey, FCC167 had center, disk and halo pointings.
                   # (Required)
 
--- fit            # This flag tells the script to perform the spaxel by spaxel fit,
+--fit            # This flag tells the script to perform the spaxel by spaxel fit,
                   # as sometimes you just want to extract the PNe, and not re-fit all spaxels.
                   # (Not required)
 
--- sep            # This flag tells the script to save the PNe minicubes in a fits file for futher analysis.
+--sep            # This flag tells the script to save the PNe minicubes in a fits file for futher analysis.
                   # (Not required)
 ```
 
@@ -74,18 +74,18 @@ To run the PNe fitting script, we need to specify another set of flags:
                   # e.g. with the Fornax3D survey, FCC167 had center, disk and halo pointings.
                   #  (Required)
 
--- fit_psf        # This tells the script to fit for the PSF, using the 5-7 brightest sources,
+--fit_psf        # This tells the script to fit for the PSF, using the 5-7 brightest sources,
                   # in signal to noise, for the best fit parameters.
                   # (Not required, works in Binder)
 
--- LOSV           # This switch is for if you want to extract the Line of Sight kinematics of the PNe,
+--LOSV           # This switch is for if you want to extract the Line of Sight kinematics of the PNe,
                   # using some extra information from the GIST ppxf files. (Not required, NOT WORKING IN BINDER)
 
 -- save_gist      # For when we want to analyse the raw spectrum of the sources, 
                   # we save PNe minicubes to run them through a custom GIST routine for impostor identification.
                   # (Not required, NOT WORKING IN BINDER)
 
--- Lbol           # Set this flag to get the script to calculate the bolometric luminosity of the galaxy 
+--Lbol           # Set this flag to get the script to calculate the bolometric luminosity of the galaxy 
                   # (Not required, works in Binder)
 ```
 
