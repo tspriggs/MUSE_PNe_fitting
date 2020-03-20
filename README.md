@@ -19,7 +19,7 @@ Then save and close the file.
 To start the process of detecting and subsequebtly fitting Planetary Nebulae, your terminal needs to be at the top directory:
 `/MUSE_PNe_fitting/`. This is where we will execute all scripts from.
 
-The first script that we want to run is called `MUSE_spaxel_fit.py`, located in `scripts/pne_analysis/`. This script reads in the residual cube from `galaxy_data/FCCtest_data/` and performs a spaxel by spaxel fit for the [OIII] 4959 5007 \AA doublet, saving the results for plotting and source detection purposes.
+The first script that we want to run is called `MUSE_spaxel_fit.py`, located in `scripts/pne_analysis/`. This script reads in the residual cube from `galaxy_data/FCCtest_data/` and performs a spaxel by spaxel fit for the [OIII] 4959 5007 Å doublet, saving the results for plotting and source detection purposes.
 
 To run this script, we first need to provide it with some command line arguments:
 
@@ -52,8 +52,8 @@ $ python scripts/pne_analysis/MUSE_spaxel_fit.py --galaxy FCCtest --loc center -
 Once completed, you should be presented with four plots:
 
 * Amplitude over residual noise (A/rN) intensity map
-* Amplitude in [OIII] 5007 \AA map
-* Flux in [OIII] 5007 \AA map
+* Amplitude in [OIII] 5007 Å map
+* Flux in [OIII] 5007 Å map
 * A second A/rN map, though with detected [OIII] sources circled and numbered.
 
 These plots will be saved into `Plots/FCCtest/` for you to view whenever.
@@ -62,7 +62,7 @@ The primary out of `MUSE_spaxel_fit.py` is a fits file that contains the residua
 
 ## Fitting the Planetary Nebulae with the 1D+2D modelling technique
 
-Now that the unresovled point sources in [OIII] 5007 \AA have been identified and extracted, we can move onto fitting their emission peak profile, allowing us to model their total flux and apparent magnitude, in [OIII]. These values can later be used for distance determination and Planetary Nebulae Luminosity Function (PNLF) construction.
+Now that the unresovled point sources in [OIII] 5007 $Å$ have been identified and extracted, we can move onto fitting their emission peak profile, allowing us to model their total flux and apparent magnitude, in [OIII]. These values can later be used for distance determination and Planetary Nebulae Luminosity Function (PNLF) construction.
 
 To run the PNe fitting script, we need to specify another set of flags:
 
@@ -101,7 +101,7 @@ $ python scripts/pne_analysis/PNe_fitting.py --galaxy FCCtest --loc center --fit
 
 The distance estimation here, assuming the brightest source of [OIII] is at the bright end of the PNLF, will be incorrect, due to the limited number of sources present. (Please see introductory paper about this tehcnique and analysis of NGC1380 and NG1404, in prep 2020).
 
-You have now run the two important scripts for spaxel by spaxel fitting of residual MUSE data (stellar continuum subtracted data), detected the presence of unresolved point sources in [OIII] 5007 \AA, and fitted them with the novel 1D+2D fitting technique enclosed herein.
+You have now run the two important scripts for spaxel by spaxel fitting of residual MUSE data (stellar continuum subtracted data), detected the presence of unresolved point sources in [OIII] 5007 Å, and fitted them with the novel 1D+2D fitting technique enclosed herein.
 
 Any suggestions are welcome for progressing this method, or queries on how to run it with your data. Please see the rest of the README for information about data requirements.
 
