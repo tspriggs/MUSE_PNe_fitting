@@ -23,7 +23,7 @@ The first script that we want to run is called `MUSE_spaxel_fit.py`, located in 
 
 To run this script, we first need to provide it with some command line arguments:
 
-```python
+```bash
 --galaxy FCCtest  # This defines the galaxy name that we want to fit.
                   # (Required)
 
@@ -66,7 +66,7 @@ Now that the unresovled point sources in [OIII] 5007 \AA have been identified an
 
 To run the PNe fitting script, we need to specify another set of flags:
 
-```python
+```bash
 --galaxy FCCtest  # This defines the galaxy name that we want to fit.
                   # (Required)
 
