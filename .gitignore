@@ -30,3 +30,7 @@ Gandalf_pipeline/
 .vscode
 from_github/exported_data/FCC3*
 .ipynb_checkpoints
+notebooks/
+exported_data/*.csv
+exported_data/*.txt
+exported_data/*.dat
