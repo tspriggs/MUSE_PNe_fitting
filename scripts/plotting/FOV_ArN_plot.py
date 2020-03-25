@@ -39,7 +39,7 @@ res_cube, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_dat
 PNe_df = pd.read_csv(DIR_dict["EXPORT_DIR"]+"_PNe_df.csv")
 x_y_list = np.load(DIR_dict["EXPORT_DIR"]+"_PNe_x_y_list.npy")
 
-A_rN_plot = np.load(DIR_dict["EXPORT_DIR"]+"_A_rN_cen.npy")
+A_rN_plot = np.load(DIR_dict["EXPORT_DIR"]+"_A_rN.npy")
 A_rN_plot_shape = A_rN_plot.reshape(y_data, x_data)
 
 # Get WCS coordinates
@@ -112,7 +112,7 @@ if len(PNe_df.loc[PNe_df["ID"]=="OvLu"].index.values) >=1:
 
 if len(matched) > 0:
     matched_x_y_list = x_y_list[matched]
-    ax.scatter(matched_x_y_list[:,0], matched_x_y_list[:,1], marker="s", facecolor="None", edgecolor="blue", lw=1.2, s=350, label="Literature matched PNe")
+    ax.scatter(matched_x_y_list[:,0], matched_x_y_list[:,1], marker="s", facecolor="None", edgecolor="blue", lw=1.2, s=350, label="Literature-matched PNe")
 
 # not_PNe_x_y_list = x_y_list[PNe_df.loc[PNe_df["ID"]=="-"].index.values]
 # ax.scatter(not_PNe_x_y_list[:,0], not_PNe_x_y_list[:,1], facecolor="None", edgecolor="r", lw=1.2, s=200, label="filtered-out objects")

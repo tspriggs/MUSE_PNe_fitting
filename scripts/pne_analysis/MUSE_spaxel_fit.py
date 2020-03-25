@@ -50,7 +50,7 @@ n_spax = np.shape(res_data_list)[0]
 
 
 # Indexes where there is spectral data to fit. We check where there is data that doesn't start with 0.0 (spectral data should never be 0.0).
-non_zero_index = np.squeeze(np.where(res_cube[0,:,:] != 0.)) # use with residual cube
+non_zero_index = np.squeeze(np.where(res_cube[1,:,:] != 0.)) # use with residual cube
 # non_zero_index = np.squeeze(np.where(res_data_list[:,0] != 0.))
     
 # list_of_std = np.abs([robust_sigma(dat) for dat in res_data_list])
@@ -60,7 +60,7 @@ non_zero_index = np.squeeze(np.where(res_cube[0,:,:] != 0.)) # use with residual
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
 
-z = 0#galaxy_info["velocity"] * 1e3 / c
+z = galaxy_info["velocity"] * 1e3 / c
 gal_mask = galaxy_info["gal_mask"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
@@ -105,16 +105,16 @@ spaxel_params.add("Gauss_grad", value=0.0001)
 
 # Loop through spectra from list format of data.
 if fit_spaxel == True:
-    for i, (y,x) in tqdm(enumerate(zip(non_zero_index[0], non_zero_index[1])), total=len(non_zero_index[0])):
+    for y,x in tqdm(zip(non_zero_index[0], non_zero_index[1]), total=len(non_zero_index[0])):
         #progbar(j, len(non_zero_index), 40)
         get_data_residuals = []
 #         fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_data_list[i], input_errors[i], z), nan_policy="propagate")
-        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_cube[:,y,x], np.nanstd(res_cube[:,y,x],0), z), nan_policy="propagate")
-        gauss_A[i] = fit_results.params["Amp"].value
-        obj_residuals[i] = fit_results.residual
-        data_residuals[i] = fit_results.residual * input_errors[i]
-        g_bkg[i]  = fit_results.params["Gauss_bkg"].value
-        g_grad[i] = fit_results.params["Gauss_grad"].value
+        fit_results = minimize(spaxel_by_spaxel, spaxel_params, args=(wavelength, res_cube[:,y,x], np.repeat(np.nanstd(res_cube[:,y,x],0), len(wavelength)), z), nan_policy="propagate")
+        gauss_A[y*x_data+x] = fit_results.params["Amp"].value
+        obj_residuals[y*x_data+x] = fit_results.residual
+        data_residuals[y*x_data+x] = fit_results.residual * np.repeat(np.nanstd(res_cube[:,y,x],0), len(wavelength))
+        g_bkg[y*x_data+x]  = fit_results.params["Gauss_bkg"].value
+        g_grad[y*x_data+x] = fit_results.params["Gauss_grad"].value
         
     list_of_rN = np.array([robust_sigma(d_r) for d_r in data_residuals])
     
