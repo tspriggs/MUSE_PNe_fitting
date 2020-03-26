@@ -24,7 +24,8 @@ def paths(galaxy_name, loc):
     """
     DIR_dict = {
         "RAW_DIR"    : f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}",
-        "RAW_DATA"   : f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}{loc}.fits",
+        # "RAW_DATA": f"/local/tspriggs/Fornax_data_cubes/{galaxy_name}{loc}.fits",
+        "RAW_DATA": f"/mnt/e/F3D_data/re_reduced_F3D/{galaxy_name}{loc}.fits",
         "DATA_DIR"   : f"galaxy_data/{galaxy_name}_data/{galaxy_name}{loc}",
         "EXPORT_DIR" : f"exported_data/{galaxy_name}/{galaxy_name}{loc}",
         "PLOT_DIR"   : f"Plots/{galaxy_name}/{galaxy_name}{loc}",
