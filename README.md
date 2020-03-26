@@ -1,11 +1,10 @@
 # Detecting PNe within reduced MUSE data
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/v1.1.0?urlpath=lab) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3719223.svg)](https://doi.org/10.5281/zenodo.3719223)
-
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/v1.2.0) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3726795.svg)](https://doi.org/10.5281/zenodo.3726795)
 
 # Binder Instructions
 
-For instructions and a prepared working environment, please open `notebooks/Binder_example.ipynb`, and read the notes.
+For instructions and a prepared working environment, please open `Binder_example.ipynb`, and read the notes.
 To explore the variables, you can run `%whos` to return a list of stored variables from the executed scripts.
 
 ## Data requirements
