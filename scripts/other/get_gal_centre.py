@@ -1,15 +1,14 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import yaml
 from astropy.io import fits
-from astropy.wcs import WCS, utils, wcs
+from astropy.wcs import WCS, utils
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astroquery.simbad import Simbad
 
-gal_df = pd.read_csv("../exported_data/galaxy_dataframe.csv")
+gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv")
 
 x_y = np.ones((len(gal_df["Galaxy"]),2))
 RA_DEC = np.ones_like(x_y)
@@ -24,15 +23,15 @@ RA_DEC = np.ones_like(x_y)
 
 for i, gal in enumerate(gal_df["Galaxy"]):
     # open up raw file and get the WCS and RA and DEC from header
-    hdulist = fits.open(f"/local/tspriggs/Fornax_data_cubes/{gal}center.fits")
+    hdulist = fits.open(f"/mnt/t/F3D_data/F3D_cubes/{gal}center.fits")
     hdr = hdulist[1].header
     wcs_obj = WCS(hdr, naxis=2)
     # open yaml entry for galaxy
-    with open("../galaxy_info.yaml", "r") as yaml_data:
+    with open("config/galaxy_info.yaml", "r") as yaml_data:
         galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
     
     galaxy_data = galaxy_info[gal+"_center"]
-    gal_cen = galaxy_data["centre"] 
+    gal_cen = galaxy_data["centre"]
     if gal_cen == [1,1]:
         RA_DEC[i] = [hdr["CRVAL1"], hdr["CRVAL2"]]
     else:
@@ -50,4 +49,4 @@ for i, gal in enumerate(gal_df["Galaxy"]):
 
 t = Table([gal_df["Galaxy"], x_y[:,0], x_y[:,1], RA_DEC[:,0], RA_DEC[:,1]], names=("Galaxy", "x_pix", "y_pix", "RA cen", "DEC cen"))
 
-t.write("../exported_data/galaxy_centre_pix.dat", format="ascii", overwrite=True)
+t.write("exported_data/galaxy_centre_pix.dat", format="ascii", overwrite=True)
