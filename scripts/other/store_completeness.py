@@ -4,11 +4,6 @@ import yaml
 import os
 import argparse
 
-
-from tqdm import tqdm
-from astropy.io import fits, ascii
-from astropy.table import Table
-
 from functions.MUSE_Models import Moffat
 from functions.file_handling import paths, open_data
 from functions.PNLF import reconstructed_image 
@@ -16,14 +11,18 @@ from functions.PNe_functions import robust_sigma
 
 
 # Read in galaxy dataframe for list of galaxy names.
-galaxy_df = pd.read_csv(f"exported_data/galaxy_dataframe.csv", index_col=("Galaxy", "loc"))
+with open("config/galaxy_info.yaml", "r") as yaml_gal_info_file:
+    yaml_gal_info = yaml.load(yaml_gal_info_file, Loader=yaml.FullLoader)
 
-# Setup of Argparse, where we can ask for individual galaxies by name, or, by default, all galaxies in galaxy_df will be used.
+galaxy_names = np.unique([gal.split("_")[0] for gal in yaml_gal_info],0)
+
+
+# Setup of Argparse, where we can ask for individual galaxies by name, or, by default, all galaxies in galaxy_info.yaml will be used.
 # dM type argument is for when the literature distance should be used instead.
 # app argument is to switch to apperture summation, instead of FOV summation.
 my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', nargs="+", type=str, required=False, default=np.unique(galaxy_df.index.get_level_values(0)))
+my_parser.add_argument('--galaxy', action='store', nargs="+", type=str, required=False, default=galaxy_names)
 
 args = my_parser.parse_args()
 
@@ -32,8 +31,7 @@ galaxy_selection = args.galaxy
 def prep_completness_data(galaxy, loc, DIR_dict, galaxy_info, test=False):
 
     #load up data
-    res_data, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(
-        galaxy, loc, DIR_dict)
+    res_data, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_info = open_data(galaxy, loc, DIR_dict)
     
     res_data = res_data*galaxy_info["F_corr"]
 
@@ -131,18 +129,12 @@ def calc_completeness(image, Noise_map, mag, params, peak, n_pixels):
     return np.asarray(completeness_ratio)
 
 
-gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv", index_col=("Galaxy", "loc"))
-# loc = "center"
-
-with open("config/galaxy_info.yaml", "r") as yaml_data:
-    galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
-
 step = 0.001
 m_5007 = np.arange(26, 31, step)
 
 if os.path.isfile("exported_data/completeness_ratio_df.csv") is False:
     comp_df = pd.DataFrame(columns=("Galaxy", "FWHM", "beta", "LSF"))
-    comp_df["Galaxy"] = np.unique(gal_df.index.get_level_values(0))
+    comp_df["Galaxy"] = galaxy_names
     comp_df.set_index("Galaxy", inplace=True)
 
 else:
@@ -150,8 +142,8 @@ else:
 
 for i, gal in enumerate(galaxy_selection):
     for loc in ["center", "halo", "middle"]:
-        if f"{gal}_{loc}" in [*galaxy_info]:
-            galaxy_data = galaxy_info[f"{gal}_{loc}"]
+        if f"{gal}_{loc}" in [*yaml_gal_info]:
+            galaxy_data = yaml_gal_info[f"{gal}_{loc}"]
             print(f"Calculating {gal}'s {loc} completeness ratio....")
             DIR_dict = paths(gal, loc)
             image, Noise_map = prep_completness_data(gal, loc, DIR_dict, galaxy_data)

@@ -1,48 +1,100 @@
+import numpy as np
 from astropy.io import fits
 import yaml
 import numpy as np
 from scipy import stats
-from tqdm import tqdm
 from astropy.table import Table
-from functions.ppxf_gal_L import ppxf_L_tot
+import matplotlib.pyplot as plt
 
 from functions.MUSE_Models import Gauss
 
-def PNe_spectrum_extractor(x, y, n_pix, data, x_d, wave):
-    """
-    Input:
-        x      - x coordinate
-        y      - y coordinate
-        n_pix  - number of pixels
-        data   - residual data, in list format
-        x_d    - x dimension size
-        wave   - wavelength array
-        
-    Returns:
-        array of PNe spectra: (N_Pne, n_pix*n_pix, len(wave))
-    """
-    xc = round(x)
-    yc = round(y)
-    offset = n_pix // 2
-    #calculate the x y coordinates of each pixel in n_pix x n_pix square around x,y input coordinates
-    y_range = np.arange(yc - offset, (yc - offset)+n_pix, 1, dtype=int)
-    x_range = np.arange(xc - offset, (xc - offset)+n_pix, 1, dtype=int)
-    ind = [i * x_d + x_range for i in y_range]
-    return data[np.ravel(ind)]
+def dM_to_D(dM, dM_err=[]):
+    """Distance modulus to distance (Mpc).
 
-# To replace PNe_spectrum_extractor function
-def PNe_minicube_extractor(x, y, n_pix, data, wave):
+    Parameters
+    ----------
+    dM : [float]
+        float value for distance modulus.
+
+    dM_err : list, optional
+        list of distance modulus errors: [upper, lower], by default []
+
+    Returns
+    -------
+    float
+        Distance in Mpc, if no error's are given.
+
+    float, float, float
+        Distance in Mpc, upper error, then lower error, on distance.
     """
-    Input:
-        x      - x coordinate
-        y      - y coordinate
-        n_pix  - number of pixels
-        data   - residual data, in list format
-        wave   - wavelength array
+    distance = 10.**((dM -25.) / 5.)
+
+    if len(dM_err)>0:
+        distance_err_up = 0.2 * np.log(10) * dM_err[0] * distance
+        distance_err_lo = 0.2 * np.log(10) * dM_err[1] * distance
         
-    Returns:
-        list format array of PN spectra: (n_pix*n_pix, len(wave))
+        return distance, distance_err_up, distance_err_lo
+    
+    else:
+        return distance
+
+def D_to_dM(distance, distance_err=[]):
+    """Distance (Mpc) to distance modulus.
+
+    Parameters
+    ----------
+    distance : [float]
+        Distance in Mpc
+
+    distance_err : list, optional
+        list of distance errors: [upper, lower], by default []
+
+    Returns
+    -------
+    float
+        Distance modulus, if no error's are given.
+
+    float, float, float
+        Distance modulus, upper error, then lower error.
     """
+    dM = 5. * np.log10(distance) + 25
+
+    if len(distance_err)>0:
+        dM_err_up = distance_err[0] / (0.2 * np.log10(10) * distance)
+        dM_err_lo = distance_err[1] / (0.2 * np.log10(10) * distance)
+
+        return dM, dM_err_up, dM_err_lo
+
+    else:
+        return dM
+
+
+def PNe_minicube_extractor(x, y, n_pix, data, wave):
+    """Extract a PNe minicube from a given MUSE residual cube.
+
+    Parameters
+    ----------
+    x : [float]
+        x coordinate
+
+    y : [float]
+        y coordinate
+
+    n_pix : [int]
+        number of pixels
+
+    data : [multi dimensional array]
+        residual data, in list format
+
+    wave : [list]
+        wavelength array
+
+    Returns
+    -------
+    [list]
+        PN spectra array of shape: (n_pix*n_pix, len(wave))
+    """
+
     xc = round(x)
     yc = round(y)
     offset = n_pix // 2
@@ -73,12 +125,28 @@ def robust_sigma(y, zero=False):
     return sigma
 
 
-def uncertainty_cube_construct(data, x_P, y_P, n_pix, PN_data, wavelength):
-    """
-    Extract and construct uncertainty cubes for PNe fitting weighting
+def uncertainty_cube_construct(data, x_P, n_pix, PN_data, wavelength):
+    """Extract and construct uncertainty cubes for PNe fitting weighting usage. Mainly used in the spaxel-by-spaxel fitting script.
+
+    Parameters
+    ----------
+    data : list / array
+        Residual array from emission subtraction (residual = data-model/err) of each spaxel.
+    x_P : list
+        List of source spaxel x coordinates.
+    n_pix : int
+        number of pixels wide FOV for each source.
+    PN_data : list /array
+        array of source spectra.
+    wavelength : list
+        wavelength array within which we are looking for the emission lines.
+
+    Returns
+    -------
+    list / array
+        residual data cube for each source, as found from spaxel-by-spaxel fitting of residual emission cube.
     """
     data[data == np.inf] = 0.01
-    # extract_data = np.array([PNe_minicube_extractor(x, y, n_pix, data, wavelength) for x,y in zip(x_P, y_P)])
     array_to_fill = np.zeros((len(x_P), n_pix*n_pix, len(wavelength)))
     for p in np.arange(0, len(x_P)):
         list_of_std = np.abs([robust_sigma(dat) for dat in PN_data[p]])
@@ -88,26 +156,44 @@ def uncertainty_cube_construct(data, x_P, y_P, n_pix, PN_data, wavelength):
 
 
 def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, galaxy_info, G_bkg, G_grad):
-    """
-    calculate the Chi2 for each fitted PN, setting data that equals zero to 1
-    
-    Parameters:
-        - n_PNe
-        - n_pix
-        - n_vary
-        - PNe_spec
-        - wave
-        - model_spectra
-        - F_xy_list
-        - mean_w_list
-        - galaxy_info
-        - G_bkg
-        - G_grad
-        
-    Returns:
-        - Chi_sqr
-        - redchi
-        
+    """calculate the Chi2 for each fitted PN, setting data that equals zero to 1
+
+    Parameters
+    ----------
+    n_PNe : [int]
+        Number of PNe.
+
+    n_pix : [int]
+        Number of Pixels in PN minicube.
+
+    n_vary : [int]
+        Number of varied parameters.
+
+    PNe_spec : [array, float]
+        PNe sepctral data.
+
+    wave : [array, float]
+        Wavelength array for spectral data.
+
+    F_xy_list : [list, float]
+        List of flux arrays for PNe.
+
+    mean_w_list : [list, float]
+        list of mean wavelength positons for PNe.
+
+    galaxy_info : [dict]
+        galaxy info dict which contains galaxy information.
+
+    G_bkg : [float]
+        Gaussian background value, from fitter, for straight line.
+
+    G_grad : [float]
+        Gaussian gradient value, from fitter, for straight line.
+
+    Returns
+    -------
+    [float]
+        chi_sqr, rechi
     """
     c = 299792458.0
     z = galaxy_info["velocity"]*1e3 / c
@@ -135,8 +221,7 @@ def calc_chi2(n_PNe, n_pix, n_vary, PNe_spec, wave, F_xy_list, mean_w_list, gala
     return Chi_sqr, redchi
 
 
-def KS2_test(dist_1, dist_2, conf_lim):
-    
+def KS2_test(dist_1, dist_2, conf_lim, v=True):
     """
     Input: 
           - dist_1 = distribution 1 for test
@@ -153,95 +238,36 @@ def KS2_test(dist_1, dist_2, conf_lim):
     """
     
     c_a = np.sqrt(-0.5*np.log(conf_lim))
-    print(f"c(a) = {round(c_a, 4)}")
     
     condition = c_a * np.sqrt((len(dist_1) + len(dist_2))/(len(dist_1) * len(dist_2)))
     
     KS2_test = stats.ks_2samp(dist_1, dist_2 )
     
 #     print(KS2_test)
-    print("\n")
-    print("KS2 p-value test")
-    if KS2_test[1] < conf_lim:
-        print(f"    KS2 sample p-value less than {conf_lim}.")
-        print("    Reject the Null hypothesis: The two samples are not drawn from the same distribution.")
-    elif KS2_test[1]> conf_lim:
-        print(f"    KS2 sample p-value greater than {conf_lim}.")
-        print("    We cannot reject the Null hypothesis.")
-    
-    print("\n")
-    print("KS2 D statistic test")
-    if KS2_test[0] > condition:
-        print(f"    D ({round(KS2_test[0],3)}) is greater than {round(condition,3)}")
-        print(f"    The Null hypothesis is rejected. The two samples do not match within a confidence of {conf_lim}.")
-    elif KS2_test[0] < condition:
-        print(f"    D ({round(KS2_test[0],3)}) is less than {round(condition,3)}")
-        print(f"    The Null hypothesis is NOT rejected. The two samples match within a confidence of {conf_lim}.")
+    if v == True:
+        print(f"c(a) = {round(c_a, 4)}")
+        print("\n")
+        print("KS2 p-value test")
+        if KS2_test[1] < conf_lim:
+            print(f"    KS2 sample p-value less than {conf_lim}.")
+            print("    Reject the Null hypothesis: The two samples are not drawn from the same distribution.")
+        elif KS2_test[1]> conf_lim:
+            print(f"    KS2 sample p-value greater than {conf_lim}.")
+            print("    We cannot reject the Null hypothesis.")
         
-    print("\n")
+        print("\n")
+        print("KS2 D statistic test")
+        if KS2_test[0] > condition:
+            print(f"    D ({round(KS2_test[0],3)}) is greater than {round(condition,3)}")
+            print(f"    The Null hypothesis is rejected. The two samples do not match within a confidence of {conf_lim}.")
+        elif KS2_test[0] < condition:
+            print(f"    D ({round(KS2_test[0],3)}) is less than {round(condition,3)}")
+            print(f"    The Null hypothesis is NOT rejected. The two samples match within a confidence of {conf_lim}.")
+            
+        print("\n")
     
     return KS2_test
  
-
-def calc_Lbol_and_mag(DIR_dict, galaxy_info, dM, dM_err=[0.1,0.1]):
-    """
-    Feature:
-
-    Parameters:
-        - DIR_dict      - directory dictionary
-        - galaxy_info   - dictionary of galaxy info
-        - z             - redshfit
-        - dist_mod      - distance modulus
-        - dM_err        - list of two elements [dM err upper, dM err lower], or [dM err] 
-                            - If one number passed, then it is used for both error bounds.
-    Return:
-        - L_bol - containing 
-    """
-    c = 299792458.0
-    z = galaxy_info["velocity"]*1e3 / c
-    
-    raw_data_cube = DIR_dict["RAW_DATA"]  # read in raw data cube
-
-    xe, ye, length, width, alpha = galaxy_info["gal_mask"]
-
-    with fits.open(DIR_dict["RAW_DATA"]) as orig_hdulist:
-        raw_data_cube = np.copy(orig_hdulist[1].data)
-        h1 = orig_hdulist[1].header
-    
-    raw_shape = np.shape(raw_data_cube)
-    
-    # Setup galaxy and star masks
-    Y, X = np.mgrid[:raw_shape[1], :raw_shape[2]]
-    elip_mask = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + \
-        (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
-
-    star_mask_sum = np.sum([(Y - yc)**2 + (X - xc)**2 <= rc*rc for xc, yc, rc in galaxy_info["star_mask"]], 0).astype(bool)
-
-    # Combine elip_mask and star_mask_sum to make total_mask
-    total_mask = ((np.isnan(raw_data_cube[1, :, :]) == False) & (
-        elip_mask == False) & (star_mask_sum == False))
-    indx_mask = np.where(total_mask == True)
-
-#     good_spectra = np.zeros((raw_shape[0], len(indx_mask[0])))
-
-#     for i, (y, x) in enumerate(zip(tqdm(indx_mask[0]), indx_mask[1])):
-#         good_spectra[:, i] = raw_data_cube[:, y, x]
-    print("Collapsing cube now....")
-    gal_lin = np.nansum(raw_data_cube[:, indx_mask[0], indx_mask[1]], 1)
-
-    print("Cube has been collapsed...")
-    # Check for if error range given, or single number supplied.
-    if len(dM_err) > 1:
-        L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z,
-                       vel=galaxy_info["velocity"], dist_mod=dM, dM_err=[dM_err[0], dM_err[1]])
-
-    elif len(dM_err) == 1: # if dM_err is len 1, use value for both bounds
-        L_bol = ppxf_L_tot(int_spec=gal_lin, header=h1, redshift=z,
-                           vel=galaxy_info["velocity"], dist_mod=dM, dM_err=[dM_err, dM_err])
-
-    return L_bol
-
-
 
 def LOSV_interloper_check(DIR_dict, galaxy_info, fitted_wave_list, PNe_indx, x_PNe, y_PNe):
     """
@@ -330,3 +356,71 @@ def LOSV_interloper_check(DIR_dict, galaxy_info, fitted_wave_list, PNe_indx, x_P
     #print(stats.norm.fit(PNe_df["V (km/s)"].loc[PNe_df["Filter"]=="Y"].values))
     
     return PNe_LOS_V, interlopers, vel_ratio, vsys
+
+
+def generate_mask(img_shape, mask_params=[], mask_shape=""):
+    """Create either elliptical or circular mask based on parameters and input mask shape choice.
+
+    Parameters
+    ----------
+    img_shape : list
+        [Y axis length, X axis length]  (e.g. [y_data, x_data]).
+
+    mask_params : list, optional
+        Parameters for the mask; 5 for ellipse, 3 for circles. Normally stored in the 'galaxy_info.yml' file, by default [].
+
+    mask_shape : string, optional
+        Choose from "ellipse" or "circle". by default "".
+        
+    Returns
+    -------
+    bool, mask
+        Returned mask has the same dimensions as input img_shape.
+    """
+
+    Y, X = np.mgrid[:img_shape[0], :img_shape[1]] # [Y, X]
+    mask = []
+    if (mask_shape == "ellipse") & (len(mask_params) == 5):
+        xe, ye, length, width, alpha = mask_params
+
+        mask = (((X-xe) * np.cos(alpha) + (Y-ye) * np.sin(alpha)) / (width/2)) ** 2 + \
+            (((X-xe) * np.sin(alpha) - (Y-ye) * np.cos(alpha)) / (length/2)) ** 2 <= 1
+
+    elif (mask_shape == "circle") & (len(mask_params) == 3):
+        xc, yc, rc = mask_params
+
+        mask = (Y - yc)**2 + (X - xc)**2 <= rc*rc
+
+    else:
+        print("Check your spelling for mask_params!")
+
+    return mask
+
+
+def plot_single_spec(n, DIR_dict, wavelength, PNe_spectra, model_spectra_list, i):
+    """Simple function to plot the integrated spectrum of a given PNe, showing the residual data, the best-fit model, and the residual of data minus best-fit model.
+
+    Parameters
+    ----------
+    n : int
+        integer number for the PNe to be plotted
+    DIR_dict : dict
+        Dictionary of useful directories for file opening and saving.
+    wavelength : list / array
+        lambda wavelength range array.
+    PNe_spectra : list / array
+        Residual data list of the PNe spectrum to be plotted
+    model_spectra_list : list / array
+        best-fit model of the PNe to be plotted
+    i : int
+        integer value designating the source as the ith brightest of those plotted, used in the filename.
+    """
+
+    res = PNe_spectra[n] - model_spectra_list[n]
+    plt.figure(figsize=(20,8))
+    plt.plot(wavelength, np.sum(PNe_spectra[n],0), label="data")
+    plt.plot(wavelength, np.sum(res, 0), label="residuals")
+    plt.plot(wavelength, np.sum(model_spectra_list[n], 0), label="model")
+    plt.title(f"PNe {n}")
+    plt.legend(fontsize=18)
+    plt.savefig(DIR_dict["PLOT_DIR"]+f"_{i}_brightest_single_spec.png", bbox_inches='tight')
