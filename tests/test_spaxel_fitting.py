@@ -7,7 +7,7 @@ from functions.file_handling import paths, open_data
 
 
 def test_dir_dict():
-    galaxy_name = "FCCtest"
+    galaxy_name = "FCC167"
     loc = "center"
     
     DIR_dict = paths(galaxy_name, loc)
@@ -16,7 +16,7 @@ def test_dir_dict():
     
 
 def test_open_data():
-    galaxy_name = "FCCtest"
+    galaxy_name = "FCC167"
     loc = "center"
     DIR_dict = paths(galaxy_name, loc)
     res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
@@ -25,7 +25,7 @@ def test_open_data():
 
 
 def test_PNe_spectrum_extractor():
-    galaxy_name = "FCCtest"
+    galaxy_name = "FCC167"
     loc = "center"
     
     DIR_dict = paths(galaxy_name, loc)

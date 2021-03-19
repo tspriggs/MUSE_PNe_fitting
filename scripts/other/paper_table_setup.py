@@ -38,5 +38,5 @@ with open("config/galaxy_info.yaml", "r") as yaml_data:
 for gal_loc in yaml_info:
     gal, loc = gal_loc.split("_")
 
-    if gal not in ["FCCtest","FCC090", "FCC263", "FCC285", "FCC290", "FCC306", "FCC308", "FCC312"]:
+    if gal not in ["FCC090", "FCC263", "FCC285", "FCC290", "FCC306", "FCC308", "FCC312"]:
         make_table(gal, loc)

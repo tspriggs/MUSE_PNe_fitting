@@ -53,10 +53,6 @@ c = 299792458.0 # speed of light
 
 z = galaxy_info["velocity"]*1e3 / c    
 
-if galaxy_name == "FCCtest":
-    z = 0.0
-
-
 gal_mask = galaxy_info["gal_mask"]
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
