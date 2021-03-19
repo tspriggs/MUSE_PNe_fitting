@@ -1,23 +1,21 @@
-FCC167_center:
-  Distance: 21.2
-  Galaxy name: FCC167
-  F_corr: 0.970
-  velocity: 1878
-  eff_r: 56.4
-  FWHM: 3.46
-  FWHM_err: 0.09
-  beta: 1.98
-  beta_err: 0.20
-  LSF: 2.97
-  LSF_err: 0.05
-  centre: [1,1]
-  gal_mask: [237,195,140,60,0.16]
+FCCtest_center:
+  Distance: 20
+  Galaxy name: FCC1test
+  F_corr: 0.99999
+  velocity: 1369
+  eff_r: 28.6
+  FWHM: 3.59
+  FWHM_err: 0.04
+  beta: 3.97
+  beta_err: 0.44
+  LSF: 3.06
+  LSF_err: 0.03
+  centre: [220, 220]
+  gal_mask: [1,1,1,1,1]
   star_mask: [[1,1,1]]
-  over_lum: [28]
-  impostor_filter: [[16,27,82,94],[9,85,89],[13]]
+  over_lum: []
+  impostor_filter: [[],[],[]]
   interloper_filter: []
   emissions:
     OIII_1: [750, null, null]
     OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
-  backup:
-    hb: [5, null, 'wave_OIII_1 - 145.518 * (1+{})']

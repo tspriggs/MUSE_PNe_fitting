@@ -1,13 +1,10 @@
-import pytest
 import numpy as np
-from astropy.io import fits
-from functions.MUSE_Models import PNe_residuals_3D, PSF_residuals_3D, spaxel_by_spaxel
-from functions.PNe_functions import robust_sigma, PNe_spectrum_extractor
+from functions.PNe_functions import  PNe_spectrum_extractor
 from functions.file_handling import paths, open_data
 
 
 def test_dir_dict():
-    galaxy_name = "FCC167"
+    galaxy_name = "FCCtest"
     loc = "center"
     
     DIR_dict = paths(galaxy_name, loc)
@@ -16,7 +13,7 @@ def test_dir_dict():
     
 
 def test_open_data():
-    galaxy_name = "FCC167"
+    galaxy_name = "FCCtest"
     loc = "center"
     DIR_dict = paths(galaxy_name, loc)
     res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
@@ -25,7 +22,7 @@ def test_open_data():
 
 
 def test_PNe_spectrum_extractor():
-    galaxy_name = "FCC167"
+    galaxy_name = "FCCtest"
     loc = "center"
     
     DIR_dict = paths(galaxy_name, loc)
