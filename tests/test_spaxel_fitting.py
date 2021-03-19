@@ -1,5 +1,5 @@
 import numpy as np
-from functions.PNe_functions import  PNe_spectrum_extractor
+from functions.PNe_functions import PNe_minicube_extractor
 from functions.file_handling import paths, open_data
 
 
@@ -16,25 +16,25 @@ def test_open_data():
     galaxy_name = "FCCtest"
     loc = "center"
     DIR_dict = paths(galaxy_name, loc)
-    res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
+    res_data, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
     
-    assert len(np.shape(res_data)) == 2 # test data is in list format, i.e. 2 dimensions
+    assert len(np.shape(res_data)) == 3 # test data is in list format, i.e. 2 dimensions
 
 
-def test_PNe_spectrum_extractor():
+def test_PNe_minicube_extractor():
     galaxy_name = "FCCtest"
     loc = "center"
     
     DIR_dict = paths(galaxy_name, loc)
     
     # Load in the residual data, in list form
-    res_data, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
-    
+    res_data, res_hdr, wavelength, res_shape, x_data, y_data, galaxy_data = open_data(galaxy_name, loc, DIR_dict)
+
     x_y_list = np.load(DIR_dict["EXPORT_DIR"]+"_PNe_x_y_list.npy")
     x_PNe = np.array([x[0] for x in x_y_list])
     y_PNe = np.array([y[1] for y in x_y_list])
     
-    sources = np.array([PNe_spectrum_extractor(x, y, 9, res_data, x_data, wavelength) for x,y in zip(x_PNe, y_PNe)])
+    sources = np.array([PNe_minicube_extractor(x, y, 9, res_data, wavelength) for x,y in zip(x_PNe, y_PNe)])
 
     assert len(np.shape(sources)) == 3  # test sources is 3 dimensional array
     assert np.shape(sources)[0] == len(x_PNe) # test number of sources matches number of PNe in x_y_list

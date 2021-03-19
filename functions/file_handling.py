@@ -65,7 +65,6 @@ def open_data(galaxy_name, loc, DIR_dict):
     galaxy_info = yaml_info[f"{galaxy_name}_{loc}"]
 
     # Open the residual list fits file for the selected galaxy and location
-    # with fits.open(DIR_dict["DATA_DIR"]+"_residual_cube.fits") as hdulist:# Path to data
     with fits.open(DIR_dict["DATA_DIR"]+"_residual_cube.fits") as hdulist:# Path to data
         residual_data = np.copy(hdulist[1].data)
         residual_hdr = hdulist[1].header # extract raw data header info, including wcs, from residual cube

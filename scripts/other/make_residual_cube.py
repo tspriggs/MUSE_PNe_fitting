@@ -6,16 +6,14 @@ import glob
 
 my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', type=str, required=True)
-my_parser.add_argument('--loc', action='store', type=str, required=True)
-my_parser.add_argument('--origin', action='store', type=str, required=True)
+my_parser.add_argument('--galaxy', action='store', type=str, required=True, help="Name of the galaxy, e.g. FCC000")
+my_parser.add_argument('--loc', action='store', type=str, required=True, help="location you want to form; center, halo or middle etc.")
 
 
 args = my_parser.parse_args()
 
 galaxy = args.galaxy
 loc = args.loc
-origin = args.origin
 
 
 def save_cube(data, wave, hdr, fname, s):
@@ -33,20 +31,13 @@ def save_cube(data, wave, hdr, fname, s):
 
 
 # Directory where the final residual cube will be saved to, change as you see fit, to match your working directory
-EXPORT_DIR = f"/data/tspriggs/Jupyterlab_dir/Github/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
+EXPORT_DIR = f"/path/to/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
 
 # Decide where to read data from, as determined from command line input arguments
-if origin == "re_reduced":
-    # Where the GIST output files are located
-    WORK_DIR = f"/local/tspriggs/re_reduced_F3D/gist_results/{galaxy}{loc}_{loc}/"
-    RAW_DIR = "/local/tspriggs/re_reduced_F3D/"
-elif origin == "F3D_gist":
-    if galaxy in ["FCC153", "FCC167", "FCC170", "FCC177", "FCC219"]:
-        WORK_DIR = f"/local/tspriggs/muse/MILES_stars_Guerou/{galaxy}/{galaxy}{loc}_{loc}/"
-        RAW_DIR =  f"/local/tspriggs/muse/{galaxy}/"
-    else:
-        WORK_DIR = f"/local/tspriggs/muse/{galaxy}/{galaxy}{loc}_{loc}/"
-        RAW_DIR =  f"/local/tspriggs/muse/{galaxy}/"
+# Where the GIST output files are located
+WORK_DIR = f"/path/to/reduced_F3D_data/gist_results/{galaxy}{loc}_{loc}/"
+RAW_DIR = "/path/to/reduced_F3D_data/"
+
 
 
 

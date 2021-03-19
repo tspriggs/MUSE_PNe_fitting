@@ -17,7 +17,7 @@ from functions.PNLF import calc_PNLF,  PNLF_analysis
 np.random.seed(42)
 
 
-gal = "FCC193"
+gal = "FCCtest"
 loc = "center"
 DIR_dict = paths(gal, loc)
 
