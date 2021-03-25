@@ -179,7 +179,7 @@ def PNLF_analysis(galaxy_name, loc, data, obs_comp, M_5007, m_5007, dM_in=31.5, 
     PNLF_params = Parameters()
 
     if loc == "center":
-        PNLF_params.add("dM", value=dM_in, min=30.0, max=32.5, vary=vary_dict["dM"])
+        PNLF_params.add("dM", value=dM_in, min=dM_in-2.0, max=dM_in+2.0, vary=vary_dict["dM"])
     elif loc in ["middle", "halo"]:
         gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv", index_col=("Galaxy", "loc"))
         center_dM = gal_df.loc[(galaxy_name, "center"), "PNLF dM"]

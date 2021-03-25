@@ -20,7 +20,8 @@ from functions.PSF_funcs import run_PSF_analysis
 np.random.seed(42)
 
 import warnings
-warnings.filterwarnings("ignore")
+# uncomment this if you do not want to view "ignore" warnings. These do not alter the output of this script.
+# warnings.filterwarnings("ignore")
 
 # Read in arguments from command line
 my_parser = argparse.ArgumentParser()
@@ -48,7 +49,9 @@ PNe_spectra, hdr, wavelength, obj_err, res_err, residual_shape, x_data, y_data, 
 n_pixels = 9 # number of pixels to be considered for FOV x and y range
 c = 299792458.0 # speed of light
 
+# Calculate redshift of galaxy from galaxy's systemic velocity
 z = galaxy_info["velocity"]*1e3 / c
+
 
 # Construct the PNe FOV coordinate grid for use when fitting PNe.
 coordinates = [(n,m) for n in range(n_pixels) for m in range(n_pixels)]
@@ -308,9 +311,12 @@ M_star = -4.53
 M_5007 = np.arange(M_star, 0.53, step)
 m_5007 = np.arange(26, 31, step)
 
+# dM_guess is used as an initial guess for the purposes of fitting.
+dM_guess = 31.5
+
 # Change the boolean values between True and False to alter which parameters are varied during the initial PNLF fit.
 vary_dict = {"dM":True, "M_star":False, "c1":False, "c2":False, "c3":False}
-PNLF_results = PNLF_analysis(galaxy_name, loc, gal_m_5007, obs_comp, M_5007, m_5007, dM_in=31.5, c2_in=0.307, vary_dict=vary_dict, comp_lim=False)
+PNLF_results = PNLF_analysis(galaxy_name, loc, gal_m_5007, obs_comp, M_5007, m_5007, dM_in=dM_guess, c2_in=0.307, vary_dict=vary_dict, comp_lim=False)
 best_fit_dM = PNLF_results.params["dM"].value
 best_fit_c2 = PNLF_results.params["c2"].value
 
@@ -358,17 +364,15 @@ plt.plot(m_5007, scale_PNLF(gal_m_5007, PNLF_comp_corr, PNLF_comp_corr, bw, step
 plt.fill_between(m_5007, scale_PNLF(gal_m_5007, PNLF_comp_corr_16, PNLF_comp_corr, bw, step), scale_PNLF(gal_m_5007, PNLF_comp_corr_84, PNLF_comp_corr, bw, step), \
                  alpha=0.4, color="b",zorder=2) 
 
-plt.xlim(26.0,30.0)
-plt.ylim(0, np.max(scale_PNLF(gal_m_5007, PNLF_best_fit, PNLF_comp_corr, bw, step)))
-
-
 
 idx = np.where(M_5007 <= M_star+2.5)[0]
 N_PNLF = np.sum(PNLF_best_fit[idx]* (len(gal_m_5007) / (np.sum(PNLF_comp_corr)*step))) * step
 
 
+plt.xlim(26.0,30.0)
+plt.ylim(0, np.max(scale_PNLF(gal_m_5007, PNLF_best_fit, PNLF_comp_corr, bw, step)[idx])*1.5)
 
-plt.title(f"{galaxy_name}, dM={round(best_fit_dM,3)}")
+plt.title(f"{galaxy_name}, dM={round(best_fit_dM,2)}$"+"^{+"+f"{round(dM_err_up,2)}"+"}"+f"_{ {-round(dM_err_lo,2)} }$")
 plt.xlabel(r"$m_{5007}$", fontsize=15)
 plt.ylabel(r"$N_{PNe} \ per \ bin$", fontsize=15)
 plt.xlim(26.0,30.0)
@@ -401,8 +405,8 @@ plt.tick_params(axis="x", labelsize=15)
 plt.tick_params(axis="y", labelsize=15)
 plt.savefig(DIR_dict["PLOT_DIR"]+"_PNe_ECDF_vs_PNLF_CDF.png", bbox_inches="tight")
 
-#### save values to gal_df csv file
 
+#### save values to gal_df csv file
 
 print(f"{galaxy_name} {loc}")
 
