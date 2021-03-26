@@ -19,10 +19,14 @@ from functions.file_handling import paths, open_data
 # Queries sys arguments for galaxy name
 my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', type=str, required=True, help="The name of the galaxy to be analysed.")
-my_parser.add_argument("--loc",    action="store", type=str, required=False, default="center", help="The pointing location, e.g. center, halo or middle")
-my_parser.add_argument("--fit", action="store_true", default=False, help="This flag is needed when you want to run the spaxel-by-spaxel fit to the residual MUSE cube.")
-my_parser.add_argument("--sep", action="store_true", default=False, help="The sep flag makes the script save the output PNe locations, as detected using the SEP package.")
+my_parser.add_argument('--galaxy', action='store', type=str, required=True, 
+                        help="The name of the galaxy to be analysed.")
+my_parser.add_argument("--loc", action="store", type=str, required=False, default="", 
+                        help="The pointing location, e.g. center, halo or middle")
+my_parser.add_argument("--fit", action="store_true", default=False, 
+                        help="This flag is needed when you want to run the spaxel-by-spaxel fit to the residual MUSE cube.")
+my_parser.add_argument("--sep", action="store_true", default=False, 
+                        help="The sep flag makes the script save the output PNe locations, as detected using the SEP package.")
 
 args = my_parser.parse_args()
 
@@ -189,7 +193,6 @@ star_mask = np.sum([generate_mask(img_shape=[y_data, x_data], mask_params=star_m
 ##      SEP      ##
 ###################
 # Use sep.extract to get the locations of sources
-# objects = sep.extract(A_rN_img, thresh=2.5, err=bkg.globalback, clean=False, mask=elip_mask_gal+star_mask,)# deblend_cont=0.001,)
 objects = sep.extract(A_rN_img, thresh=2.5, clean=True, mask=elip_mask_gal+star_mask, deblend_cont=0.001,)
 peak_filter = np.where(objects["peak"] < 30)
 

@@ -1,4 +1,4 @@
-RAW_DIR: /local/tspriggs/Fornax_data_cubes/{galaxy}
+RAW_DIR: /path/to/Fornax_data_cubes/{galaxy}
 RAW_DATA: galaxy_data/{galaxy}_data/{galaxy}{loc}.fits
 DATA_DIR: galaxy_data/{galaxy}_data/{galaxy}{loc}
 EXPORT_DIR: exported_data/{galaxy}/{galaxy}{loc}

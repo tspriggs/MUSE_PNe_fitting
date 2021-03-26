@@ -14,36 +14,36 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', type=str, required=True)
-# my_parser.add_argument('--w', action='store_true', default=False)
-my_parser.add_argument('--n', action='store_true', default=False)
-my_parser.add_argument('--p', action='store_true', default=False)
-my_parser.add_argument('--save', action='store_true', default=False)
+my_parser.add_argument('--galaxy', action='store', type=str, required=True, 
+                        help="Galaxy name, normally given as FCC000, or NGC000")
+my_parser.add_argument('--n', action='store_true', default=False, 
+                        help="Boolean flag to indicate if the plots should show source numbers. Default is False.")
+my_parser.add_argument('--show', action='store_true', default=False, 
+                        help="Boolean flag to indicate if the plotted figures are displayed to the user. Default is False.")
+my_parser.add_argument('--save', action='store_true', default=False, 
+                        help="Boolean flag to determine if the figures created from this script should be saved on this run. Default is False")
 
 args = my_parser.parse_args()
 
 # Define galaxy name
 galaxy_name = args.galaxy 
-
-# weighted = args.w
-
-show_plot = args.p
-
+show_plot = args.show
 plt_save = args.save
 
 # Define Working directory
 
-# TODO set the following path to be user-defined.
-gist_dir = f"/mnt/t/F3D_data/gist_results/{galaxy_name}MUSEPNeweighted_contamination/{galaxy_name}MUSEPNeweighted"
+gist_dir = f"/path/to/gist_results/{galaxy_name}MUSEPNeweighted_contamination/{galaxy_name}MUSEPNeweighted"
 
 
 DIR_dict = paths(galaxy_name, "center")
 
-# read in PNe data
+# Read in PNe dataframe from the PNe fitting script
 PNe_df = pd.read_csv(DIR_dict["EXPORT_DIR"]+"_PNe_df.csv")
+
+# create an index array for source that pass both the A/rN>3, as well as the chi-square filters.
+# i.e. all entries that have "ID" not equal to "-"
 indx = PNe_df[PNe_df["ID"]!="-"].index.values
-# m_5007 = PNe_df["m 5007"].loc[PNe_df["ID"]=="PN"]
-m_5007 = PNe_df["m 5007"].loc[PNe_df["ID"]!="-"]
+m_5007 = PNe_df.loc[indx, "m 5007"]
 
 # Open and name the following result files
 gandalf_emission = fits.open(f"{gist_dir}_gandalf-emission_SPAXEL.fits")

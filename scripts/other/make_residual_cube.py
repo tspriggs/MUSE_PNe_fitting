@@ -1,4 +1,5 @@
 from astropy.io import fits
+from functions.file_handling import paths
 import numpy as np 
 import argparse
 import glob
@@ -28,14 +29,12 @@ def save_cube(data, wave, hdr, fname, s):
     print(f'Residual cube saved to --> {fname}')
 
 
-
-
 # Directory where the final residual cube will be saved to, change as you see fit, to match your working directory
 EXPORT_DIR = f"/path/to/MUSE_PNe_fitting/galaxy_data/{galaxy}_data/"
 
 # Decide where to read data from, as determined from command line input arguments
 # Where the GIST output files are located
-WORK_DIR = f"/path/to/reduced_F3D_data/gist_results/{galaxy}{loc}_{loc}/"
+WORK_DIR = f"/path/to/reduced_F3D_data/{galaxy}{loc}_{loc}/"
 RAW_DIR = "/path/to/reduced_F3D_data/"
 
 

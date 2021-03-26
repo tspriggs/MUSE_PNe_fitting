@@ -26,10 +26,14 @@ import warnings
 # Read in arguments from command line
 my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', type=str, required=True, help="The name of the galaxy to be analysed.")
-my_parser.add_argument("--loc",    action="store", type=str, required=False, default="center", help="The pointing location, e.g. center, halo or middle")
-my_parser.add_argument("--fit_psf", action="store_true", default=False, help="A flag used to determine if a PSF fit should be run.")
-my_parser.add_argument("--save_gist", action="store_true", default=False, help="This Flag indicates that you want to save the files used for impostor detection, ready for GIST.")
+my_parser.add_argument('--galaxy', action='store', type=str, required=True, 
+                        help="The name of the galaxy to be analysed.")
+my_parser.add_argument("--loc",    action="store", type=str, required=False, default="", 
+                        help="The pointing location, e.g. center, halo or middle")
+my_parser.add_argument("--fit_psf", action="store_true", default=False, 
+                        help="A flag used to determine if a PSF fit should be run.")
+my_parser.add_argument("--save_gist", action="store_true", default=False, 
+                        help="This Flag indicates that you want to save the files used for impostor detection, ready for GIST.")
 
 args = my_parser.parse_args()
 

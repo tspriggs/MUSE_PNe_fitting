@@ -1,15 +1,14 @@
 FCCtest_center:
-  Distance: 20
-  Galaxy name: FCC1test
-  F_corr: 0.99999
+  Galaxy name: FCCtest
+  F_corr: 1.0
   velocity: 1369
   eff_r: 28.6
-  FWHM: 3.59
-  FWHM_err: 0.04
-  beta: 3.97
-  beta_err: 0.44
-  LSF: 3.06
-  LSF_err: 0.03
+  FWHM: 4.0
+  FWHM_err: 0.05
+  beta: 2.5
+  beta_err: 0.1
+  LSF: 2.8
+  LSF_err: 0.01
   centre: [220, 220]
   gal_mask: [1,1,1,1,1]
   star_mask: [[1,1,1]]

@@ -12,10 +12,11 @@ def make_table(galaxy_name, loc):
     index_check = PNe_df["ID"].isin(["-", "CrssMtch"])
     y_idx = PNe_df.loc[~index_check].index.values
     
-
+    # transform the RA and DEC stored, to a format ready for the tables used in a paper.
     RA_for_table = [RA.replace("h", "").replace("m", "").replace("s", "") for RA in PNe_df["Ra (J2000)"].loc[y_idx]]  
     DEC_for_table = [DEC.replace("d", "").replace("m", "").replace("s", "") for DEC in PNe_df["Dec (J2000)"].loc[y_idx]]
 
+    # generate ID's for the PNe, using the "F3D J" at the start.
     ID_for_table = ["F3D J"+RA_for_table[i]+DEC_for_table[i] for i in range(len(y_idx))]
 
 
@@ -36,5 +37,15 @@ with open("config/galaxy_info.yaml", "r") as yaml_data:
     yaml_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
 
 for gal_loc in yaml_info:
-    gal, loc = gal_loc.split("_")
-    make_table(gal, loc)
+    if len(gal_loc.split("_")) == 2:
+        # If the format is FCC000_center, then you have a gal and loc.
+        gal, loc = gal_loc.split("_")
+        make_table(gal, loc)
+    elif len(gal_loc.split("_")) == 1:
+        # If the format is FCC000, then you have a gal and no stated loc.
+        gal = gal_loc
+        loc = ""
+        make_table(gal, loc)
+    else:
+        print("ERROR: Incorrect galaxy and or loc name format found in galaxy_info.yaml. Please investigate.")
+    
