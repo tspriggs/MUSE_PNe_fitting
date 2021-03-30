@@ -54,7 +54,7 @@ The directory will look something like this:
 
 For storing the galaxy information that is required to detect and fit for PNe, a yaml file is used. The format, as it stands, of the yaml entry for each galaxy is:
 
-
+```yaml
     FCCtest_center:
         Galaxy name: FCCtest
         F_corr: 1.0                 # Flux calibration correction
@@ -75,27 +75,31 @@ For storing the galaxy information that is required to detect and fit for PNe, a
         emissions:                  # This is a dictionary of emissions with the required parameter setup.
           OIII_1: [750, null, null]
           OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
-
+```
 
 ## Spaxel-by-Spaxel [OIII] fitting
 
+```bash
+$ python scripts/pne_analysis/MUSE_spaxel_fit.py FCC000 --fit --sep # command to run spaxel fitting script
+```
+
 This routine will take in the galaxy FCC000's residual cube data file, fit spaxel by spaxel for \[OIII] doublets, and save the output files and plots in the relevant files. The shape of the galaxy (x and y lengths) are stored in the header now and easy to access.
 
-## PNe detection and PSF analysis
+### **\[OIII] source detection**
 
-Once you have run MUSE_spaxel_fit.py, then you will want to run SEP on the A/rN map (this is not included in the scripts yet, only in master_book.ipynb). SEP will save a list of x,y pixel coordinates of the detected sources. Once they are read in as minicubes, you need to run the PSF routine to get values for FWHM, beta and LSF, with the relevant errors. On the first fit, to determine the signal to noise ratio, the PSF is defaulted to FWHM=4.0, beta=2.5 and LSF=3.0. For the PSF part, you will need to select a suitable number of sources via the brightest and work downwards. 5 or 10 objects is adequate. This will be incorporated later into a script.
+Once you have run MUSE_spaxel_fit.py, then you will want to run SEP on the A/rN map (this is not included in the scripts yet, only in master_book.ipynb). SEP will save a list of x,y pixel coordinates of the detected sources.
 
-## PNe 3D modelling
+## Running the PNe_fitting.py script
 
 After you have a list of PNe coordinates, and the PSF values saved into the galaxy_info.yaml file, you are ready to run the PNe_fitting.py file. To run this script, use:
 
 ```bash
-$ python scripts/other/PNe_fitting.py FCC000 # command line use
+$ python scripts/pne_analysis/PNe_fitting.py FCC000 --fit_psf # command to run PNe fitting script
 ```
 
 ### **PNe source fitting with 3D model**
 
-The PNe_fitting.py script uses the PNe minicubes from the MUSE_spaxel_fit.py script, as detected from signal to noise maps, to fit the \[OIII] emission lines using our 3D model. Once all the sources are fitted, the initial catalogue is trimmed of any objects that do not pass the first filters: signal to noise $\geq$ 3, or a $\chi^{2}$ within 3 sigma (99.73 %).
+The PNe_fitting.py script uses the PNe minicubes from the MUSE_spaxel_fit.py script, as detected from signal to noise maps, to fit the \[OIII] emission lines using our 3D model. Once all the sources are fitted, the initial catalogue is trimmed of any objects that do not pass the first filters: signal to noise >= 3, or a Chi-square within 3 sigma (99.73 %).
 
 ### **Point Spread Function fitting**
 
@@ -107,4 +111,4 @@ Beyond the previously mentioned filter, there is also functionality to produce P
 
 ### **Planetary Nebulae Luminosity Function (PNLF) fitting**
 
-The final catalogue of PNe are then passed to a function that fits the Ciardullo et al. 1989 analytical PNLF formulae to the data. The only free parameter of this $\chi^{2}$ minimisation effort is the distance modulus. The result of the PNLF modelling method produces both a distance to the galaxy hosting the observed PNe, it also calculates the expected number of PNe to lie within 2.5 magntitudes of the cut-off.
+The final catalogue of PNe are then passed to a function that fits the Ciardullo et al. 1989 analytical PNLF formulae to the data. The only free parameter of this Chi-square minimisation effort is the distance modulus. The result of the PNLF modelling method produces both a distance to the galaxy hosting the observed PNe, it also calculates the expected number of PNe to lie within 2.5 magntitudes of the cut-off.
