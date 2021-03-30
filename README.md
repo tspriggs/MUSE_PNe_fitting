@@ -18,7 +18,7 @@ This software was first introduced in the method paper of [Spriggs, T. W. et al.
 
 The purpose of this pipeline is to first run a spaxel-by-spaxel fit for \[OIII] 5007 Angstrom doublet (4959 Angstrom), then store files and save plots (exported_data/ and Plots/). Then having formed a x,y list of coordinates (pixel coordinates) from running SEP on the A/rN map, fit the PNe with the 1D+2D model fitting routine, using LMfit for the minimisation efforts.
 
-## Directory Structure
+## :card_index_dividers: Directory Structure
 
 Note: if you are willing to change the input and output locations for files, then you can use any naming / directory convention. For the purposes of ease, the convention used herein is explained in full.
 
