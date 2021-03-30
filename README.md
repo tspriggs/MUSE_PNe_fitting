@@ -22,15 +22,15 @@ The purpose of this pipeline is to first run a spaxel-by-spaxel fit for \[OIII] 
 
 Note: if you are willing to change the input and output locations for files, then you can use any naming / directory convention. For the purposes of ease, the convention used herein is explained in full.
 
-### **galaxy_data**
+### :telescope: **galaxy_data**
 
 Please store the input data files (residual lists) in folders named: galaxy_data/FCC000_data/, an example would be FCC167_data/. In this folder please place the residual lists .fits file from gandalf fits (containining only the residuals of stellar continuum subtracted spectra, with nebulous emission lines.), as well the wavelength array (saved in npy format) if required.
 
-### **Plots**
+### :bar_chart: **Plots**
 
 The folder Plots/ is where the saved figures / plots from the script are stored. Inside Plots/ there needs to be a folder for each galaxy you intend to use with the pipeline, named as follows: GalaxyName/ (e.g. `Plots/FCC167/` ).
 
-### **exported_data**
+### :milky_way: **exported_data**
 
 The final folder required here is "exported_data/", where the results of the spaxel-by-spaxel fit will be stored. Again a folder within "exported_data/", for each galaxy, needs to be made so as to keep track of exported files.
 
@@ -50,7 +50,7 @@ The directory will look something like this:
         └─ FCC000/
 ```
 
-## Galaxy information
+## :information_source: Galaxy information
 
 For storing the galaxy information that is required to detect and fit for PNe, a yaml file is used. The format, as it stands, of the yaml entry for each galaxy is:
 
@@ -77,7 +77,7 @@ For storing the galaxy information that is required to detect and fit for PNe, a
           OIII_2: [null, Amp_2D_OIII_1/3, 'wave_OIII_1 - 47.9399 * (1+{})']
 ```
 
-## Spaxel-by-Spaxel [OIII] fitting
+## :sparkles: Spaxel-by-Spaxel [OIII] fitting
 
 ```bash
 $ python scripts/pne_analysis/MUSE_spaxel_fit.py FCC000 --fit --sep # command to run spaxel fitting script
@@ -85,11 +85,11 @@ $ python scripts/pne_analysis/MUSE_spaxel_fit.py FCC000 --fit --sep # command to
 
 This routine will take in the galaxy FCC000's residual cube data file, fit spaxel by spaxel for \[OIII] doublets, and save the output files and plots in the relevant files. The shape of the galaxy (x and y lengths) are stored in the header now and easy to access.
 
-### **\[OIII] source detection**
+### :mag: **\[OIII] source detection**
 
 Once you have run MUSE_spaxel_fit.py, then you will want to run SEP on the A/rN map (this is not included in the scripts yet, only in master_book.ipynb). SEP will save a list of x,y pixel coordinates of the detected sources.
 
-## Running the PNe_fitting.py script
+## :computer: Running the PNe_fitting.py script
 
 After you have a list of PNe coordinates, and the PSF values saved into the galaxy_info.yaml file, you are ready to run the PNe_fitting.py file. To run this script, use:
 
@@ -97,18 +97,18 @@ After you have a list of PNe coordinates, and the PSF values saved into the gala
 $ python scripts/pne_analysis/PNe_fitting.py FCC000 --fit_psf # command to run PNe fitting script
 ```
 
-### **PNe source fitting with 3D model**
+### :blue_book: **PNe source fitting with 3D model**
 
 The PNe_fitting.py script uses the PNe minicubes from the MUSE_spaxel_fit.py script, as detected from signal to noise maps, to fit the \[OIII] emission lines using our 3D model. Once all the sources are fitted, the initial catalogue is trimmed of any objects that do not pass the first filters: signal to noise >= 3, or a Chi-square within 3 sigma (99.73 %).
 
-### **Point Spread Function fitting**
+### :collision: **Point Spread Function fitting**
 
 This script is also capable of choosing the 4 brightest PNe and fitting them simultaneously to evaluate the Point Spread Function (PSF) for the current pointing.
 
-### **Impostor identification, using GIST**
+### :grey_question: **Impostor identification, using GIST**
 
 Beyond the previously mentioned filter, there is also functionality to produce PSF weighted datacubes for the PNe, taken from the reduced (raw) MUSE data, and be ready for further evaluation by the GIST pipeline for impostor determination. This is achieved through emission line diagnostic ratio investigation. Here, sources that meet the associated criteria are labelled as Supernova Remnants (SNR), compact HII regions (HII), or unknowns.
 
-### **Planetary Nebulae Luminosity Function (PNLF) fitting**
+### :shipit: **Planetary Nebulae Luminosity Function (PNLF) fitting**
 
 The final catalogue of PNe are then passed to a function that fits the Ciardullo et al. 1989 analytical PNLF formulae to the data. The only free parameter of this Chi-square minimisation effort is the distance modulus. The result of the PNLF modelling method produces both a distance to the galaxy hosting the observed PNe, it also calculates the expected number of PNe to lie within 2.5 magntitudes of the cut-off.
