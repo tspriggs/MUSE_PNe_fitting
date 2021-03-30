@@ -3,16 +3,16 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/b1dd21304663b97ed3c53771c7054e844c35bb77?filepath=%2FBinder_example.ipynb)
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3726795.svg)](https://doi.org/10.5281/zenodo.3726795)
 
-## Binder Instructions
+## :notebook: Binder Instructions
 
 For instructions and a prepared working environment, please open `Binder_example.ipynb`, and read the notes.
 To explore the variables, you can run `%whos` to return a list of stored variables from the executed scripts.
 
-## Data requirements
+## :pencil: Data requirements
 
 This project uses the output of the GIST IFU pipeline ([[GIST]](https://abittner.gitlab.io/thegistpipeline/)). Where the stellar continuum has been modelled (ppxf), along with the emission lines of the diffuse ionised gas (Gandalf; Sarzi, M. 2006). Once the stellar continuum is subtracted (MUSE_spectra - (Best fit - emission fit) ), we are left with a residual data cube, where the emission lines of unresolved point sources can be mapped out, along with regions of diffuse ionised gas. The residual cube is what is needed for this workflow. To create a residual data cube, please use the gist_residual_data.py script, under `scripts/other`, this will load up the relevant files and create a residual data cube for use with the PNe detection scripts.
 
-## Introduction
+## :coffee: Introduction
 
 This software was first introduced in the method paper of [Spriggs, T. W. et al. 2020](https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..62S/abstract).
 
