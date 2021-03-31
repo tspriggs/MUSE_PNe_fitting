@@ -137,12 +137,12 @@ def run_minimiser(parameters):
         A_2D_list[PNe_num]  = useful_stuff[1][0]
         F_xy_list[PNe_num]  = useful_stuff[1][1]
         model_spectra_list[PNe_num] = useful_stuff[1][3]
-        moff_A[PNe_num]     = [multi_fit_results.params["Amp_2D_{}".format(em)] for em in emission_dict]
-        mean_wave_list[PNe_num] = [multi_fit_results.params["wave_{}".format(em)] for em in emission_dict]
-        list_of_x[PNe_num]  = multi_fit_results.params["x_0"]
-        list_of_y[PNe_num]  = multi_fit_results.params["y_0"]
-        Gauss_bkg[PNe_num]  = multi_fit_results.params["Gauss_bkg"]
-        Gauss_grad[PNe_num] = multi_fit_results.params["Gauss_grad"]
+        moff_A[PNe_num]     = [multi_fit_results.params["Amp_2D_{}".format(em)].value for em in emission_dict]
+        mean_wave_list[PNe_num] = [multi_fit_results.params["wave_{}".format(em)].value for em in emission_dict]
+        list_of_x[PNe_num]  = multi_fit_results.params["x_0"].value
+        list_of_y[PNe_num]  = multi_fit_results.params["y_0"].value
+        Gauss_bkg[PNe_num]  = multi_fit_results.params["Gauss_bkg"].value
+        Gauss_grad[PNe_num] = multi_fit_results.params["Gauss_grad"].value
         # Store the errors from the minimisation run
         moff_A_err[PNe_num]     = [multi_fit_results.params["Amp_2D_{}".format(em)].stderr for em in emission_dict]
         mean_wave_err[PNe_num]  = [multi_fit_results.params["wave_{}".format(em)].stderr for em in emission_dict]
