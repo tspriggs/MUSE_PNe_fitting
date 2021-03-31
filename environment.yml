@@ -7,7 +7,7 @@ dependencies:
   - numpy
   - matplotlib
   - pandas
-  - lmfit
+  - lmfit=1.0.1
   - astropy
   - ipython
   - jupyter
