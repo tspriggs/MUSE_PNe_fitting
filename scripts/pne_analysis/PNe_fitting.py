@@ -74,11 +74,10 @@ n_PNe = len(x_PNe)
 
 
 # create Pandas dataframe for storage of values from the 3D fitter.
-PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "sep_peak", "PNe_LOS_V", "redchi", "ID"))
+PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "PNe_LOS_V", "redchi", "ID"))
 PNe_df["PNe number"] = np.arange(0, n_PNe)
 PNe_df["ID"] = "PN" # all start as PN
 
-PNe_df["sep_peak"] = np.load(DIR_dict["EXPORT_DIR"]+"_PNe_SEP_peak.npy")
 
 wcs_obj = WCS(hdr, naxis=2)
 
