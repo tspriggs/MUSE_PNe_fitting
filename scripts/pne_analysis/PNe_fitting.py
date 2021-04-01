@@ -16,10 +16,11 @@ from functions.MUSE_Models import PNe_residuals_3D, generate_3D_fit_params
 from functions.PNe_functions import calc_chi2, plot_single_spec, dM_to_D
 from functions.file_handling import paths, open_PNe, prep_impostor_files
 from functions.PSF_funcs import run_PSF_analysis
+from functions.completeness import prep_completness_data, calc_completeness
 
 np.random.seed(42)
 
-import warnings
+# import warnings
 # uncomment this if you do not want to view "ignore" warnings. These do not alter the output of this script.
 # warnings.filterwarnings("ignore")
 
@@ -301,7 +302,20 @@ PNe_df["mag error lo"] = mag_err_plus_minus[:,1]
 # print("##########################\n")
 
 # read in the observed completeness ratio profile for the given galaxy observation.
-obs_comp = np.load(DIR_dict["EXPORT_DIR"]+"_completeness_ratio.npy")
+try:
+    obs_comp = np.load(DIR_dict["EXPORT_DIR"]+"_completeness_ratio.npy")
+except:
+    print("\nThere appears to be no completeness profile saved for this galaxy.")
+    print(f"Calculating the completeness profile of {galaxy_name} {loc}\n")
+    step = 0.001
+    m_5007 = np.arange(26, 31, step)
+    image, Noise_map = prep_completness_data(galaxy_name, loc, DIR_dict, galaxy_info)
+
+    completeness_ratio = calc_completeness(image, Noise_map, m_5007, galaxy_info, 3.0, 9, )
+
+    np.save(DIR_dict["EXPORT_DIR"]+"_completeness_ratio", completeness_ratio)
+    print(f"The completeness profile has been calculated and will be stored for later use\n")
+    obs_comp = np.load(DIR_dict["EXPORT_DIR"]+"_completeness_ratio.npy")
 
 # Retrieve key information from the PNe_df dataframe: [OIII] magntiudes and errors, only for sources that have the "ID" of "PN".
 gal_m_5007 = PNe_df["m 5007"].loc[PNe_df["ID"].isin(["PN"])].values
