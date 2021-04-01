@@ -221,8 +221,7 @@ if fit_PSF == True:
 
     sel_PNe = PNe_df.loc[(PNe_df["ID"] == "PN")].nlargest(3, "A/rN").index.values#[1:]
 
-    PSF_results, PSF_ci = run_PSF_analysis(sel_PNe, PNe_spectra, obj_err, wavelength, x_fit, y_fit, z)
-    lmfit.printfuncs.report_ci(PSF_ci)
+    PSF_results = run_PSF_analysis(sel_PNe, PNe_spectra, obj_err, wavelength, x_fit, y_fit, z, eval_Conf_int=False)
 
     generate_3D_fit_params(wave=5006.77*(1+z), FWHM=PSF_results.params["FWHM"].value, beta=PSF_results.params["beta"].value,
                LSF=PSF_results.params["LSF"].value, vary_PSF=False, em_dict=emission_dict, z=z)

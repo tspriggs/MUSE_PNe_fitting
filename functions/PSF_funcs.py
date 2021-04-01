@@ -35,7 +35,7 @@ def generate_PSF_params(sel_PNe, amp, mean, n_pixels=9):
 
     return param_obj
 
-def run_PSF_analysis(sel_PNe, PNe_spectra, obj_err, wavelength, x_fit, y_fit, z, n_pixels=9. ):
+def run_PSF_analysis(sel_PNe, PNe_spectra, obj_err, wavelength, x_fit, y_fit, z, eval_Conf_int=False ):
     """Fits multiple PNe simultaneously to evaluate the Point Spread Function (PSF) and Line Spread Function,
     of the galaxy (pointing dependant).
 
@@ -87,15 +87,21 @@ def run_PSF_analysis(sel_PNe, PNe_spectra, obj_err, wavelength, x_fit, y_fit, z,
     # minimisation of the PSF functions
     PSF_min = lmfit.Minimizer(PSF_residuals_3D, PSF_params, fcn_args=(wavelength, x_fit, y_fit, selected_PNe, selected_PNe_err, z), nan_policy="propagate")
     PSF_results = PSF_min.minimize()
-    # use LMfits confidence interval functionality to map out the errors between the 3 different parameters.
-    print("Calculating Confidence Intervals for FWHM, beta and LSF")
-    PSF_ci = lmfit.conf_interval(PSF_min, PSF_results, p_names=["FWHM", "beta", "LSF"], sigmas=[1,2])
-    
+
     print("FWHM: ", round(PSF_results.params["FWHM"].value, 4), "+/-", round(PSF_results.params["FWHM"].stderr, 4), "(", round(PSF_results.params["FWHM"].stderr / PSF_results.params["FWHM"].value, 4)*100, "%)")
     print("Beta: ", round(PSF_results.params["beta"].value, 4), "+/-", round(PSF_results.params["beta"].stderr, 4), "(", round(PSF_results.params["beta"].stderr / PSF_results.params["beta"].value, 4)*100, "%)")
     print("LSF: " , round(PSF_results.params["LSF"].value , 4), "+/-", round(PSF_results.params["LSF"].stderr , 4), "(", round(PSF_results.params["LSF"].stderr / PSF_results.params["LSF"].value, 4)*100, "%)")
 
-    return PSF_results, PSF_ci
+    if eval_Conf_int == True:
+        # use LMfits confidence interval functionality to map out the errors between the 3 different parameters.
+        print("Calculating Confidence Intervals for FWHM, beta and LSF")
+        PSF_ci = lmfit.conf_interval(PSF_min, PSF_results, p_names=["FWHM", "beta", "LSF"], sigmas=[1,2])
+                
+        lmfit.printfuncs.report_ci(PSF_ci)
+
+    
+    return PSF_results
+
 
 
 def PSF_residuals_3D(params, lam, x_2D, y_2D, data, err, z):
