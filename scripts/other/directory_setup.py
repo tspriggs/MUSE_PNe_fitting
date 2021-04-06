@@ -3,7 +3,7 @@ import yaml
 
 # Open yaml file to get galaxy names from individual entries
 
-with open("../galaxy_info.yaml", "r") as yaml_data:
+with open("config/galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
     
 galaxy_names = [gal for gal in galaxy_info]
