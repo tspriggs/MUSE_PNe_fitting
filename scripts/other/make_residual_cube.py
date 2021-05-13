@@ -61,7 +61,7 @@ with fits.open(RAW_DIR+f"{galaxy}{loc}.fits") as raw_hdu:
     raw_hdr = raw_hdu[1].header
     raw_shape = np.shape(raw_hdu[1].data)
 
-#wavelength = raw_hdr['CRVAL3']+(np.arange(raw_shape[0])-raw_hdr['CRPIX3'])*raw_hdr['CD3_3']
+#wavelength = raw_hdr['CRVAL3']+(np.arange(raw_shape[0]))*raw_hdr['CD3_3']
 
 # If number of spectra in residuals less than raw data x-axis length, times y-axis length
 # then project residuals to original pixel locations.

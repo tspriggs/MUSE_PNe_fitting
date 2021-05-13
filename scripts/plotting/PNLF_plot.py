@@ -39,8 +39,8 @@ gal_m_5007_err_lo = PNe_df["mag error lo"].loc[PNe_df["ID"].isin(["PN"])].values
 
 step = 0.001
 M_star = -4.53
-M_5007 = np.arange(M_star, 0.53, step)
-m_5007 = np.arange(26, 31, step)
+m_5007 = np.arange(22, 34, step)
+M_5007 = np.arange(M_star, M_star+12, step)
 
 
 gal_df = pd.read_csv("exported_data/galaxy_dataframe.csv", index_col=("Galaxy", "loc"))
@@ -85,15 +85,6 @@ idx = np.where(M_5007 <= M_star+2.5)[0]
 N_PNLF = np.sum(PNLF_best_fit[idx]* (len(gal_m_5007) / (np.sum(PNLF_comp_corr)*step))) * step
 
 
-
-plt.title(f"{galaxy_name}, dM={round(best_fit_dM,3)}")
-plt.xlabel(r"$m_{5007}$", fontsize=15)
-plt.ylabel(r"$N_{PNe} \ per \ bin$", fontsize=15)
-plt.xlim(26.0,30.0)
-plt.ylim(0, np.max(scale_PNLF(gal_m_5007, PNLF_best_fit, PNLF_comp_corr, bw, step)[idx])*2)
-plt.legend(loc="upper left", fontsize=12)
-
-
 ## Check to see if halo or middle data exists, if so, plot the data overlayed on the central pointing data
 
 if f"{galaxy_name}_halo" in yaml_info:
@@ -124,11 +115,11 @@ if f"{galaxy_name}_middle" in yaml_info:
              c="red", ls="-.", label="Incompleteness-corrected middle PNLF") 
 
 
-plt.title(f"{galaxy_name}, dM={round(best_fit_dM,3)}")
+plt.title(f"{galaxy_name}, dM={round(best_fit_dM,2)}$"+"^{+"+f"{round(dM_err_up,2)}"+"}"+f"_{ {-round(dM_err_lo,2)} }$")
 plt.xlabel(r"$m_{5007}$", fontsize=15)
 plt.ylabel(r"$N_{PNe} \ per \ bin$", fontsize=15)
 plt.xlim(26.0,30.0)
-plt.ylim(0, np.max(scale_PNLF(gal_m_5007, PNLF_best_fit, PNLF_comp_corr, bw, step)))
+plt.ylim(0, np.max(scale_PNLF(gal_m_5007, PNLF_best_fit, PNLF_comp_corr, bw, step)[idx])*1.5)
 plt.legend(loc="upper left", fontsize=12)
 
 if show == True:

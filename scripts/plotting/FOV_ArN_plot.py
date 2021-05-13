@@ -14,15 +14,12 @@ from functions.file_handling import reconstructed_image, paths, open_data
 # Setup for argparse
 my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', type=str, required=True, help="The name of the galaxy to be analysed.")
-my_parser.add_argument("--loc",    action="store", type=str, required=False, default="", help="The pointing location, e.g. center, halo or middle")
-my_parser.add_argument("--ann", action="store_true", default=False, help="Flag to indicate if you want the figure to be annotated with object index values")
-my_parser.add_argument("--save", action="store_true", default=False, help="Flag to indicate that the produced figures should be saved.")
-my_parser.add_argument("--show", action="store_true", default=False, help="Flag to indicate that the plotted figures should be displayed on screen, once the script has been run.")
-my_parser.add_argument("--matched", action="store", nargs="+" , type=int, default=[], 
-                        help="Provide index values of sources within the dataset that have been matched to previous literature surveys. \
-                        These sources will be highlighted uniquely in the plot.")
-
+my_parser.add_argument('--galaxy', action='store', type=str, required=True)
+my_parser.add_argument("--loc",    action="store", type=str, required=False)
+my_parser.add_argument("--ann", action="store_true", default=False)
+my_parser.add_argument("--save", action="store_true", default=False)
+my_parser.add_argument("--show", action="store_true", default=False)
+my_parser.add_argument("--matched", action="store", nargs="+" , type=int, default=[])
 args = my_parser.parse_args()
 
 # Define galaxy name
@@ -302,7 +299,12 @@ elif galaxy_name in ["FCC083", "FCC147", "FCC148", "FCC161", "FCC184", "FCC190",
         OvLu_x_y_list = cen_x_y_list[cen_PNe_df.loc[cen_PNe_df["ID"]=="OvLu"].index.values]
         ax.scatter(OvLu_x_y_list[:,0], OvLu_x_y_list[:,1], marker="s", facecolor="None", edgecolor="k", lw=1.2, s=250, label="Over-luminous object")
 
-    plt.legend(loc=2, fontsize=15, labelspacing=1.0)
+    if galaxy_name in ["FCC161", "FCC193"]:
+        plt.legend(loc="upper right", fontsize=15, labelspacing=1.0)
+    elif galaxy_name == "FCC184":
+        plt.legend(loc="lower right", fontsize=15, labelspacing=1.0)
+    else:
+        plt.legend(loc=2, fontsize=15, labelspacing=1.0)
 
     # produce a white-light, collpased image of the galaxy.
     cen_data, wave, hdr = reconstructed_image(galaxy_name, "center")

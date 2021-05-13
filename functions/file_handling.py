@@ -127,7 +127,7 @@ def reconstructed_image(galaxy_name, loc):
     with fits.open(DIR_dict["RAW_DATA"]) as hdu:
         hdr  = hdu[1].header
         s    = np.shape(hdu[1].data)
-        wave = hdr['CRVAL3']+(np.arange(s[0])-hdr['CRPIX3'])*hdr['CD3_3']   
+        wave = hdr['CRVAL3']+(np.arange(s[0]))*hdr['CD3_3']   
         cond = (wave >= 4900.0) & (wave <= 5100.0)
         data = np.sum(hdu[1].data[cond,:,:],axis=0)
 

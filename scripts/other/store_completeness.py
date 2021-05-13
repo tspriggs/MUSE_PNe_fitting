@@ -29,7 +29,8 @@ with open("config/galaxy_info.yaml", "r") as yaml_data:
     galaxy_info = yaml.load(yaml_data, Loader=yaml.FullLoader)
 
 step = 0.001
-m_5007 = np.arange(26, 31, step)
+m_5007 = np.arange(22, 34, step)
+
 
 if os.path.isfile("exported_data/completeness_ratio_df.csv") is False:
     comp_df = pd.DataFrame(columns=("Galaxy", "FWHM", "beta", "LSF"))
@@ -50,6 +51,7 @@ for i, gal in enumerate(galaxy_selection):
             completeness_ratio = calc_completeness(image, Noise_map, m_5007, galaxy_data, 3.0, 9, )
 
             np.save(DIR_dict["EXPORT_DIR"]+"_completeness_ratio", completeness_ratio)
+            np.savetxt(DIR_dict["EXPORT_DIR"]+"_completeness_ratio_m5007.txt", m_5007, fmt='%f')
         else:
             continue
 

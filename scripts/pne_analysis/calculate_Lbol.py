@@ -105,7 +105,8 @@ def run_Lbol(DIR_dict, dM, gal_params, z, dM_err_up, dM_err_lo, app_sum=False, c
     Y, X = np.mgrid[:s[1], :s[2]]
     
     # The equation for calclating the wavelength array, from the header of the raw/reduced MUSE cube.
-    # wavelength_data = h1['CRVAL3']+(np.arange(np.shape(raw_data_cube)[0])-h1['CRPIX3'])*h1['CD3_3']
+    # wavelength_data = h1['CRVAL3']+(np.arange(np.shape(raw_data_cube)[0]))*h1['CD3_3']
+
 
     if app_sum == False:
         elip_mask = generate_mask([s[1], s[2]], gal_params["gal_mask"], mask_shape="ellipse")

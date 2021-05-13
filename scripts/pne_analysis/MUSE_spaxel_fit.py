@@ -193,7 +193,7 @@ star_mask = np.sum([generate_mask(img_shape=[y_data, x_data], mask_params=star_m
 ##      SEP      ##
 ###################
 # Use sep.extract to get the locations of sources
-objects = sep.extract(A_rN_img, thresh=2.5, clean=True, mask=elip_mask_gal+star_mask, deblend_cont=0.001,)
+objects = sep.extract(A_rN_img, thresh=2.5, clean=True, mask=elip_mask_gal+star_mask, deblend_nthresh=8, minarea=5, deblend_cont=0.0005,)
 peak_filter = np.where(objects["peak"] < 30)
 
 x_sep = objects["x"][peak_filter]
@@ -248,8 +248,8 @@ res_error_cube = uncertainty_cube_construct(data_residuals, x_PNe, n_pixels, PNe
 
 primary_hdu = fits.PrimaryHDU()
 
-res_hdr.set("YAXIS", value=x_data)
-res_hdr.set("XAXIS", value=y_data)
+res_hdr.set("YAXIS", value=y_data)
+res_hdr.set("XAXIS", value=x_data)
 
 # Use once residual cubes are introduced
 PNe_hdu = fits.ImageHDU(data=PNe_spectra, header=res_hdr, name="PNe_spectra")
