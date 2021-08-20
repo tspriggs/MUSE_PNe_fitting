@@ -1,0 +1,22 @@
+# YAML 1.2
+---
+authors: 
+  -
+    affiliation: "Centre for Astrophysics Research, University of Hertfordshire, College Lane, Hatfield AL10 9AB, UK"
+    family-names: Spriggs
+    given-names: Thomas
+    orcid: "https://orcid.org/0000-0003-3130-865X"
+cff-version: "1.1.0"
+date-released: 2021-05-13
+doi: "10.5281/zenodo.4758533"
+keywords: 
+  - "Planetary Nebulae"
+  - "Spectroscopic analysis"
+  - MUSE
+  - PNLF
+  - extragalactic
+message: "If you use this software, please cite it using these metadata."
+repository-code: "https://github.com/tspriggs/MUSE_PNe_fitting/releases/tag/V2.1.0"
+title: "MUSE_PNe_fitting"
+version: "2.1.0"
+...
