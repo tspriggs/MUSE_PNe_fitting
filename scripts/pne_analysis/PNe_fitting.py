@@ -24,25 +24,30 @@ np.random.seed(42)
 # uncomment this if you do not want to view "ignore" warnings. These do not alter the output of this script.
 # warnings.filterwarnings("ignore")
 
-# Read in arguments from command line
-my_parser = argparse.ArgumentParser()
+# # Read in arguments from command line
+# my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', type=str, required=True, 
-                        help="The name of the galaxy to be analysed.")
-my_parser.add_argument("--loc",    action="store", type=str, required=False, default="", 
-                        help="The pointing location, e.g. center, halo or middle")
-my_parser.add_argument("--fit_psf", action="store_true", default=False, 
-                        help="A flag used to determine if a PSF fit should be run.")
-my_parser.add_argument("--save_gist", action="store_true", default=False, 
-                        help="This Flag indicates that you want to save the files used for impostor detection, ready for GIST.")
+# my_parser.add_argument('--galaxy', action='store', type=str, required=True, 
+#                         help="The name of the galaxy to be analysed.")
+# my_parser.add_argument("--loc",    action="store", type=str, required=False, default="", 
+#                         help="The pointing location, e.g. center, halo or middle")
+# my_parser.add_argument("--fit_psf", action="store_true", default=False, 
+#                         help="A flag used to determine if a PSF fit should be run.")
+# my_parser.add_argument("--save_gist", action="store_true", default=False, 
+#                         help="This Flag indicates that you want to save the files used for impostor detection, ready for GIST.")
 
-args = my_parser.parse_args()
+# args = my_parser.parse_args()
 
 # Define galaxy name
-galaxy_name = args.galaxy   # galaxy name, format of FCC000
-loc = args.loc              # MUSE pointing loc: center, middle, halo
-fit_PSF = args.fit_psf
-save_gist = args.save_gist
+# galaxy_name = args.galaxy   # galaxy name, format of FCC000
+# loc = args.loc              # MUSE pointing loc: center, middle, halo
+# fit_PSF = args.fit_psf
+# save_gist = args.save_gist
+
+galaxy_name = "FCCtest"   # galaxy name, format of FCC000
+loc = "center"              # MUSE pointing loc: center, middle, halo
+fit_PSF = True
+save_gist = False
 
 
 DIR_dict = paths(galaxy_name, loc)
