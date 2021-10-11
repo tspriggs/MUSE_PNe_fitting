@@ -75,7 +75,7 @@ n_PNe = len(x_PNe)
 
 
 # create Pandas dataframe for storage of values from the 3D fitter.
-PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "PNe_LOS_V", "redchi", "ID", "index"))
+PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "Flux error up", "Flux error lo", "m 5007", "mag error up", "mag error lo", "M 5007",  "A/rN", "sep_peak", "PNe_LOS_V", "PNe_LOS_V_err", "redchi", "ID"))
 PNe_df["PNe number"] = np.arange(0, n_PNe)
 PNe_df["ID"] = "PN" # all start as PN
 
@@ -180,13 +180,11 @@ def run_minimiser(parameters):
     fitted_wavelength_distr = [(c * (mcerp.N(mean_wave_list[i,0], (mean_wave_err[i,0])) - 5006.77) / 5006.77) / 1000. for i in range(n_PNe)]
     PNe_df["PNe_LOS_V_err"] = [np.sqrt(fitted_wavelength_distr[i].var) for i in range(n_PNe)]
 
-
     PNe_df["fitted_mean_wave"] = mean_wave_list[:,0]
 
     PNe_df["[OIII] Flux"] = total_Flux[:,0] #store total OIII 5007 line flux
 
     PNe_df["m 5007"] = -2.5 * np.log10(PNe_df["[OIII] Flux"].values) - 13.74 + (-2.5*np.log10(galaxy_info["F_corr"]))
-
 
     return multi_fit_results.nvarys
 
@@ -231,6 +229,8 @@ if fit_PSF == True:
 
     if loc == "center":
         sel_PNe = PNe_df.loc[(PNe_df["ID"] == "PN") & (PNe_df["A/rN"]>8.0)].index.values[1:]
+        if len(sel_PNe) < 1:
+            sel_PNe = PNe_df.loc[(PNe_df["ID"] == "PN")].nlargest(4, "A/rN").index.values
     else:
         sel_PNe = PNe_df.loc[(PNe_df["ID"] == "PN")].nlargest(5, "A/rN").index.values
 
