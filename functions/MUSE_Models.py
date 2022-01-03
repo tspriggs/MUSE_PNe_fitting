@@ -212,7 +212,8 @@ def PNe_residuals_3D(params, l, x_2D, y_2D, data, error, emission_dict, list_to_
     list_to_append_data.append(data-model)
     list_to_append_data.append(useful_info)
     # Some sources may be at the edge of the field of fiew (FOV), and this may have arrays of 0.0. find such pixels and make a mask array.
-    zero_mask = np.where((data[:,0]!=0) & (np.isnan(data[:,0])==False))
+    zero_mask = np.where(((data[:,0]!=0) & (data[:,-1]!=0)) & (np.isnan(data[:,0])==False))
+
     
     # return the object function, for LMfit's minimisation routine, which is weighted by the errors and has the zero mask applied.
     return (data[zero_mask]- model[zero_mask]) / error[zero_mask]
