@@ -233,7 +233,7 @@ print(f"Number of detected [OIII] sources: {len(x_y_list)}")
 
 if save_sep == True:
     np.save(DIR_dict["EXPORT_DIR"]+"_PNe_x_y_list", x_y_list)
-    np.save(DIR_dict["EXPORT_DIR"]+"_PNE_SEP_peak", sep_peak)
+    np.save(DIR_dict["EXPORT_DIR"]+"_PNe_SEP_peak", sep_peak)
     
 ######
 # save a fits file of the PNe, with objective and error lists

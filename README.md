@@ -1,6 +1,6 @@
 # Detecting PNe within reduced MUSE data
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/HEAD?filepath=Binder_example.ipynb) [![DOI](https://zenodo.org/badge/144008483.svg)](https://zenodo.org/badge/latestdoi/144008483)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tspriggs/MUSE_PNe_fitting/HEAD?labpath=Binder_example.ipynb) [![DOI](https://zenodo.org/badge/144008483.svg)](https://zenodo.org/badge/latestdoi/144008483)
 
 
 ## :notebook: Binder Instructions

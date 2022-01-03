@@ -66,7 +66,7 @@ def reconstructed_image(galaxy_name, loc):
 
     return data, wave, hdr
 
-def form_PNLF_CDF(PNLF, data, dM, obs_comp, M_5007, m_5007):
+def form_PNLF_CDF(data, PNLF, dM, obs_comp, M_5007, m_5007):
     """Take in a formed PNLF, completeness correct it and calculate the Cumulative distribution function of the incompleteness corrected PNLF.
 
     Parameters
@@ -90,7 +90,6 @@ def form_PNLF_CDF(PNLF, data, dM, obs_comp, M_5007, m_5007):
         Cumulative distribution function of the PNLF provided, at dM
     """    
     sorted_data = np.sort(data)
-
     PNLF_comp_corr = np.array(np.interp(m_5007, M_5007+dM, PNLF)*obs_comp)
     PNLF_comp_corr[PNLF_comp_corr < 0] = 0.0
     PNLF_CDF = np.array(np.interp(sorted_data, m_5007, np.nancumsum(PNLF_comp_corr)/np.nansum(PNLF_comp_corr)))
@@ -129,7 +128,7 @@ def PNLF_fitter(params, data, data_err, obs_comp, M_5007, m_5007, min_stat="KS_1
     if min_stat == "chi2":
         if comp_lim == True:
             completeness_lim_mag = m_5007[obs_comp>=0.5].max()
-            PNLF_CDF = form_PNLF_CDF(PNLF, data, dM, obs_comp, M_5007, m_5007)
+            PNLF_CDF = form_PNLF_CDF(data, PNLF, dM, obs_comp, M_5007, m_5007)
             PNLF_CDF = PNLF_CDF[data<completeness_lim_mag]
             x, PNe_CDF = ecdf(data)
             PNe_CDF = PNe_CDF[data<completeness_lim_mag]

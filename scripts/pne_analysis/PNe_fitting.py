@@ -24,25 +24,30 @@ np.random.seed(42)
 # uncomment this if you do not want to view "ignore" warnings. These do not alter the output of this script.
 # warnings.filterwarnings("ignore")
 
-# Read in arguments from command line
-my_parser = argparse.ArgumentParser()
+# # Read in arguments from command line
+# my_parser = argparse.ArgumentParser()
 
-my_parser.add_argument('--galaxy', action='store', type=str, required=True, 
-                        help="The name of the galaxy to be analysed.")
-my_parser.add_argument("--loc",    action="store", type=str, required=False, default="", 
-                        help="The pointing location, e.g. center, halo or middle")
-my_parser.add_argument("--fit_psf", action="store_true", default=False, 
-                        help="A flag used to determine if a PSF fit should be run.")
-my_parser.add_argument("--save_gist", action="store_true", default=False, 
-                        help="This Flag indicates that you want to save the files used for impostor detection, ready for GIST.")
+# my_parser.add_argument('--galaxy', action='store', type=str, required=True, 
+#                         help="The name of the galaxy to be analysed.")
+# my_parser.add_argument("--loc",    action="store", type=str, required=False, default="", 
+#                         help="The pointing location, e.g. center, halo or middle")
+# my_parser.add_argument("--fit_psf", action="store_true", default=False, 
+#                         help="A flag used to determine if a PSF fit should be run.")
+# my_parser.add_argument("--save_gist", action="store_true", default=False, 
+#                         help="This Flag indicates that you want to save the files used for impostor detection, ready for GIST.")
 
-args = my_parser.parse_args()
+# args = my_parser.parse_args()
 
 # Define galaxy name
-galaxy_name = args.galaxy   # galaxy name, format of FCC000
-loc = args.loc              # MUSE pointing loc: center, middle, halo
-fit_PSF = args.fit_psf
-save_gist = args.save_gist
+# galaxy_name = args.galaxy   # galaxy name, format of FCC000
+# loc = args.loc              # MUSE pointing loc: center, middle, halo
+# fit_PSF = args.fit_psf
+# save_gist = args.save_gist
+
+galaxy_name = "FCCtest"   # galaxy name, format of FCC000
+loc = "center"              # MUSE pointing loc: center, middle, halo
+fit_PSF = True
+save_gist = False
 
 
 DIR_dict = paths(galaxy_name, loc)
@@ -75,7 +80,7 @@ n_PNe = len(x_PNe)
 
 
 # create Pandas dataframe for storage of values from the 3D fitter.
-PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "m 5007", "m 5007 error", "M 5007", "[OIII] Flux", "M 5007 error", "A/rN", "PNe_LOS_V", "redchi", "ID", "index"))
+PNe_df = pd.DataFrame(columns=("PNe number", "Ra (J2000)", "Dec (J2000)", "[OIII] Flux", "Flux error up", "Flux error lo", "m 5007", "mag error up", "mag error lo", "M 5007",  "A/rN", "sep_peak", "PNe_LOS_V", "PNe_LOS_V_err", "redchi", "ID"))
 PNe_df["PNe number"] = np.arange(0, n_PNe)
 PNe_df["ID"] = "PN" # all start as PN
 
@@ -180,13 +185,11 @@ def run_minimiser(parameters):
     fitted_wavelength_distr = [(c * (mcerp.N(mean_wave_list[i,0], (mean_wave_err[i,0])) - 5006.77) / 5006.77) / 1000. for i in range(n_PNe)]
     PNe_df["PNe_LOS_V_err"] = [np.sqrt(fitted_wavelength_distr[i].var) for i in range(n_PNe)]
 
-
     PNe_df["fitted_mean_wave"] = mean_wave_list[:,0]
 
     PNe_df["[OIII] Flux"] = total_Flux[:,0] #store total OIII 5007 line flux
 
     PNe_df["m 5007"] = -2.5 * np.log10(PNe_df["[OIII] Flux"].values) - 13.74 + (-2.5*np.log10(galaxy_info["F_corr"]))
-
 
     return multi_fit_results.nvarys
 
@@ -231,6 +234,8 @@ if fit_PSF == True:
 
     if loc == "center":
         sel_PNe = PNe_df.loc[(PNe_df["ID"] == "PN") & (PNe_df["A/rN"]>8.0)].index.values[1:]
+        if len(sel_PNe) < 1:
+            sel_PNe = PNe_df.loc[(PNe_df["ID"] == "PN")].nlargest(4, "A/rN").index.values
     else:
         sel_PNe = PNe_df.loc[(PNe_df["ID"] == "PN")].nlargest(5, "A/rN").index.values
 
